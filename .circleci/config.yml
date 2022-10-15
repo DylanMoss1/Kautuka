@@ -1,0 +1,68 @@
+version: 2
+jobs:
+  test:
+    docker:
+      - image: ocaml/opam2:debian-10-ocaml-4.14
+    environment:
+      - TERM: dumb
+    steps:
+      - checkout
+      - restore_cache:
+          key: cache-{{ checksum "hello_world.opam" }}
+      - run:
+          name: "Update Opam"
+          command: cd /home/opam/opam-repository && git pull && opam update && cd - && eval $(opam env)
+      - run:
+          name: "Install deps"
+          command: sudo apt-get install -y m4  && make install
+      - save_cache:
+          key: cache-{{ checksum "hello_world.opam" }}
+          paths:
+            - ~/.opam
+      - run:
+          name: "Lint"
+          command: opam exec -- make lint
+      - run:
+          name: "Run tests and calculate test coverage"
+          command: opam exec -- make coverage
+      - run:
+          name: "Send Coveralls.io coverage report"
+          command: opam exec -- bisect-ppx-report send-to Coveralls
+      - run:
+          name: "Make docs"
+          command: opam exec -- make doc
+      - run:
+          name: "Provision custom domain"
+          command: echo "ocamltest.mukulrathi.com" > docs/CNAME
+      - persist_to_workspace:
+          root: ./
+          paths: docs
+
+  docs-deploy:
+    docker:
+      - image: node:8.10.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "dylan.moss2001@gmail.com"
+            git config user.name "Dylan Moss"
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --dist docs/ --message "[skip ci] Update docs"
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "test"
+      - docs-deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master

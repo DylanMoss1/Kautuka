@@ -1,0 +1,22 @@
+opam-version: "2.0"
+synopsis: "A template for OCaml Tooling"
+version: "1.0"
+maintainer: "mukul.rathi@gmail.com"
+authors: ["Mukul Rathi"]
+homepage: "https://github.com/mukul-rathi/ocaml-testing-template"
+bug-reports: "https://github.com/mukul-rathi/ocaml-testing-template/issues"
+dev-repo: "git+https://github.com/mukul-rathi/ocaml-testing-template.git"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "dune" { >= "2.0.0"}
+  "qcheck" {= "0.12"}
+  "qcheck-alcotest" {= "0.12"}
+  "alcotest"  {= "0.8.5"}
+  "odoc"  {= "1.4.2"}
+  "ocamlformat" {="0.12"}
+  "bisect_ppx" {= "2.2.0"}
+  "ppx_jane"{= "v0.12.0"}
+  "reason"  { ="3.5.2"}
+]
