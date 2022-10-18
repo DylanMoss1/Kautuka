@@ -1,11 +1,11 @@
 opam-version: "2.0"
-synopsis: "A template for OCaml Tooling"
+synopsis: "X"
 version: "1.0"
-maintainer: "mukul.rathi@gmail.com"
-authors: ["Mukul Rathi"]
-homepage: "https://github.com/mukul-rathi/ocaml-testing-template"
-bug-reports: "https://github.com/mukul-rathi/ocaml-testing-template/issues"
-dev-repo: "git+https://github.com/mukul-rathi/ocaml-testing-template.git"
+maintainer: "dm894@cam.ac.uk"
+authors: ["Dylan Moss"]
+homepage: "X"
+bug-reports: "X"
+dev-repo: "X"
 build: [
   ["dune" "build" "-p" name "-j" jobs]
 ]
