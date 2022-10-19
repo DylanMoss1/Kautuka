@@ -1,13 +1,8 @@
 (library
- (name parsing)
- (libraries core fmt ast)
+ (name ast)
+ (libraries core fmt)
  (preprocess
   (pps bisect_ppx --conditional))
  (lint
   (pps ppx_js_style -check-doc-comments -annotated-ignores -styler -pretty
     -dated-deprecation)))
-
-(ocamllex lexer)
-
-(menhir
- (modules parser))

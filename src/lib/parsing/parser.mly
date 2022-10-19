@@ -1,5 +1,5 @@
 %{
-    open Ast.Expr
+    open Ast
 %}
 
 %token <int> TINTEGER
@@ -9,7 +9,6 @@
 %token TLPAREN TRPAREN TLBRACE TRBRACE
 %token <string> TEQUAL TCEQ TCNE TCLT TCLE TCGT TCGE TCAND TCOR
 %token TCOMMA EOF
-
 
 %type <string> ident
 %type <Expr.expr> numeric expr 
@@ -38,12 +37,12 @@ block : TLBRACE stmts TRBRACE { $2 }
     | TLBRACE TRBRACE { [] }
     ;
 
-var_decl : ident ident { VariableDeclaration($1, $2) }
-    | ident ident TEQUAL expr { VariableDeclarationExpr($1, $2, $4) }
+var_decl : ident ident { Expr.VariableDeclaration($1, $2) }
+    | ident ident TEQUAL expr { Expr.VariableDeclarationExpr($1, $2, $4) }
     ;
 
 func_decl : ident ident TLPAREN func_decl_args TRPAREN block 
-                {FunctionDeclaration($1, $2, $4, $6)}
+                { Expr.FunctionDeclaration($1, $2, $4, $6)}
     ;
 
 func_decl_args : {[]}
@@ -54,15 +53,15 @@ func_decl_args : {[]}
 ident : TIDENTIFIER { $1 }
     ;
 
-numeric : TINTEGER { Int($1) }
-    | TDOUBLE {Double($1)}
+numeric : TINTEGER { Expr.Int($1) }
+    | TDOUBLE {Expr.Double($1)}
     ;
 
-expr : ident TEQUAL expr {Assignment($1, $3)}
-    | ident TLPAREN call_args TRPAREN {MethodCall($1, $3)}
-    | ident {Identifier($1)}
+expr : ident TEQUAL expr {Expr.Assignment($1, $3)}
+    | ident TLPAREN call_args TRPAREN {Expr.MethodCall($1, $3)}
+    | ident {Expr.Identifier($1)}
     | numeric {$1}
-    | expr comparison expr {BinaryOperator($1, $2, $3)}
+    | expr comparison expr {Expr.BinaryOperator($1, $2, $3)}
     | TLPAREN expr TRPAREN {$2} 
     ;
 
