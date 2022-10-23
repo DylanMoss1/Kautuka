@@ -1,13 +1,13 @@
-double circle(double r, ){
-3.14 * r * r
+int circle(int r, ){
+3 * r * r
 }
 
-double cyl(double r, double h, ){
+int cyl(int r, int h, ){
 h * circle(r)
 }
 
 int main(){
-double vol cyl(2., 5.)
+int vol cyl(2, 5)
 printf(vol)
 0
 }

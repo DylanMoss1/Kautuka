@@ -1,28 +1,51 @@
 {
     open Parser
+    open Lexing
+
+    exception LexerError of string
+
+    let next_line lexbuf =
+    let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <-
+      { pos with pos_bol = lexbuf.lex_curr_pos;
+                pos_lnum = pos.pos_lnum + 1
+      }
 }
 
-rule token = parse
-  | [' ' '\t' '\n']                  { token lexbuf }
-  | ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as s       {  TIDENTIFIER (s)}
-  | ['0'-'9']+ as lxm                { TINTEGER (int_of_string lxm) }
-  | ['0'-'9']+'.'['0'-'9']* as lxm   { TDOUBLE(float_of_string lxm)}
-  | "=" as s                         { TEQUAL(String.make 1 s) }
-  | "==" as s                        { TCEQ(s) }
-  | "!=" as s                        { TCNE(s) }
-  | "<"  as s                        { TCLT(String.make 1 s) }
-  | "<=" as s                        { TCLE(s) }
-  | ">"  as s                        { TCGT(String.make 1 s) }
-  | ">=" as s                        { TCGE(s) }
-  | "&&" as s                        { TCAND(s) }
-  | "||" as s                        { TCOR(s) }
-  | "+"  as s                        { TPLUS(String.make 1 s) }
-  | "-"  as s                        { TMINUS(String.make 1 s) }
-  | "*"  as s                        { TMUL(String.make 1 s) }
-  | "/"  as s                        { TDIV(String.make 1 s) }
-  | '('                              { TLPAREN }
-  | ')'                              { TRPAREN }
-  | '{'                              { TLBRACE }
-  | '}'                              { TRBRACE }
-  | ','                              { TCOMMA }
+let digit = ['0'-'9']
+let alpha = ['a'-'z' 'A'-'Z']
+let int = '-'? digit+
+let id = ((alpha) (alpha|digit|'_')*) | "_"
+let whitespace = [' ' '\t']+
+let newline = '\r' | '\n' | "\r\n"
+
+rule read_token = parse
+  | whitespace                       { read_token lexbuf }
+  | '('                              { LPAREN }
+  | ')'                              { RPAREN }
+  | '{'                              { LBRACE }
+  | '}'                              { RBRACE }
+  | "int"                            { T_INT }
+  | "bool"                           { T_BOOL }
+  | "string"                         { T_STRING }
+  | "+"                              { PLUS }
+  | "-"                              { MINUS }
+  | "*"                              { MULT }
+  | "/"                              { DIV }
+  | "="                              { EQUALS }
+  | "=="                             { EQ }
+  | "!="                             { NE }
+  | "<"                              { LT }
+  | "<="                             { LE }
+  | ">"                              { GT }
+  | ">="                             { GE }
+  | "&&"                             { AND }
+  | "||"                             { OR }
+  | "package"                        { PACKAGE }
+  | "val"                            { VALUE }
+  | ','                              { COMMA }
+  | int as i                         { INT (int_of_string i) }
+  | id as s                          { ID (s)}
+  | newline { next_line lexbuf; read_token lexbuf }
   | eof                              { EOF }
+  | _ {raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
