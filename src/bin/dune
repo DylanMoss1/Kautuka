@@ -1,0 +1,8 @@
+(executable
+ (name main)
+ (public_name kautuka)
+ (libraries core fmt parsing go_translation)
+ (preprocess
+  (pps ppx_jane bisect_ppx --conditional))
+ (lint
+  (pps ppx_js_style -annotated-ignores -styler -pretty -dated-deprecation)))
