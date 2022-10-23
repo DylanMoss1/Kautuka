@@ -1,6 +1,14 @@
-FunctionDeclaration 
+double circle(double r, ){
+3.14 * r * r
+}
 
-FunctionDeclaration 
+double cyl(double r, double h, ){
+h * circle(r)
+}
 
-FunctionDeclaration 
+int main(){
+double vol cyl(2., 5.)
+printf(vol)
+0
+}
 
