@@ -27,6 +27,7 @@ rule read_token = parse
   | '{'                              { LBRACE }
   | '}'                              { RBRACE }
   | "="                              { EQUALS }
+  | ":="                             { DECL }
   | "int"                            { T_INT }
   | "bool"                           { T_BOOL }
   | "string"                         { T_STRING }

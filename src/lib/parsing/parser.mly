@@ -9,13 +9,15 @@
 %token <bool> BOOL
 %token <string> STRING
 %token FUNC COMMA
-%token VAR EQUALS 
+%token VAR EQUALS DECL 
 %token PACKAGE 
 %token EOF
 
 %type <program> program
 %type <package> package
-%type <global_var> global_var
+%type <var> global_var
+%type <statement> statement 
+%type <var> var 
 %type <id> id 
 %type <type_id> type_id
 %type <func> func
@@ -31,9 +33,9 @@ program:
 package:
 | PACKAGE id=id { Package(id) }
 
-global_var: 
-| VAR id=id type_id=type_id { GlobalVar(id, type_id) }
-| VAR id=id type_id=type_id EQUALS value=value { GlobalVarInit(id, type_id, value) }
+global_var:
+| VAR id=id type_id=type_id { VarNonInit(id, type_id) }
+| VAR id=id type_id=type_id EQUALS value=value { VarInit(id, type_id, value) }
 
 id: 
 | id=ID { ID(id) }
@@ -49,10 +51,18 @@ value:
 | string_val=STRING { String(string_val) }
 
 func: 
-| FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN LBRACE contents=list(global_var) RBRACE { Function(id, params, contents) }
+| FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN LBRACE contents=list(statement) RBRACE { Function(id, params, contents) }
 
 param: 
 | id=id type_id=type_id { Param(id, type_id) }
+
+statement: 
+| var=var { Var(var) }
+
+var: 
+| VAR id=id type_id=type_id { VarNonInit(id, type_id) }
+| VAR id=id type_id=type_id EQUALS value=value { VarInit(id, type_id, value) }
+| VAR id=id DECL value=value { VarDecl(id, value) }
 
 
 %%
