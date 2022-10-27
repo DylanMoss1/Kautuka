@@ -7,7 +7,7 @@ type var =
   | VarInit of id * type_id * value
   | VarDecl of id * value
 
-type statement = Var of var 
+type statement = Var of var
 type package = Package of id
 type param = Param of id * type_id
 type func = Function of id * param list * statement list
