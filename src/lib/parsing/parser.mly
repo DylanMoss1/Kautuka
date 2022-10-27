@@ -1,97 +1,58 @@
-%{
-    open Ast
+%{ 
+    open Ast.Ast_structure  
 %}
 
-%token <int> INT
-%token <string> ID
 %token LPAREN RPAREN LBRACE RBRACE
+%token <string> ID
 %token T_INT T_BOOL T_STRING
-%token PLUS MINUS MULT DIV
-%token EQUALS EQ NE LT LE GT GE AND OR
-%token PACKAGE VAR COMMA EOF
+%token <int> INT
+%token <bool> BOOL
+%token <string> STRING
+%token FUNC COMMA
+%token VAR EQUALS 
+%token PACKAGE 
+%token EOF
 
-%type <string> identifier
-%type <expr> numeric expr 
-%type <statement list> func_decl_args
-%type <expr list> call_args
-%type <block> program stmts block
-%type <statement> stmt var_decl func_decl
-%type <bin_op> comparison
+%type <program> program
+%type <package> package
+%type <global_var> global_var
+%type <id> id 
+%type <type_id> type_id
+%type <func> func
+%type <param> param
 
 %start program
 
 %%
 
 program:
-| package=package global_vars=list(global_var) stmts=stmts EOF { Program(package, global_vars, stmts) };
-
-global_var: 
-| VAR id=ID type_id=type_id { GlobalVar(id, type_id) }
-| VAR id=ID type_id=type_id EQUALS expr=expr { GlobalInitVar(id, type_id, expr) }
-
-type_id: 
-| T_INT { TInt }
-| T_BOOL { TBool }
-| T_STRING { TString}
+| package=package; global_vars=list(global_var) funcs=list(func) EOF { Program(package, global_vars, funcs) }
 
 package:
-| PACKAGE id=ID { Package(id) }
+| PACKAGE id=id { Package(id) }
 
-stmts : 
-| stmt { [$1] }
-| stmts stmt { $1@[$2] }
+global_var: 
+| VAR id=id type_id=type_id { GlobalVar(id, type_id) }
+| VAR id=id type_id=type_id EQUALS value=value { GlobalVarInit(id, type_id, value) }
 
-stmt : 
-| var_decl {$1} | func_decl {$1}
-| expr { Expr($1) };
+id: 
+| id=ID { ID(id) }
 
-block : 
-| LBRACE stmts RBRACE { $2 }
-| LBRACE RBRACE { [] };
+type_id: 
+| T_INT { T_Int } 
+| T_BOOL { T_Bool }
+| T_STRING { T_String }
 
-var_decl : 
-| identifier identifier { VariableDeclaration($1, $2) }
-| identifier identifier EQUALS expr { VariableDeclarationExpr($1, $2, $4) };
+value: 
+| int_val=INT { Int(int_val) }
+| bool_val=BOOL { Bool(bool_val) }
+| string_val=STRING { String(string_val) }
 
-func_decl : 
-| identifier identifier LPAREN func_decl_args RPAREN block { FunctionDeclaration($1, $2, $4, $6)};
+func: 
+| FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN LBRACE contents=list(global_var) RBRACE { Function(id, params, contents) }
 
-func_decl_args : 
-| {[]}
-| var_decl {[$1]}
-| func_decl_args COMMA var_decl {$1@[$3]};
+param: 
+| id=id type_id=type_id { Param(id, type_id) }
 
-identifier : 
-| ID { $1 };
-
-numeric : 
-| INT { Value(Int($1)) }
-
-expr : 
-| identifier EQUALS expr { Assignment($1, $3)}
-| identifier LPAREN call_args RPAREN { MethodCall($1, $3)}
-| identifier { Identifier($1)}
-| numeric { $1 }
-| expr comparison expr { BinaryOperator($1, $2, $3)}
-| LPAREN expr RPAREN {$2};
-
-call_args : 
-| {[]}
-| expr {[$1]}
-| call_args COMMA expr {$1@[$3]};
-
-comparison : 
-| EQ {Eq}
-| NE {Ne}
-| LT {Lt}
-| LE {Le}
-| GT {Gt}
-| GE {Ge}
-| PLUS {Plus}
-| MINUS {Minus}
-| MULT {Mult}
-| DIV {Div}
-| AND {And}
-| OR {Or};
 
 %%

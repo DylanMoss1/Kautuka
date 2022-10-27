@@ -1,14 +1,20 @@
-int circle(int r, ){
-3 * r * r
+package main
+
+var x int
+var y bool
+var z string
+var a int = 1
+var b bool = true
+var c string = "Hello world"
+
+func hello() {
+	var 	x 	int
+	var 	y 	bool
+	var 	z 	string
 }
 
-int cyl(int r, int h, ){
-h * circle(r)
+func hello1(a int, b string, c bool) {
+	var 	a 	int = 	1
+	var 	b 	bool = 	true
+	var 	c 	string = 	"Hello world"
 }
-
-int main(){
-int vol cyl(2, 5)
-printf(vol)
-0
-}
-
