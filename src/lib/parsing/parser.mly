@@ -1,5 +1,5 @@
 %{ 
-    open Ast.Ast_structure  
+    open Ast.Parsed_ast  
 %}
 
 %token LPAREN RPAREN LBRACE RBRACE

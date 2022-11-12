@@ -1,4 +1,4 @@
-open Ast_structure
+open Parsed_ast
 
 let rec repeat s n = if n = 0 then "" else s ^ repeat s (n - 1)
 let add_indent n s = repeat "\t" n ^ s

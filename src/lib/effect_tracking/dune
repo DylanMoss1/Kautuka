@@ -1,5 +1,5 @@
 (library
- (name ast)
+ (name effect_tracking)
  (libraries core fmt ast)
  (preprocess
   (pps bisect_ppx --conditional))

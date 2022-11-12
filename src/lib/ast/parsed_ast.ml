@@ -1,3 +1,9 @@
+(* module type Structure = sig 
+  type t 
+  
+  val to_string : t -> int -> string 
+end  *)
+
 type id = ID of string
 type value = Int of int | Bool of bool | String of string
 type type_id = T_Int | T_Bool | T_String
