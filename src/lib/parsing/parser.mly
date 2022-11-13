@@ -126,15 +126,15 @@ statement:
 | func_call=func_call { Func_call(func_call) }
 
 func_call: 
-| name=id LPAREN args=separated_list(COMMA, expr) RPAREN { { name = name; args = args } }
+| name=id LPAREN args=separated_list(COMMA, expr) RPAREN { User_func( { name = name; args = args } ) }
 | PRINT LPAREN arg=expr RPAREN { Print(arg) }
 | INPUT LPAREN RPAREN { Input }
 | OPEN LPAREN arg=expr RPAREN { Open(arg) } 
 | READ LPAREN arg=expr RPAREN { Read(arg) }
-| WRITE LPAREN arg1=id COMMA arg2=id RPAREN { Write({ file : arg1; contents : arg2 }) } 
-| APPEND LPAREN arg1=id COMMA arg2=id RPAREN { Append({ file : arg1; contents : arg2 }) } 
+| WRITE LPAREN arg1=id COMMA arg2=expr RPAREN { Write( { file = arg1; contents = arg2 } ) } 
+| APPEND LPAREN arg1=id COMMA arg2=expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
 
-structure: 
+structure:
 | func=func { Func(func) }
 | condition=condition { condition }
 | block=block { Block(block) }

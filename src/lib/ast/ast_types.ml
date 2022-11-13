@@ -12,30 +12,30 @@ type value =
   | Bool of bool
   | String of string
 
-type unop = 
-  | Not 
-  | Minus 
+type unop =
+  | Not
+  | Minus
 
-type binop = 
-  | Plus 
-  | Mult 
-  | Div 
-  | Mod 
-  | Lt 
-  | Le 
-  | Gt 
-  | Ge 
+type binop =
+  | Plus
+  | Mult
+  | Div
+  | Mod
+  | Lt
+  | Le
+  | Gt
+  | Ge
   | Eq
-  | Ne 
-  | And 
-  | Or 
+  | Ne
+  | And
+  | Or
 
-type expr = 
-  | Unop of unop * expr 
-  | Binop of expr * binop * expr 
-  | Paren of expr 
+type expr =
+  | Unop of unop * expr
+  | Binop of expr * binop * expr
+  | Paren of expr
   | Value of value
-  | Var of id 
+  | Var of id
 
 type var =
   | VarNonInit of id * type_id
@@ -45,22 +45,22 @@ type var =
 
 type user_func = {
   name : id;
-  args : expr list;                                    
+  args : expr list;
 }
 
-type write_template = { 
-  file : id; 
-  contents: expr 
+type write_template = {
+  file : id;
+  contents : expr;
 }
 
-type func_call = 
-  | User_func of user_func 
+type func_call =
+  | User_func of user_func
   | Print of expr
   | Input
-  | Open of expr 
-  | Read of expr 
-  | Write of write_template 
-  | Append of write_template 
+  | Open of expr
+  | Read of expr
+  | Write of write_template
+  | Append of write_template
 
 type statement =
   | Expr of expr
