@@ -37,20 +37,24 @@ rule read_token = parse
   | '"'                              { read_string (Buffer.create 256) lexbuf }
   | "func"                           { FUNC }
   | ','                              { COMMA }
+  | ";"                              { SEMICOLON }
   | "var"                            { VAR }
   | "package"                        { PACKAGE }
   | "</>"                            { IGNORE }
   | "<!>"                            { FORCE }
   | "if"                             { IF }
   | "else"                           { ELSE }
+  | "else if"                        { ELIF }
   | "while"                          { WHILE }
   | "for"                            { FOR }
   | "range"                          { RANGE }
   | ";"                              { SEMICOLON }
-  | id as s                          { ID (s) }
-  | eof                              { EOF }
-  | _ { raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
-  (*
+  | "print"                          { PRINT }
+  | "input"                          { INPUT }
+  | "open"                           { OPEN }
+  | "read"                           { READ }
+  | "write"                          { WRITE }
+  | "append"                         { APPEND }
   | "+"                              { PLUS }
   | "-"                              { MINUS }
   | "*"                              { MULT }
@@ -65,8 +69,11 @@ rule read_token = parse
   | "&&"                             { AND }
   | "||"                             { OR }
   | "!"                              { NOT }
+  | id as s                          { ID (s) }
+  | eof                              { EOF }
+  | _ { raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
   | _ {raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
-*)
+
 
   and read_string buf = parse
   | '"'       { STRING (Buffer.contents buf) }

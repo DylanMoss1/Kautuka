@@ -9,11 +9,15 @@
 %token <bool> BOOL
 %token <string> STRING
 %token FUNC COMMA
+%token SEMICOLON RANGE
 %token VAR EQUALS DECL 
 %token PACKAGE 
 %token EOF
-%token FORCE IGNORE 
-
+%token FORCE IGNORE
+%token IF ELSE ELIF
+%token WHILE FOR 
+%token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
+%token PRINT INPUT OPEN READ WRITE APPEND 
 %type <program> program
 %type <id> package
 %type <statement> statement 
@@ -24,14 +28,19 @@
 %type <func> func
 %type <param> param
 %type <expr> expr 
-%type <block> block 
-%type <structure> structure 
-%type <command> command 
+%type <block> block _else 
+%type <structure> structure condition
+%type <command> command
+%type <condition_template> condition_template else_if
+%type <func_call> func_call 
 
+%type <expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
+%type <block option> option(_else)
+%type <condition_template list> list(else_if)
+%type <command list> list(command)
 %type <func list> list(func)
 %type <var list> list(global_var)
-%type <param list> loption(separated_nonempty_list(COMMA,param))
-%type <param list> separated_nonempty_list(COMMA,param)
+%type <param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 
 %start program
 
@@ -87,21 +96,73 @@ param:
 | id=id type_id=type_id { (id, type_id) }
 
 expr: 
+| unop=unop expr=expr { Unop(unop, expr) }
+| expr1=expr binop=binop expr2=expr { Binop(expr1, binop, expr2) }
+| LPAREN expr=expr RPAREN { Paren(expr) } 
 | value=value { Value(value) }
+| var=id { Var(var) }
+
+unop: 
+| NOT { Not }
+| MINUS { Minus }
+
+binop: 
+| PLUS { Plus }
+| MULT { Mult }
+| DIV { Div }
+| MOD { Mod }
+| LT { Lt }
+| LE { Le }
+| GT { Gt }
+| GE { Ge }
+| EQ { Eq } 
+| NE { Ne }
+| AND { And }
+| OR { Or }
 
 statement: 
 | var=var { Var(var) }
 | expr=expr { Expr(expr) }
+| func_call=func_call { Func_call(func_call) }
+
+func_call: 
+| name=id LPAREN args=separated_list(COMMA, expr) RPAREN { { name = name; args = args } }
+| PRINT LPAREN arg=expr RPAREN { Print(arg) }
+| INPUT LPAREN RPAREN { Input }
+| OPEN LPAREN arg=expr RPAREN { Open(arg) } 
+| READ LPAREN arg=expr RPAREN { Read(arg) }
+| WRITE LPAREN arg1=id COMMA arg2=id RPAREN { Write({ file : arg1; contents : arg2 }) } 
+| APPEND LPAREN arg1=id COMMA arg2=id RPAREN { Append({ file : arg1; contents : arg2 }) } 
 
 structure: 
 | func=func { Func(func) }
-| _if=if { _if }
+| condition=condition { condition }
+| block=block { Block(block) }
+| WHILE expr=expr block=block { While(expr, block) }
+| FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=block {
+    For_loop( { init = init; cond = cond; iter = iter; contents=contents } )
+} 
+| FOR item=id DECL RANGE iterator=id contents=block {
+    For_each( { item = item; iterator = iterator; contents=contents } )
+}
 
-if
-| IF condition=expr contents=block { If({ condition = condition; contents=contents }) }
-| IF condition=expr if_contents=block list(else_if) ELSE else_contents=block {}
+condition_template: 
+| condition=expr contents=block { { condition = condition; contents = contents } } 
+
+condition:
+| IF _if=condition_template else_if=list(else_if) else_contents=option(_else) {
+    If(
+    { 
+      _if = _if;
+      else_if = else_if;
+      else_contents = else_contents
+    })
+}
 
 else_if: 
-| ELSE IF condition=expr contents = block {  } 
+| ELIF else_if=condition_template { else_if } 
+
+_else: 
+| ELSE content=block { content }
 
 %%

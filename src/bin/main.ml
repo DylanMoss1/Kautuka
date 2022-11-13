@@ -1,6 +1,6 @@
 open Core
 open Parsing
-open Ast.Pprint_ast 
+open Ast.Pprint_ast
 
 let () =
   In_channel.read_all "./files/kau_program.kau"
