@@ -21,7 +21,7 @@ let newline = '\r' | '\n' | "\r\n"
 
 rule read_token = parse
   | whitespace                       { read_token lexbuf }
-  | newline { next_line lexbuf; read_token lexbuf }
+  | newline                          { next_line lexbuf; read_token lexbuf }
   | '('                              { LPAREN }
   | ')'                              { RPAREN }
   | '{'                              { LBRACE }
@@ -39,10 +39,18 @@ rule read_token = parse
   | ','                              { COMMA }
   | "var"                            { VAR }
   | "package"                        { PACKAGE }
+  | "</>"                            { IGNORE }
+  | "<!>"                            { FORCE }
+  | "if"                             { IF }
+  | "else"                           { ELSE }
+  | "while"                          { WHILE }
+  | "for"                            { FOR }
+  | "range"                          { RANGE }
+  | ";"                              { SEMICOLON }
   | id as s                          { ID (s) }
   | eof                              { EOF }
+  | _ { raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
   (*
-  | ":="                             { DECL }
   | "+"                              { PLUS }
   | "-"                              { MINUS }
   | "*"                              { MULT }
@@ -57,13 +65,6 @@ rule read_token = parse
   | "&&"                             { AND }
   | "||"                             { OR }
   | "!"                              { NOT }
-  | "</>"                            { FRAGMENT }
-  | "if"                             { IF }
-  | "else"                           { ELSE }
-  | "while"                          { WHILE }
-  | "for"                            { FOR }
-  | "range"                          { RANGE }
-  | ";"                              { SEMICOLON }
   | _ {raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
 *)
 

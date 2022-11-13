@@ -1,6 +1,7 @@
 (library
  (name ast)
  (libraries core fmt)
+ (flags (-warn-error -30))
  (preprocess
   (pps ppx_string_interpolation bisect_ppx --conditional))
  (lint

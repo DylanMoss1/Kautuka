@@ -1,4 +1,6 @@
-open Parsed_ast
+let string_of_program _ = "Hello world"
+
+(* open Parsed_ast
 
 let rec repeat s n = if n = 0 then "" else s ^ repeat s (n - 1)
 let add_indent n s = repeat "\t" n ^ s
@@ -50,4 +52,4 @@ let string_of_program = function
       [%string
         "$(string_of_package package)\n\n\
          $(newline_list string_of_var global_vars 1)\n\n\
-         $(newline_list (string_of_func indent) funcs 2)"]
+         $(newline_list (string_of_func indent) funcs 2)"] *)
