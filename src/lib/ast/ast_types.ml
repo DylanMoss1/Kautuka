@@ -1,6 +1,6 @@
 open! Core
 
-type id = string
+type id = ID of string
 
 type type_id =
   | T_Int
@@ -14,10 +14,11 @@ type value =
 
 type unop =
   | Not
-  | Minus
+  | U_Minus
 
 type binop =
   | Plus
+  | B_Minus
   | Mult
   | Div
   | Mod
@@ -131,3 +132,39 @@ type program = {
   global_vars : var list;
   funcs : func list;
 }
+
+(* type non_variants =
+  | User_func of user_func
+  | Write_template of write_template
+  | Param of param
+  | For_loop of for_loop
+  | For_each of for_each
+  | Condition_template of condition_template
+  | If_record of if_record
+  | Block_record of block_record
+  | Func of func
+  | Program of program *)
+
+type ast =
+| Id of id 
+| Type_id of type_id
+| Value of value 
+| Unop of unop 
+| Binop of binop 
+| Expr of expr 
+| Var of var 
+| User_func of user_func 
+| Write_template of write_template 
+| Func_call of func_call 
+| Statement of statement 
+| Param of param 
+| For_loop of for_loop
+| For_each of for_each
+| Condition_template of condition_template 
+| If_record of if_record 
+| Structure of structure 
+| Command of command 
+| Block_record of block_record 
+| Block of block 
+| Func of func 
+| Program of program

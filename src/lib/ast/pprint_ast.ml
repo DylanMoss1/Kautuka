@@ -1,4 +1,25 @@
-let string_of_program _ = "Hello world"
+open Ast_types
+
+(* let map_reduce f x = String.concat "\n" (List.map f x)
+let string_of_id = function ID s -> s
+let string_of_var = function 
+| VarNonInit(id, type_id) -> Fmt.str "var %s %s" (string_of_id id) (string_of_type_id type_id)
+| VarInit(id, type_id, expr) -> Fmt.str "var %s %s = %s"
+| VarDecl(id, expr) -> 
+| VarAssign(id, expr) -> 
+
+let string_of_func _ = "[string of func]"
+
+let string_of_program program =
+  string_of_id program.package
+  ^ map_reduce string_of_var program.global_vars
+  ^ map_reduce string_of_func program.funcs *)
+
+
+
+
+  
+(* let string_of_program _ = "Hello world" *)
 
 (* open Parsed_ast
 

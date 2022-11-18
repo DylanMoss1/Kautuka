@@ -2,22 +2,23 @@
     open Parser
     open Lexing
 
-    exception LexerError of string
+    exception Lexer_error of string
 
     let next_line lexbuf =
-    let pos = lexbuf.lex_curr_p in
-    lexbuf.lex_curr_p <-
-      { pos with pos_bol = lexbuf.lex_curr_pos;
-                pos_lnum = pos.pos_lnum + 1
-      }
+      let pos = lexbuf.lex_curr_p in
+      lexbuf.lex_curr_p <-
+        { pos with pos_bol = lexbuf.lex_curr_pos;
+                  pos_lnum = pos.pos_lnum + 1
+        }
 }
 
+let whitespace = [' ' '\t']+
+let newline = '\r' | '\n' | "\r\n"
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+
 let id = ((alpha) (alpha|digit|'_')*) | "_"
-let whitespace = [' ' '\t']+
-let newline = '\r' | '\n' | "\r\n"
+let func_call_id = id whitespace ['(']
 
 rule read_token = parse
   | whitespace                       { read_token lexbuf }
@@ -71,9 +72,7 @@ rule read_token = parse
   | "!"                              { NOT }
   | id as s                          { ID (s) }
   | eof                              { EOF }
-  | _ { raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
-  | _ {raise (LexerError ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
-
+  | _ { raise (Lexer_error ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
 
   and read_string buf = parse
   | '"'       { STRING (Buffer.contents buf) }
@@ -88,5 +87,5 @@ rule read_token = parse
     { Buffer.add_string buf (Lexing.lexeme lexbuf);
       read_string buf lexbuf
     }
-  | _ { raise (LexerError ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
-  | eof { raise (LexerError ("String is not terminated")) }
+  | _ { raise (Lexer_error ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
+  | eof { raise (Lexer_error ("String is not terminated")) }

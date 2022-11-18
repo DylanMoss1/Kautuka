@@ -22,7 +22,6 @@
 %type <id> package
 %type <statement> statement 
 %type <var> var global_var
-%type <id> id 
 %type <type_id> type_id
 %type <value> value 
 %type <func> func
@@ -33,6 +32,8 @@
 %type <command> command
 %type <condition_template> condition_template else_if
 %type <func_call> func_call 
+%type <unop> unop
+%type <binop> binop
 
 %type <expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
 %type <block option> option(_else)
@@ -41,6 +42,12 @@
 %type <func list> list(func)
 %type <var list> list(global_var)
 %type <param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
+
+%left MINUS PLUS
+%left MULT DIV MOD
+%left EQ NE LT LE GT GE
+%left AND OR  
+%nonassoc NOT
 
 %start program
 
@@ -55,7 +62,7 @@ package:
 | PACKAGE id=id { id } 
 
 id: 
-| id=ID { id }
+| id=ID { ID(id) }
 
 type_id: 
 | T_INT { T_Int } 
@@ -102,12 +109,13 @@ expr:
 | value=value { Value(value) }
 | var=id { Var(var) }
 
-unop: 
+%inline unop: 
 | NOT { Not }
-| MINUS { Minus }
+| MINUS { U_Minus }
 
-binop: 
+%inline binop: 
 | PLUS { Plus }
+| MINUS { B_Minus }
 | MULT { Mult }
 | DIV { Div }
 | MOD { Mod }
@@ -122,7 +130,6 @@ binop:
 
 statement: 
 | var=var { Var(var) }
-| expr=expr { Expr(expr) }
 | func_call=func_call { Func_call(func_call) }
 
 func_call: 

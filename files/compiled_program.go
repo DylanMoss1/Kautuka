@@ -1,1 +1,1 @@
-Hello world
+[string of var][string of var][string of var][string of var][string of var][string of var][string of func]
