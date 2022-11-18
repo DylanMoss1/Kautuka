@@ -21,54 +21,54 @@ open Parser
 open Format
 
 let pprint_tokens ppf = function
-| LPAREN -> Fmt.pf ppf "LPAREN@."
-| RPAREN -> Fmt.pf ppf "RPAREN@."
-| LBRACE -> Fmt.pf ppf "LBRACE@."
-| RBRACE -> Fmt.pf ppf "RBRACE@."
-| EQUALS -> Fmt.pf ppf "EQUALS@."
-| DECL -> Fmt.pf ppf "DECL@."
-| T_INT -> Fmt.pf ppf "T_INT@."
-| T_BOOL -> Fmt.pf ppf "T_BOOL@."
-| T_STRING -> Fmt.pf ppf "T_STRING@."
-| INT(i) -> Fmt.pf ppf "INT(%d)@." i 
-| BOOL(true) -> Fmt.pf ppf "BOOL(true)@."
-| BOOL(false) -> Fmt.pf ppf "BOOL(false)@."
-| STRING(s) -> Fmt.pf ppf "STRING(%s)@." s
-| FUNC -> Fmt.pf ppf "FUNC@."
-| COMMA -> Fmt.pf ppf "COMMA@."
-| VAR -> Fmt.pf ppf "VAR@."
-| PACKAGE -> Fmt.pf ppf "PACKAGE@."
-| IGNORE -> Fmt.pf ppf "IGNORE@."
-| FORCE -> Fmt.pf ppf "FORCE@."
-| IF -> Fmt.pf ppf "IF@."
-| ELSE -> Fmt.pf ppf "ELSE@."
-| ELIF -> Fmt.pf ppf "ELIF@."
-| WHILE -> Fmt.pf ppf "WHILE@."
-| FOR -> Fmt.pf ppf "FOR@."
-| RANGE -> Fmt.pf ppf "RANGE@."
-| SEMICOLON -> Fmt.pf ppf "SEMICOLON@."
-| PRINT -> Fmt.pf ppf "PRINT@."
-| INPUT -> Fmt.pf ppf "INPUT@."
-| OPEN -> Fmt.pf ppf "OPEN@."
-| READ -> Fmt.pf ppf "READ@."
-| WRITE -> Fmt.pf ppf "WRITE@."
-| APPEND -> Fmt.pf ppf "APPEND@."
-| PLUS -> Fmt.pf ppf "PLUS@."
-| MINUS -> Fmt.pf ppf "MINUS@."
-| MULT -> Fmt.pf ppf "MULT@."
-| DIV -> Fmt.pf ppf "DIV@."
-| MOD -> Fmt.pf ppf "MOD@."
-| EQ -> Fmt.pf ppf "EQ@."
-| NE -> Fmt.pf ppf "NE@."
-| LT -> Fmt.pf ppf "LT@."
-| LE -> Fmt.pf ppf "LE@."
-| GT -> Fmt.pf ppf "GT@."
-| GE -> Fmt.pf ppf "GE@."
-| AND -> Fmt.pf ppf "AND@."
-| OR -> Fmt.pf ppf "OR@."
-| NOT -> Fmt.pf ppf "NOT@."
-| ID(s) -> Fmt.pf ppf "ID(%s)@." s
-| EOF -> Fmt.pf ppf "EOF@."
+  | LPAREN -> Fmt.pf ppf "LPAREN@."
+  | RPAREN -> Fmt.pf ppf "RPAREN@."
+  | LBRACE -> Fmt.pf ppf "LBRACE@."
+  | RBRACE -> Fmt.pf ppf "RBRACE@."
+  | EQUALS -> Fmt.pf ppf "EQUALS@."
+  | DECL -> Fmt.pf ppf "DECL@."
+  | T_INT -> Fmt.pf ppf "T_INT@."
+  | T_BOOL -> Fmt.pf ppf "T_BOOL@."
+  | T_STRING -> Fmt.pf ppf "T_STRING@."
+  | INT i -> Fmt.pf ppf "INT(%d)@." i
+  | BOOL true -> Fmt.pf ppf "BOOL(true)@."
+  | BOOL false -> Fmt.pf ppf "BOOL(false)@."
+  | STRING s -> Fmt.pf ppf "STRING(%s)@." s
+  | FUNC -> Fmt.pf ppf "FUNC@."
+  | COMMA -> Fmt.pf ppf "COMMA@."
+  | VAR -> Fmt.pf ppf "VAR@."
+  | PACKAGE -> Fmt.pf ppf "PACKAGE@."
+  | IGNORE -> Fmt.pf ppf "IGNORE@."
+  | FORCE -> Fmt.pf ppf "FORCE@."
+  | IF -> Fmt.pf ppf "IF@."
+  | ELSE -> Fmt.pf ppf "ELSE@."
+  | ELIF -> Fmt.pf ppf "ELIF@."
+  | WHILE -> Fmt.pf ppf "WHILE@."
+  | FOR -> Fmt.pf ppf "FOR@."
+  | RANGE -> Fmt.pf ppf "RANGE@."
+  | SEMICOLON -> Fmt.pf ppf "SEMICOLON@."
+  | PRINT -> Fmt.pf ppf "PRINT@."
+  | INPUT -> Fmt.pf ppf "INPUT@."
+  | OPEN -> Fmt.pf ppf "OPEN@."
+  | READ -> Fmt.pf ppf "READ@."
+  | WRITE -> Fmt.pf ppf "WRITE@."
+  | APPEND -> Fmt.pf ppf "APPEND@."
+  | PLUS -> Fmt.pf ppf "PLUS@."
+  | MINUS -> Fmt.pf ppf "MINUS@."
+  | MULT -> Fmt.pf ppf "MULT@."
+  | DIV -> Fmt.pf ppf "DIV@."
+  | MOD -> Fmt.pf ppf "MOD@."
+  | EQ -> Fmt.pf ppf "EQ@."
+  | NE -> Fmt.pf ppf "NE@."
+  | LT -> Fmt.pf ppf "LT@."
+  | LE -> Fmt.pf ppf "LE@."
+  | GT -> Fmt.pf ppf "GT@."
+  | GE -> Fmt.pf ppf "GE@."
+  | AND -> Fmt.pf ppf "AND@."
+  | OR -> Fmt.pf ppf "OR@."
+  | NOT -> Fmt.pf ppf "NOT@."
+  | ID s -> Fmt.pf ppf "ID(%s)@." s
+  | EOF -> Fmt.pf ppf "EOF@."
 
 type error =
   [ `Lexer_error of string
@@ -79,10 +79,10 @@ let print_error_position lexbuf =
   let pos = lexbuf.lex_curr_p in
   Fmt.str "Line:%d Position:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
-let debug lexbuf = 
-  while lexbuf.lex_eof_reached do 
+let debug lexbuf =
+  while lexbuf.lex_eof_reached do
     pprint_tokens std_formatter (Lexer.read_token lexbuf)
-  done 
+  done
 
 let parse lexbuf =
   try Ok (Parser.program Lexer.read_token lexbuf) with

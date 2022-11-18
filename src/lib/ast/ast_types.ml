@@ -44,15 +44,15 @@ type var =
   | VarDecl of id * expr
   | VarAssign of id * expr
 
-type user_func = {
-  name : id;
-  args : expr list;
-}
+type user_func =
+  { name : id
+  ; args : expr list
+  }
 
-type write_template = {
-  file : id;
-  contents : expr;
-}
+type write_template =
+  { file : id
+  ; contents : expr
+  }
 
 type func_call =
   | User_func of user_func
@@ -72,35 +72,35 @@ type param = id * type_id
 type effects = int
 type cost = float
 
-type for_loop = {
-  init : expr;
-  cond : expr;
-  iter : expr;
-  contents : block;
-}
+type for_loop =
+  { init : expr
+  ; cond : expr
+  ; iter : expr
+  ; contents : block
+  }
 
-and for_each = {
-  item : id;
-  iterator : id;
-  contents : block;
-}
+and for_each =
+  { item : id
+  ; iterator : id
+  ; contents : block
+  }
 
-and condition_template = {
-  condition : expr;
-  contents : block;
-}
+and condition_template =
+  { condition : expr
+  ; contents : block
+  }
 
-and if_record = {
-  _if : condition_template;
-  else_if : condition_template list;
-  else_contents : block option;
-}
+and if_record =
+  { _if : condition_template
+  ; else_if : condition_template list
+  ; else_contents : block option
+  }
 
 and structure =
   | Func of func
   | Block of block
   | If of if_record
-  | While of expr * block
+  | While of condition_template
   | For_loop of for_loop
   | For_each of for_each
 
@@ -108,63 +108,63 @@ and command =
   | Structure of structure
   | Statement of statement
 
-and block_record = {
-  contents : command list;
-  effects : effects option;
-  cost : cost option;
-  is_parallel : bool option;
-}
+and block_record =
+  { contents : command list
+  ; effects : effects option
+  ; cost : cost option
+  ; is_parallel : bool option
+  }
 
 and block =
   | Block of block_record
   | Ignore of command list
   | Force of command list
 
-and func = {
-  name : id;
-  params : param list;
-  body : block;
-  return_type : type_id option;
-}
+and func =
+  { name : id
+  ; params : param list
+  ; body : block
+  ; return_type : type_id option
+  }
 
-type program = {
-  package : id;
-  global_vars : var list;
-  funcs : func list;
-}
+type program =
+  { package : id
+  ; global_vars : var list
+  ; funcs : func list
+  }
 
 (* type non_variants =
-  | User_func of user_func
-  | Write_template of write_template
-  | Param of param
-  | For_loop of for_loop
-  | For_each of for_each
-  | Condition_template of condition_template
-  | If_record of if_record
-  | Block_record of block_record
-  | Func of func
-  | Program of program *)
+   | User_func of user_func
+   | Write_template of write_template
+   | Param of param
+   | For_loop of for_loop
+   | For_each of for_each
+   | Condition_template of condition_template
+   | If_record of if_record
+   | Block_record of block_record
+   | Func of func
+   | Program of program *)
 
-type ast =
-| Id of id 
-| Type_id of type_id
-| Value of value 
-| Unop of unop 
-| Binop of binop 
-| Expr of expr 
-| Var of var 
-| User_func of user_func 
-| Write_template of write_template 
-| Func_call of func_call 
-| Statement of statement 
-| Param of param 
-| For_loop of for_loop
-| For_each of for_each
-| Condition_template of condition_template 
-| If_record of if_record 
-| Structure of structure 
-| Command of command 
-| Block_record of block_record 
-| Block of block 
-| Func of func 
-| Program of program
+(* type ast =
+   | Id of id
+   | Type_id of type_id
+   | Value of value
+   | Unop of unop
+   | Binop of binop
+   | Expr of expr
+   | Var of var
+   | User_func of user_func
+   | Write_template of write_template
+   | Func_call of func_call
+   | Statement of statement
+   | Param of param
+   | For_loop of for_loop
+   | For_each of for_each
+   | Condition_template of condition_template
+   | If_record of if_record
+   | Structure of structure
+   | Command of command
+   | Block_record of block_record
+   | Block of block
+   | Func of func
+   | Program of program *)

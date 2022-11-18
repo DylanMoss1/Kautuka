@@ -145,7 +145,7 @@ structure:
 | func=func { Func(func) }
 | condition=condition { condition }
 | block=block { Block(block) }
-| WHILE expr=expr block=block { While(expr, block) }
+| WHILE expr=expr block=block { While( { condition = expr; contents = block } ) }
 | FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=block {
     For_loop( { init = init; cond = cond; iter = iter; contents=contents } )
 } 

@@ -13,23 +13,18 @@ open Parsing
        ~data:(string_of_program ast_program) *)
 
 let usage_msg = "x [--debug]"
-let debug = ref false 
+let debug = ref false
+let anon_fun _ = ()
+let speclist = [ ("--debug", Arg.Set debug, "Output intermediary steps") ]
 
-let anon_fun _ = () 
-
-let speclist = [("--debug", Arg.Set debug, "Output intermediary steps")]
-
-let () = 
+let () =
   Arg.parse speclist anon_fun usage_msg;
   print_endline "\n";
 
-  if !debug then 
-
+  if !debug then
     In_channel.read_all "./files/kau_program.kau"
     |> Lexing.from_string |> Lex_and_parse.debug
-
-  else 
-
+  else
     In_channel.read_all "./files/kau_program.kau"
     |> Lexing.from_string |> Lex_and_parse.parse
     |> fun ast_program ->
