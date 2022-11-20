@@ -39,7 +39,8 @@ let pprint_tokens ppf = function
   | VAR -> Fmt.pf ppf "VAR@."
   | PACKAGE -> Fmt.pf ppf "PACKAGE@."
   | IGNORE -> Fmt.pf ppf "IGNORE@."
-  | FORCE -> Fmt.pf ppf "FORCE@."
+  | FORCEPAR -> Fmt.pf ppf "FORCEPAR@."
+  | FORCESEQ -> Fmt.pf ppf "FORCESEQ@."
   | IF -> Fmt.pf ppf "IF@."
   | ELSE -> Fmt.pf ppf "ELSE@."
   | ELIF -> Fmt.pf ppf "ELIF@."
@@ -70,6 +71,7 @@ let pprint_tokens ppf = function
   | ID s -> Fmt.pf ppf "ID(%s)@." s
   | EOF -> Fmt.pf ppf "EOF@."
 
+
 type error =
   [ `Lexer_error of string
   | `Parser_error of string
@@ -79,21 +81,23 @@ let print_error_position lexbuf =
   let pos = lexbuf.lex_curr_p in
   Fmt.str "Line:%d Position:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
+
 let debug lexbuf =
   while lexbuf.lex_eof_reached do
     pprint_tokens std_formatter (Lexer.read_token lexbuf)
   done
 
+
 let parse lexbuf =
   try Ok (Parser.program Lexer.read_token lexbuf) with
   | Lexer.Lexer_error msg ->
-      let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
-      Result.Error (`Lexer_error error_msg)
+    let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
+    Result.Error (`Lexer_error error_msg)
   | Parser.Error ->
-      let error_msg =
-        Fmt.str "%s: Parsing Error@." (print_error_position lexbuf)
-      in
-      Result.Error (`Parser_error error_msg)
+    let error_msg =
+      Fmt.str "%s: Parsing Error@." (print_error_position lexbuf)
+    in
+    Result.Error (`Parser_error error_msg)
 
 (* type error =
        [ `Lexer_error of string

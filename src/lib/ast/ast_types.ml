@@ -1,20 +1,23 @@
-open! Core
+open Core
 
-type id = ID of string
+type id = ID of string [@@deriving equal, of_sexp, sexp_of, compare]
 
 type type_id =
   | T_Int
   | T_Bool
   | T_String
+[@@deriving equal, of_sexp, sexp_of, compare]
 
 type value =
   | Int of int
   | Bool of bool
   | String of string
+[@@deriving equal, of_sexp, sexp_of, compare]
 
 type unop =
   | Not
   | U_Minus
+[@@deriving equal, of_sexp, sexp_of, compare]
 
 type binop =
   | Plus
@@ -30,6 +33,7 @@ type binop =
   | Ne
   | And
   | Or
+[@@deriving equal, of_sexp, sexp_of, compare]
 
 type expr =
   | Unop of unop * expr
@@ -37,12 +41,14 @@ type expr =
   | Paren of expr
   | Value of value
   | Var of id
+[@@deriving equal, of_sexp, sexp_of, compare]
 
 type var =
   | VarNonInit of id * type_id
   | VarInit of id * type_id * expr
   | VarDecl of id * expr
   | VarAssign of id * expr
+[@@deriving equal, of_sexp, sexp_of, compare]
 
 type user_func =
   { name : id
@@ -118,7 +124,7 @@ and block_record =
 and block =
   | Block of block_record
   | Ignore of command list
-  | Force of command list
+  | Go_block of command list
 
 and func =
   { name : id
@@ -129,6 +135,7 @@ and func =
 
 type program =
   { package : id
+  ; imports : string list
   ; global_vars : var list
   ; funcs : func list
   }

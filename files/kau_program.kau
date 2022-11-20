@@ -8,8 +8,9 @@ var a int = 1
 var b bool = true 
 var c string = "Hello world"
 
-func hello() { 
-    var x int
-    var y bool
-    var z string 
+func main() { 
+    print("Hello world")
+    <!>{
+        print("Hello world")
+    }
 }

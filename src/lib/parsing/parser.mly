@@ -13,7 +13,7 @@
 %token VAR EQUALS DECL 
 %token PACKAGE 
 %token EOF
-%token FORCE IGNORE
+%token FORCEPAR FORCESEQ IGNORE
 %token IF ELSE ELIF
 %token WHILE FOR 
 %token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
@@ -55,7 +55,7 @@
 
 program:
 | package=package; global_vars=list(global_var) funcs=list(func) EOF { 
-    { package = package; global_vars = global_vars; funcs = funcs } 
+    { package = package; imports = []; global_vars = global_vars; funcs = funcs } 
 }
 
 package: 
@@ -84,8 +84,8 @@ global_var:
 | VAR id=id type_id=type_id EQUALS expr=expr { VarInit(id, type_id, expr) }
 
 func: 
-| FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN block=block {
-     { name = id; params = params; body = block; return_type = None } 
+| FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN return_type=option(type_id) block=block {
+     { name = id; params = params; body = block; return_type = return_type } 
   }
 
 block: 
@@ -93,7 +93,8 @@ block:
     Block({ contents = commands; effects = None; cost = None; is_parallel = None })
   }
 | IGNORE LBRACE commands=list(command) RBRACE { Ignore(commands) }
-| FORCE LBRACE commands=list(command) RBRACE { Force(commands) }
+| FORCEPAR LBRACE commands=list(command) RBRACE { Block({ contents = commands; effects = None; cost = None; is_parallel = Some(true) }) }
+| FORCESEQ LBRACE commands=list(command) RBRACE { Block({ contents = commands; effects = None; cost = None; is_parallel = Some(false) }) }
 
 command: 
 | structure=structure { Structure(structure) }

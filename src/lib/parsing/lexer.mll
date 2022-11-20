@@ -42,7 +42,8 @@ rule read_token = parse
   | "var"                            { VAR }
   | "package"                        { PACKAGE }
   | "</>"                            { IGNORE }
-  | "<!>"                            { FORCE }
+  | "<!>"                            { FORCEPAR }
+  | "<$>"                            { FORCESEQ }
   | "if"                             { IF }
   | "else"                           { ELSE }
   | "else if"                        { ELIF }

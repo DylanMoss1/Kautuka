@@ -1,6 +1,6 @@
 (library
- (name go_translation)
- (libraries core fmt ast)
+ (name parallelisation)
+ (libraries ast core fmt)
  (preprocess
   (pps bisect_ppx --conditional))
  (lint
