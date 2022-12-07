@@ -7,5 +7,5 @@ let get_id =
   counter := x + 1;
   x
 
-let get_new_name = 
-  Fmt.str "__%d" get_id
+
+let get_new_name = Fmt.str "__%d" get_id

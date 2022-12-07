@@ -22,7 +22,7 @@ let () =
          print_endline "";
          x)
     |> Lex_and_parse.parse
-    |> Result.map ~f:parallelise_program
+    (* |> Result.map ~f:parallelise_program *)
     |> fun ast_program ->
     match ast_program with
     | Ok ast_program ->
@@ -37,7 +37,7 @@ let () =
     In_channel.read_all "./files/kau_program.kau"
     |> Lexing.from_string
     |> Lex_and_parse.parse
-    |> Result.map ~f:parallelise_program
+    (* |> Result.map ~f:parallelise_program *)
     |> fun ast_program ->
     match ast_program with
     | Ok ast_program ->

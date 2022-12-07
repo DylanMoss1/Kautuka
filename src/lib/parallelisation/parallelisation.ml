@@ -1,4 +1,4 @@
-open! Core
+(* open! Core
 open Ast.Ast_types
 
 let rec parallelise_expr = function
@@ -60,19 +60,18 @@ and parallelise_command = function
 
 and parallelise_block_record block_record =
   { contents = List.map ~f:parallelise_command block_record.contents
-  ; effects = block_record.effects
-  ; cost = block_record.cost
-  ; is_parallel = block_record.is_parallel
+  ; annotations = block_record.annotations
   }
 
 
 and parallelise_block = function
-  | Block block_record ->
-    (match block_record.is_parallel with
+  | Default_block block_record ->
+    (match block_record.annotations.is_parallel with
     | Some true ->
       Go_block (List.map ~f:parallelise_command block_record.contents)
-    | Some false -> Block (parallelise_block_record block_record)
-    | None -> Block (parallelise_block_record block_record))
+    | Some false -> Default_block (parallelise_block_record block_record)
+    | None -> Default_block (parallelise_block_record block_record))
+  | For_block block_record -> For_block block_record
   | Ignore contents -> Ignore contents
   | Go_block contents -> Go_block contents
 
@@ -90,4 +89,4 @@ let parallelise_program program =
   ; imports = program.imports
   ; global_vars = program.global_vars
   ; funcs = List.map ~f:parallelise_func program.funcs
-  }
+  } *)

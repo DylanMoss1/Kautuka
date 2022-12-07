@@ -6,6 +6,7 @@ type type_id =
   | T_Int
   | T_Bool
   | T_String
+  | T_Unit
 [@@deriving equal, of_sexp, sexp_of, compare]
 
 type value =
@@ -74,70 +75,67 @@ type statement =
   | Var of var
   | Func_call of func_call
 
-type param = id * type_id
-type effects = int
-type cost = float
-
-type for_loop =
+type 'a for_loop =
   { init : expr
   ; cond : expr
   ; iter : expr
-  ; contents : block
+  ; contents : 'a block
   }
 
-and for_each =
+and 'a for_each =
   { item : id
   ; iterator : id
-  ; contents : block
+  ; contents : 'a block
   }
 
-and condition_template =
+and 'a condition_template =
   { condition : expr
-  ; contents : block
+  ; contents : 'a block
   }
 
-and if_record =
-  { _if : condition_template
-  ; else_if : condition_template list
-  ; else_contents : block option
+and 'a if_record =
+  { _if : 'a condition_template
+  ; else_if : 'a condition_template list
+  ; else_contents : 'a block option
   }
 
-and structure =
-  | Func of func
-  | Block of block
-  | If of if_record
-  | While of condition_template
-  | For_loop of for_loop
-  | For_each of for_each
+and 'a structure =
+  | Func of 'a func
+  | Block of 'a block
+  | If of 'a if_record
+  | While of 'a condition_template
+  | For_loop of 'a for_loop
+  | For_each of 'a for_each
 
-and command =
-  | Structure of structure
+and 'a command =
+  | Structure of 'a structure
   | Statement of statement
 
-and block_record =
-  { contents : command list
-  ; effects : effects option
-  ; cost : cost option
-  ; is_parallel : bool option
+and 'a block_record =
+  { contents : 'a command list
+  ; annotations : 'a
   }
 
-and block =
-  | Block of block_record
-  | Ignore of command list
-  | Go_block of command list
+and 'a block =
+  | Default_block of 'a block_record
+  | For_block of 'a block_record
+  | Ignore of 'a command list
+  | Go_block of 'a command list
 
-and func =
+and param = id * type_id
+
+and 'a func =
   { name : id
   ; params : param list
-  ; body : block
-  ; return_type : type_id option
+  ; body : 'a block
+  ; return_type : type_id
   }
 
-type program =
+type 'a program =
   { package : id
-  ; imports : string list
+  ; imports : string list option 
   ; global_vars : var list
-  ; funcs : func list
+  ; funcs : 'a func list
   }
 
 (* type non_variants =

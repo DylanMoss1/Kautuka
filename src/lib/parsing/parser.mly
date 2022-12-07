@@ -1,5 +1,18 @@
 %{ 
-    open Ast.Ast_types  
+    open Ast.Ast_types
+
+    let block_wrapper command =
+        Block
+          (Default_block
+            { contents = [ command ]
+            ; effects = None
+            ; cost = None
+            ; is_parallel = None
+            })
+
+    let parse_return_type = function 
+    | Some(return_type) -> return_type  
+    | None -> T_Unit 
 %}
 
 %token LPAREN RPAREN LBRACE RBRACE
@@ -27,7 +40,7 @@
 %type <func> func
 %type <param> param
 %type <expr> expr 
-%type <block> block _else 
+%type <block> block for_block _else 
 %type <structure> structure condition
 %type <command> command
 %type <condition_template> condition_template else_if
@@ -85,16 +98,24 @@ global_var:
 
 func: 
 | FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN return_type=option(type_id) block=block {
-     { name = id; params = params; body = block; return_type = return_type } 
+     { name = id; params = params; body = block; return_type = (parse_return_type return_type) } 
   }
 
 block: 
 | LBRACE commands=list(command) RBRACE { 
-    Block({ contents = commands; effects = None; cost = None; is_parallel = None })
+    Default_block({ contents = commands; annotations =  })
   }
 | IGNORE LBRACE commands=list(command) RBRACE { Ignore(commands) }
-| FORCEPAR LBRACE commands=list(command) RBRACE { Block({ contents = commands; effects = None; cost = None; is_parallel = Some(true) }) }
-| FORCESEQ LBRACE commands=list(command) RBRACE { Block({ contents = commands; effects = None; cost = None; is_parallel = Some(false) }) }
+| FORCEPAR LBRACE commands=list(command) RBRACE { Default_block({ contents = commands;  }) }
+| FORCESEQ LBRACE commands=list(command) RBRACE { Default_block({ contents = commands;  }) }
+
+for_block: 
+| LBRACE commands=list(command) RBRACE { 
+    For_block({ contents = commands; effects = None; cost = None; is_parallel = None })
+  }
+| IGNORE LBRACE commands=list(command) RBRACE { Ignore(commands) }
+| FORCEPAR LBRACE commands=list(command) RBRACE { For_block({ contents = commands;  }) }
+| FORCESEQ LBRACE commands=list(command) RBRACE { For_block({ contents = commands;  }) }
 
 command: 
 | structure=structure { Structure(structure) }
@@ -147,11 +168,11 @@ structure:
 | condition=condition { condition }
 | block=block { Block(block) }
 | WHILE expr=expr block=block { While( { condition = expr; contents = block } ) }
-| FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=block {
-    For_loop( { init = init; cond = cond; iter = iter; contents=contents } )
+| FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=for_block {
+    block_wrapper (Structure(For_loop( { init = init; cond = cond; iter = iter; contents = contents } )))
 } 
-| FOR item=id DECL RANGE iterator=id contents=block {
-    For_each( { item = item; iterator = iterator; contents=contents } )
+| FOR item=id DECL RANGE iterator=id contents=for_block {
+    block_wrapper (Structure(For_each( { item = item; iterator = iterator; contents = contents } )))
 }
 
 condition_template: 

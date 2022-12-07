@@ -11,6 +11,7 @@ let string_of_type_id = function
   | T_Int -> "int"
   | T_Bool -> "bool"
   | T_String -> "string"
+  | T_Unit -> ""
 
 
 let string_of_unop = function
@@ -140,12 +141,20 @@ and string_of_if_record if_record =
 
 and string_of_structure = function
   | Func func -> string_of_func func
-  | Block block -> (
-    match block with 
-    | Block block_record -> Fmt.str "{%s}" (string_of_block_record block_record)
-    | Ignore commands -> Fmt.str "{%s}" (List.map ~f:string_of_command commands |> String.concat ~sep:"\n")
-    | Go_block commands -> Fmt.str "go func (){%s}()" (List.map ~f:string_of_command commands |> String.concat ~sep:"\n")
-  ) 
+  | Block block ->
+    (match block with
+    | Default_block block_record ->
+      Fmt.str "{%s}" (string_of_block_record block_record)
+    | For_block block_record ->
+      Fmt.str "{%s}" (string_of_block_record block_record)
+    | Ignore commands ->
+      Fmt.str
+        "{%s}"
+        (List.map ~f:string_of_command commands |> String.concat ~sep:"\n")
+    | Go_block commands ->
+      Fmt.str
+        "go func (){%s}()"
+        (List.map ~f:string_of_command commands |> String.concat ~sep:"\n"))
   | If if_record -> string_of_if_record if_record
   | While while_loop -> string_of_condition_template while_loop
   | For_loop for_loop -> string_of_for_loop for_loop
@@ -162,7 +171,8 @@ and string_of_block_record block_record =
 
 
 and string_of_block = function
-  | Block block_record -> string_of_block_record block_record
+  | Default_block block_record -> string_of_block_record block_record
+  | For_block block_record -> string_of_block_record block_record
   | Ignore contents -> map_reduce ~sep:"\n" ~f:string_of_command contents
   | Go_block contents -> map_reduce ~sep:"\n" ~f:string_of_command contents
 
@@ -173,19 +183,27 @@ and string_of_param (id, type_id) =
 
 and string_of_func func =
   Fmt.str
-    "func %s (%s) {\n%s\n}"
+    "func %s (%s) %s {\n%s\n}"
     (string_of_id func.name)
     (map_reduce ~sep:", " ~f:string_of_param func.params)
+    (string_of_type_id func.return_type)
     (string_of_block func.body)
 
 
 let string_of_program program =
   Fmt.str "package %s\n\n" (string_of_id program.package)
-  ^ map_reduce ~sep:"\n" ~f:(fun import -> Fmt.str "import \"%s\"" import) program.imports
-  ^ "\n\n"
-  ^ map_reduce ~sep:"\n" ~f:string_of_var program.global_vars
-  ^ "\n\n"
-  ^ map_reduce ~sep:"\n" ~f:string_of_func program.funcs
+  ^
+  match program.imports with
+  | None | Some [] -> ""
+  | Some imports ->
+    (map_reduce
+       ~sep:"\n"
+       ~f:(fun import -> Fmt.str "import \"%s\"" import)
+       imports
+    ^ "\n\n")
+    ^ map_reduce ~sep:"\n" ~f:string_of_var program.global_vars
+    ^ "\n\n"
+    ^ map_reduce ~sep:"\n" ~f:string_of_func program.funcs
 
 (* let string_of_program _ = "Hello world" *)
 
