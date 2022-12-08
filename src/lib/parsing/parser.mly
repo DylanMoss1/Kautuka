@@ -1,13 +1,12 @@
 %{ 
-    open Ast.Ast_types
+    open Ast_types
+    open Ast
 
     let block_wrapper command =
-        Block
-          (Default_block
-            { contents = [ command ]
-            ; effects = None
-            ; cost = None
-            ; is_parallel = None
+        Block_struct
+          (Block
+            { contents = [ command ];
+              annotations: Init_annotations.t = { block_type = Default }
             })
 
     let parse_return_type = function 
@@ -31,28 +30,28 @@
 %token WHILE FOR 
 %token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
 %token PRINT INPUT OPEN READ WRITE APPEND 
-%type <program> program
+%type <Init_annotations.t program> program
 %type <id> package
 %type <statement> statement 
 %type <var> var global_var
 %type <type_id> type_id
 %type <value> value 
-%type <func> func
+%type <Init_annotations.t func> func
 %type <param> param
-%type <expr> expr 
-%type <block> block for_block _else 
-%type <structure> structure condition
-%type <command> command
-%type <condition_template> condition_template else_if
+%type <expr> expr
+%type <Init_annotations.t block> block _else 
+%type <Init_annotations.t structure> structure condition
+%type <Init_annotations.t command> command
+%type <Init_annotations.t condition_template> condition_template else_if
 %type <func_call> func_call 
 %type <unop> unop
 %type <binop> binop
 
 %type <expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
-%type <block option> option(_else)
-%type <condition_template list> list(else_if)
-%type <command list> list(command)
-%type <func list> list(func)
+%type <Init_annotations.t block option> option(_else)
+%type <Init_annotations.t condition_template list> list(else_if)
+%type <Init_annotations.t command list> list(command)
+%type <Init_annotations.t func list> list(func)
 %type <var list> list(global_var)
 %type <param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 
@@ -68,7 +67,7 @@
 
 program:
 | package=package; global_vars=list(global_var) funcs=list(func) EOF { 
-    { package = package; imports = []; global_vars = global_vars; funcs = funcs } 
+    { package = package; imports = None; global_vars = global_vars; funcs = funcs } 
 }
 
 package: 
@@ -103,19 +102,11 @@ func:
 
 block: 
 | LBRACE commands=list(command) RBRACE { 
-    Default_block({ contents = commands; annotations =  })
+    Block({ contents = commands; annotations = { block_type = Default } })
   }
-| IGNORE LBRACE commands=list(command) RBRACE { Ignore(commands) }
-| FORCEPAR LBRACE commands=list(command) RBRACE { Default_block({ contents = commands;  }) }
-| FORCESEQ LBRACE commands=list(command) RBRACE { Default_block({ contents = commands;  }) }
-
-for_block: 
-| LBRACE commands=list(command) RBRACE { 
-    For_block({ contents = commands; effects = None; cost = None; is_parallel = None })
-  }
-| IGNORE LBRACE commands=list(command) RBRACE { Ignore(commands) }
-| FORCEPAR LBRACE commands=list(command) RBRACE { For_block({ contents = commands;  }) }
-| FORCESEQ LBRACE commands=list(command) RBRACE { For_block({ contents = commands;  }) }
+| IGNORE LBRACE commands=list(command) RBRACE { Block({ contents = commands; annotations = { block_type = Ignore } }) }
+| FORCEPAR LBRACE commands=list(command) RBRACE { Block({ contents = commands; annotations = { block_type = Force_par } }) }
+| FORCESEQ LBRACE commands=list(command) RBRACE { Block({ contents = commands; annotations = { block_type = Force_seq } }) }
 
 command: 
 | structure=structure { Structure(structure) }
@@ -166,12 +157,12 @@ func_call:
 structure:
 | func=func { Func(func) }
 | condition=condition { condition }
-| block=block { Block(block) }
+| block=block { Block_struct(block) }
 | WHILE expr=expr block=block { While( { condition = expr; contents = block } ) }
-| FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=for_block {
+| FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=block {
     block_wrapper (Structure(For_loop( { init = init; cond = cond; iter = iter; contents = contents } )))
 } 
-| FOR item=id DECL RANGE iterator=id contents=for_block {
+| FOR item=id DECL RANGE iterator=id contents=block {
     block_wrapper (Structure(For_each( { item = item; iterator = iterator; contents = contents } )))
 }
 

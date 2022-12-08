@@ -1,20 +1,3 @@
-(* open Core
-   open Lexer
-   open Lexing
-
-   let print_error_position lexbuf =
-     let pos = lexbuf.lex_curr_p in
-     Fmt.str "Line:%d Position:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
-
-   let parse_program lexbuf =
-     try Ok (Parser.program Lexer.read_token lexbuf) with
-     | SyntaxError msg ->
-         let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
-         Error (Error.of_string error_msg)
-     | Parser.Error ->
-         let error_msg = Fmt.str "%s: syntax error@." (print_error_position lexbuf) in
-         Error (Error.of_string error_msg) *)
-
 open Core
 open Lexing
 open Parser
@@ -98,28 +81,3 @@ let parse lexbuf =
       Fmt.str "%s: Parsing Error@." (print_error_position lexbuf)
     in
     Result.Error (`Parser_error error_msg)
-
-(* type error =
-       [ `Lexer_error of string
-       |  `Parser_error
-       ]
-
-   let parse ~f lexbuf =
-     try f Lexer.read_token lexbuf |> Result.Ok with
-     | Lexer.Lexer_error message -> Result.Error (`Lexer_error message)
-     | Parser.Error -> Result.Error `Parser_error *)
-
-(* let pprint_tokens ppf =
-   let open Parser in
-   function
-   | LPAREN -> Fmt.pf ppf "LPAREN@."
-   | _ -> Fmt.pf ppf "" *)
-
-(* let tokens_from_string str =
-   let rec loop lexbuf =
-     match Lexer.read_token lexbuf with
-     | Parser.EOF -> []
-     | token -> token :: loop lexbuf
-   in
-   try Ok (loop (Lexing.from_string str)) with
-   | Lexer.Lexer_error err -> Error (`Lexer_error err) *)

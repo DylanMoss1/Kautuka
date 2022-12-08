@@ -10,7 +10,4 @@ var c string = "Hello world"
 
 func main() { 
     print("Hello world")
-    <!>{
-        print("Hello world")
-    }
 }

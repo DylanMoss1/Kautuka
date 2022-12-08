@@ -1,7 +1,7 @@
 open Core
 open Ast_types
 
-let map_reduce ~sep ~f x = String.concat ~sep (List.map ~f x)
+let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
 
 let string_of_id = function
   | ID s -> s
@@ -75,7 +75,7 @@ let string_of_user_func (user_func : user_func) =
   Fmt.str
     "%s(%s)"
     (string_of_id user_func.name)
-    (map_reduce ~sep:", " ~f:string_of_expr user_func.args)
+    (map_concat ~sep:", " ~f:string_of_expr user_func.args)
 
 
 let string_of_write_template write_template =
@@ -130,7 +130,7 @@ and string_of_condition_template condition_template =
 and string_of_if_record if_record =
   Fmt.str
     "if %s %s"
-    (map_reduce
+    (map_concat
        ~sep:" else if "
        ~f:string_of_condition_template
        (List.append [ if_record._if ] if_record.else_if))
@@ -141,20 +141,7 @@ and string_of_if_record if_record =
 
 and string_of_structure = function
   | Func func -> string_of_func func
-  | Block block ->
-    (match block with
-    | Default_block block_record ->
-      Fmt.str "{%s}" (string_of_block_record block_record)
-    | For_block block_record ->
-      Fmt.str "{%s}" (string_of_block_record block_record)
-    | Ignore commands ->
-      Fmt.str
-        "{%s}"
-        (List.map ~f:string_of_command commands |> String.concat ~sep:"\n")
-    | Go_block commands ->
-      Fmt.str
-        "go func (){%s}()"
-        (List.map ~f:string_of_command commands |> String.concat ~sep:"\n"))
+  | Block_struct block -> string_of_block block
   | If if_record -> string_of_if_record if_record
   | While while_loop -> string_of_condition_template while_loop
   | For_loop for_loop -> string_of_for_loop for_loop
@@ -165,16 +152,22 @@ and string_of_command = function
   | Structure structure -> string_of_structure structure
   | Statement statement -> string_of_statement statement
 
+and string_of_block_type = function 
+  | Default -> "Default"
+  | Ignore -> "Ignore"
+  | Force_par -> "Force_par"
+  | Force_seq -> "Force_seq"
 
 and string_of_block_record block_record =
-  map_reduce ~sep:"\n" ~f:string_of_command block_record.contents
+  map_concat ~sep:"\n" ~f:string_of_command block_record.contents
 
 
 and string_of_block = function
-  | Default_block block_record -> string_of_block_record block_record
-  | For_block block_record -> string_of_block_record block_record
-  | Ignore contents -> map_reduce ~sep:"\n" ~f:string_of_command contents
-  | Go_block contents -> map_reduce ~sep:"\n" ~f:string_of_command contents
+  | Block block_record -> Fmt.str "{%s}" (string_of_block_record block_record)
+  | Go_block commands ->
+    Fmt.str
+      "go func (){%s}()"
+      (List.map ~f:string_of_command commands |> String.concat ~sep:"\n")
 
 
 and string_of_param (id, type_id) =
@@ -185,10 +178,9 @@ and string_of_func func =
   Fmt.str
     "func %s (%s) %s {\n%s\n}"
     (string_of_id func.name)
-    (map_reduce ~sep:", " ~f:string_of_param func.params)
+    (map_concat ~sep:", " ~f:string_of_param func.params)
     (string_of_type_id func.return_type)
     (string_of_block func.body)
-
 
 let string_of_program program =
   Fmt.str "package %s\n\n" (string_of_id program.package)
@@ -196,67 +188,11 @@ let string_of_program program =
   match program.imports with
   | None | Some [] -> ""
   | Some imports ->
-    (map_reduce
+    (map_concat
        ~sep:"\n"
        ~f:(fun import -> Fmt.str "import \"%s\"" import)
        imports
     ^ "\n\n")
-    ^ map_reduce ~sep:"\n" ~f:string_of_var program.global_vars
+    ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
     ^ "\n\n"
-    ^ map_reduce ~sep:"\n" ~f:string_of_func program.funcs
-
-(* let string_of_program _ = "Hello world" *)
-
-(* open Parsed_ast
-
-   let rec repeat s n = if n = 0 then "" else s ^ repeat s (n - 1)
-   let add_indent n s = repeat "\t" n ^ s
-   let string_of_id = function ID id -> id
-   let comma_list f xs = String.concat ", " (List.map f xs)
-   let newline_list f xs n = String.concat (repeat "\n" n) (List.map f xs)
-
-   let string_of_type_id = function
-     | T_Int -> "int"
-     | T_Bool -> "bool"
-     | T_String -> "string"
-
-   let string_of_value = function
-     | Int i -> string_of_int i
-     | Bool b -> string_of_bool b
-     | String s -> [%string "\"$(s)\""]
-
-   let string_of_package = function
-     | Package package -> [%string "package $(string_of_id package)"]
-
-   let string_of_var = function
-     | VarNonInit (id, type_id) ->
-         [%string "var $(string_of_id id) $(string_of_type_id type_id)"]
-     | VarInit (id, type_id, value) ->
-         [%string
-           "var $(string_of_id id) $(string_of_type_id type_id) = \
-            $(string_of_value value)"]
-     | VarDecl (id, value) ->
-         [%string "$(string_of_id id) := $(string_of_value value)"]
-
-   let string_of_param = function
-     | Param (id, type_id) ->
-         [%string "$(string_of_id id) $(string_of_type_id type_id)"]
-
-   let string_of_statement indent = function
-     | Var var -> add_indent indent (string_of_var var)
-
-   let string_of_func indent = function
-     | Function (id, params, global_vars) ->
-         add_indent indent
-           [%string
-             "func $(string_of_id id)($(comma_list string_of_param params)) {\n\
-              $(newline_list (string_of_statement (indent + 1)) global_vars 1)\n\
-              }"]
-
-   let string_of_program = function
-     | Program (package, global_vars, funcs) ->
-         let indent = 0 in
-         [%string
-           "$(string_of_package package)\n\n\
-            $(newline_list string_of_var global_vars 1)\n\n\
-            $(newline_list (string_of_func indent) funcs 2)"] *)
+    ^ map_concat ~sep:"\n" ~f:string_of_func program.funcs
