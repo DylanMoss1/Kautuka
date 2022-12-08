@@ -1,6 +1,6 @@
 %{ 
     open Annotated_ast 
-    open Ast
+    open Ast.Ast_types
 
     let block_wrapper command =
         Block_struct
@@ -23,17 +23,20 @@
 %token FUNC COMMA
 %token SEMICOLON RANGE
 %token VAR EQUALS DECL 
-%token PACKAGE 
+%token PACKAGE
 %token EOF
 %token FORCEPAR FORCESEQ IGNORE
 %token IF ELSE ELIF
-%token WHILE FOR 
+%token WHILE FOR
+%token BREAK CONTINUE
+%token INCREMENT DECREMENT
 %token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
 %token PRINT INPUT OPEN READ WRITE APPEND 
 %type <Init_annotations.t program> program
+%type <id> id 
 %type <id> package
 %type <statement> statement 
-%type <var> var global_var
+%type <var> var global_var var_mod
 %type <type_id> type_id
 %type <value> value 
 %type <Init_annotations.t func> func
@@ -43,10 +46,12 @@
 %type <Init_annotations.t structure> structure condition
 %type <Init_annotations.t command> command
 %type <Init_annotations.t condition_template> condition_template else_if
+%type <control> control
 %type <func_call> func_call 
 %type <unop> unop
 %type <binop> binop
 
+%type <type_id option> option(type_id)
 %type <expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
 %type <Init_annotations.t block option> option(_else)
 %type <Init_annotations.t condition_template list> list(else_if)
@@ -90,10 +95,17 @@ var:
 | var=global_var { var }
 | id=id DECL expr=expr { VarDecl(id, expr) }
 | id=id EQUALS expr=expr { VarAssign(id, expr) }
+| var_mod=var_mod { var_mod }
 
 global_var:
 | VAR id=id type_id=type_id { VarNonInit(id, type_id) }
 | VAR id=id type_id=type_id EQUALS expr=expr { VarInit(id, type_id, expr) }
+
+var_mod: 
+| INCREMENT id=id { Pre_inc(id) }
+| DECREMENT id=id { Pre_dec(id) }
+| id=id INCREMENT { Post_inc(id) }
+| id=id DECREMENT { Post_dec(id) }
 
 func: 
 | FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN return_type=option(type_id) block=block {
@@ -141,9 +153,14 @@ expr:
 | AND { And }
 | OR { Or }
 
-statement: 
+statement:
 | var=var { Var(var) }
 | func_call=func_call { Func_call(func_call) }
+| control=control { Control(control) }
+
+control: 
+| BREAK { Break }
+| CONTINUE { Continue }
 
 func_call: 
 | name=id LPAREN args=separated_list(COMMA, expr) RPAREN { User_func( { name = name; args = args } ) }
@@ -158,13 +175,15 @@ structure:
 | func=func { Func(func) }
 | condition=condition { condition }
 | block=block { Block_struct(block) }
-| WHILE expr=expr block=block { While( { condition = expr; contents = block } ) }
-| FOR init=expr SEMICOLON cond=expr SEMICOLON iter=expr contents=block {
+| WHILE cond=expr block=block { While( { condition = cond; contents = block } ) }
+| FOR init=var SEMICOLON cond=expr SEMICOLON iter=var contents=block {
     block_wrapper (Structure(For_loop( { init = init; cond = cond; iter = iter; contents = contents } )))
 } 
 | FOR item=id DECL RANGE iterator=id contents=block {
     block_wrapper (Structure(For_each( { item = item; iterator = iterator; contents = contents } )))
 }
+| FOR cond=expr contents=block { While( { condition = cond; contents = contents } ) }
+| FOR contents=block { While( { condition = Value(Bool(true)); contents = contents } ) }
 
 condition_template: 
 | condition=expr contents=block { { condition = condition; contents = contents } } 

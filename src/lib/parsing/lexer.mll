@@ -51,12 +51,16 @@ rule read_token = parse
   | "for"                            { FOR }
   | "range"                          { RANGE }
   | ";"                              { SEMICOLON }
+  | "break"                          { BREAK }
+  | "continue"                       { CONTINUE }
   | "print"                          { PRINT }
   | "input"                          { INPUT }
   | "open"                           { OPEN }
   | "read"                           { READ }
   | "write"                          { WRITE }
   | "append"                         { APPEND }
+  | "++"                             { INCREMENT }
+  | "--"                             { DECREMENT }
   | "+"                              { PLUS }
   | "-"                              { MINUS }
   | "*"                              { MULT }

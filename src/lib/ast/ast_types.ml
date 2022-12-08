@@ -55,6 +55,10 @@ type var =
   | VarInit of id * type_id * expr
   | VarDecl of id * expr
   | VarAssign of id * expr
+  | Pre_inc of id
+  | Pre_dec of id
+  | Post_inc of id
+  | Post_dec of id
 [@@deriving equal, of_sexp, sexp_of, compare]
 
 type user_func =
@@ -76,21 +80,30 @@ type func_call =
   | Write of write_template
   | Append of write_template
 
+type control =
+  | Break
+  | Continue
+
 type statement =
-  | Expr of expr
   | Var of var
   | Func_call of func_call
+  | Control of control
 
 type 'a for_loop =
-  { init : expr
+  { init : var
   ; cond : expr
-  ; iter : expr
+  ; iter : var
   ; contents : 'a block
   }
 
 and 'a for_each =
   { item : id
   ; iterator : id
+  ; contents : 'a block
+  }
+
+and 'a for_cond =
+  { cond : expr
   ; contents : 'a block
   }
 

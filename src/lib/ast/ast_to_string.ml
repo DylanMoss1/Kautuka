@@ -1,5 +1,5 @@
 open Core
-open Ast
+open Ast_types 
 
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
 
@@ -68,6 +68,10 @@ let string_of_var = function
     Fmt.str "%s := %s" (string_of_id id) (string_of_expr expr)
   | VarAssign (id, expr) ->
     Fmt.str "%s = %s" (string_of_id id) (string_of_expr expr)
+  | Pre_inc id -> Fmt.str "++%s" (string_of_id id)
+  | Pre_dec id -> Fmt.str "--%s" (string_of_id id)
+  | Post_inc id -> Fmt.str "%s++" (string_of_id id)
+  | Post_dec id -> Fmt.str "%s--" (string_of_id id)
 
 
 (* REMOVE TYPE ANNOTATION HERE *)
@@ -97,8 +101,13 @@ let string_of_func_call = function
     Fmt.str "append(%s)" (string_of_write_template write_template)
 
 
+let string_of_control = function
+  | Continue -> "continue"
+  | Break -> "break"
+
+
 let string_of_statement = function
-  | Expr expr -> string_of_expr expr
+  | Control control -> string_of_control control
   | Var var -> string_of_var var
   | Func_call func_call -> string_of_func_call func_call
 
@@ -106,9 +115,9 @@ let string_of_statement = function
 let rec string_of_for_loop for_loop =
   Fmt.str
     "for %s;%s;%s {\n%s\n}"
-    (string_of_expr for_loop.init)
+    (string_of_var for_loop.init)
     (string_of_expr for_loop.cond)
-    (string_of_expr for_loop.iter)
+    (string_of_var for_loop.iter)
     (string_of_block for_loop.contents)
 
 
@@ -127,6 +136,10 @@ and string_of_condition_template condition_template =
     (string_of_block condition_template.contents)
 
 
+and string_of_while while_loop =
+  Fmt.str "for %s" (string_of_condition_template while_loop)
+
+
 and string_of_if_record if_record =
   Fmt.str
     "if %s %s"
@@ -143,7 +156,7 @@ and string_of_structure = function
   | Func func -> string_of_func func
   | Block_struct block -> string_of_block block
   | If if_record -> string_of_if_record if_record
-  | While while_loop -> string_of_condition_template while_loop
+  | While while_loop -> string_of_while while_loop
   | For_loop for_loop -> string_of_for_loop for_loop
   | For_each for_each -> string_of_for_each for_each
 
@@ -165,7 +178,7 @@ and string_of_block_record block_record =
 
 
 and string_of_block = function
-  | Block block_record -> Fmt.str "{%s}" (string_of_block_record block_record)
+  | Block block_record -> Fmt.str "%s" (string_of_block_record block_record)
   | Go_block commands ->
     Fmt.str
       "go func (){%s}()"
@@ -187,15 +200,14 @@ and string_of_func func =
 
 let string_of_program program =
   Fmt.str "package %s\n\n" (string_of_id program.package)
-  ^
-  match program.imports with
-  | None | Some [] -> ""
-  | Some imports ->
-    (map_concat
-       ~sep:"\n"
-       ~f:(fun import -> Fmt.str "import \"%s\"" import)
-       imports
-    ^ "\n\n")
-    ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
-    ^ "\n\n"
-    ^ map_concat ~sep:"\n" ~f:string_of_func program.funcs
+  ^ (match program.imports with
+    | None | Some [] -> ""
+    | Some imports ->
+      map_concat
+        ~sep:"\n"
+        ~f:(fun import -> Fmt.str "import \"%s\"" import)
+        imports
+      ^ "\n\n")
+  ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
+  ^ "\n\n"
+  ^ map_concat ~sep:"\n" ~f:string_of_func program.funcs

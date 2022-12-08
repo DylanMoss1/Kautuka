@@ -1,5 +1,5 @@
 (* open Core
-open Ast.Ast_types
+open Ast
 open Ast.Pprint_ast
 
 type effect_value =
