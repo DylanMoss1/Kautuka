@@ -1,5 +1,5 @@
 open Core
-open Ast 
+open Ast
 
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
 

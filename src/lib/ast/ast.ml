@@ -137,8 +137,7 @@ and 'a func =
 
 type 'a program =
   { package : id
-  ; imports : string list option 
+  ; imports : string list option
   ; global_vars : var list
   ; funcs : 'a func list
   }
-

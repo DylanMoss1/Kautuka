@@ -1,4 +1,4 @@
-open Core
+open! Core
 open Parsing
 open Annotated_ast
 
@@ -11,7 +11,7 @@ let () =
   Arg.parse speclist anon_fun usage_msg;
   print_endline "\n";
   In_channel.read_all "./files/kau_program.kau"
-  |> Lex_and_parse.parse ~debug: !debug
+  |> Lex_and_parse.parse ~debug:!debug
   |> fun parse_result ->
   match parse_result with
   | Ok ast ->
