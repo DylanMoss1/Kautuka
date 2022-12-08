@@ -1,8 +1,6 @@
 (library
- (name ast)
- (libraries core fmt)
- (flags
-  (-warn-error -30))
+ (name annotated_ast)
+ (libraries core fmt ast)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))
  (lint

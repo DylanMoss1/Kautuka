@@ -1,7 +1,7 @@
 (executable
  (name main)
  (public_name kautuka)
- (libraries core fmt parsing ast parallelisation)
+ (libraries core fmt parsing annotated_ast parallelisation)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))
  (lint

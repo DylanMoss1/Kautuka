@@ -65,13 +65,24 @@ let print_error_position lexbuf =
   Fmt.str "Line:%d Position:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
 
-let debug lexbuf =
+let pprint_lexbuf lexbuf =
   while lexbuf.lex_eof_reached do
     pprint_tokens std_formatter (Lexer.read_token lexbuf)
   done
 
 
-let parse lexbuf =
+let init_pos file_name =
+  { pos_fname = file_name; pos_lnum = 0; pos_bol = 0; pos_cnum = 0 }
+
+
+let parse ~debug input_program =
+  if debug
+  then (
+    print_endline "LEXER DEBUG INFO:\n";
+    let lexbuf = Lexing.from_string input_program in
+    pprint_lexbuf lexbuf;
+    print_endline "");
+  let lexbuf = Lexing.from_string input_program in
   try Ok (Parser.program Lexer.read_token lexbuf) with
   | Lexer.Lexer_error msg ->
     let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in

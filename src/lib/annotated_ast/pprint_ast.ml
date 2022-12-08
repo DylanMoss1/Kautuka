@@ -1,5 +1,5 @@
 open Core
-open Ast_types
+open Ast 
 
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
 
@@ -152,11 +152,13 @@ and string_of_command = function
   | Structure structure -> string_of_structure structure
   | Statement statement -> string_of_statement statement
 
-and string_of_block_type = function 
+
+and string_of_block_type = function
   | Default -> "Default"
   | Ignore -> "Ignore"
   | Force_par -> "Force_par"
   | Force_seq -> "Force_seq"
+
 
 and string_of_block_record block_record =
   map_concat ~sep:"\n" ~f:string_of_command block_record.contents
@@ -181,6 +183,7 @@ and string_of_func func =
     (map_concat ~sep:", " ~f:string_of_param func.params)
     (string_of_type_id func.return_type)
     (string_of_block func.body)
+
 
 let string_of_program program =
   Fmt.str "package %s\n\n" (string_of_id program.package)
