@@ -1,6 +1,6 @@
 open! Core
-open Ast.Ast_types 
-open Ast.Ast_to_string 
+open Ast.Ast_types
+open Ast.Ast_to_string
 
 type effect_set = string
 type cost = int
