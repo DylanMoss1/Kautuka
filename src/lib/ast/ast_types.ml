@@ -1,4 +1,19 @@
 open! Core
+open Util.Extended_set
+
+type imports = 
+| Fmt [@@deriving of_sexp, sexp_of, compare]
+
+let string_of_imports = function 
+| Fmt -> "fmt"
+
+module Import : Type_item = struct
+  type t = imports [@@deriving of_sexp, sexp_of, compare]
+
+  let string_of_t t = Fmt.str "import \"%s\"" (string_of_imports t)
+end
+
+module Import_set = Make_extended_set (Import)
 
 type block_type =
   | Default
@@ -6,25 +21,27 @@ type block_type =
   | Force_par
   | Force_seq
 
-type id = ID of string [@@deriving equal, of_sexp, sexp_of, compare]
+type id_record =
+  { name : string
+  (* ; uuid : Uuid.t *)
+  }
+
+type id = ID of id_record
 
 type type_id =
   | T_Int
   | T_Bool
   | T_String
   | T_Unit
-[@@deriving equal, of_sexp, sexp_of, compare]
 
 type value =
   | Int of int
   | Bool of bool
   | String of string
-[@@deriving equal, of_sexp, sexp_of, compare]
 
 type unop =
   | Not
   | U_Minus
-[@@deriving equal, of_sexp, sexp_of, compare]
 
 type binop =
   | Plus
@@ -40,7 +57,6 @@ type binop =
   | Ne
   | And
   | Or
-[@@deriving equal, of_sexp, sexp_of, compare]
 
 type expr =
   | Unop of unop * expr
@@ -48,7 +64,6 @@ type expr =
   | Paren of expr
   | Value of value
   | Var of id
-[@@deriving equal, of_sexp, sexp_of, compare]
 
 type var =
   | VarNonInit of id * type_id
@@ -59,7 +74,6 @@ type var =
   | Pre_dec of id
   | Post_inc of id
   | Post_dec of id
-[@@deriving equal, of_sexp, sexp_of, compare]
 
 type user_func =
   { name : id
@@ -102,11 +116,6 @@ and 'a for_each =
   ; contents : 'a block
   }
 
-and 'a for_cond =
-  { cond : expr
-  ; contents : 'a block
-  }
-
 and 'a condition_template =
   { condition : expr
   ; contents : 'a block
@@ -119,7 +128,6 @@ and 'a if_record =
   }
 
 and 'a structure =
-  | Func of 'a func
   | Block_struct of 'a block
   | If of 'a if_record
   | While of 'a condition_template
@@ -137,7 +145,6 @@ and 'a block_record =
 
 and 'a block =
   | Block of 'a block_record
-  | Go_block of 'a command list
 
 and param = id * type_id
 
@@ -150,7 +157,7 @@ and 'a func =
 
 type 'a program =
   { package : id
-  ; imports : string list option
+  ; imports : (Import_set.t) option
   ; global_vars : var list
   ; funcs : 'a func list
   }

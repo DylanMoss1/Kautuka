@@ -79,7 +79,7 @@ package:
 | PACKAGE id=id { id } 
 
 id: 
-| id=ID { ID(id) }
+| id=ID { ID({ name = id }) }
 
 type_id: 
 | T_INT { T_Int } 
@@ -172,7 +172,6 @@ func_call:
 | APPEND LPAREN arg1=id COMMA arg2=expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
 
 structure:
-| func=func { Func(func) }
 | condition=condition { condition }
 | block=block { Block_struct(block) }
 | WHILE cond=expr block=block { While( { condition = cond; contents = block } ) }

@@ -1,6 +1,6 @@
 (library
  (name ast)
- (libraries core fmt)
+ (libraries core fmt util)
  (flags
   (-warn-error -30))
  (preprocess

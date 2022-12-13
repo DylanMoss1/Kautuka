@@ -1,8 +1,36 @@
 open Core
-open Ast_types
+open Ast.Ast_types
+open Util.Extended_set
 
-let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
+let ast_set_pair_mapping ~mapping ~union x = 
+  let ast_x, x_list = List.map ~f:mapping x in 
+  let x = union x_list in 
+  (ast_x, x)
 
+let get_import = ast_set_pair_mapping ~union:Import_set.union_of_list
+
+
+(* let string_list_of_import_set import_set = List.map ~f:Imports.string_of_t (Imports_set.elements import_set) *)
+
+let import_of_global_var global_var = (global_var, Import_set.empty)
+
+let import_ast_of_program program = 
+  (* let import_ast_of_global_vars, import_of_global_vars_list = List.map ~f:import_of_global_vars program.global_vars in
+  let import_of_global_vars = Imports_set.union_of_list import_of_global_vars_list in 
+  let x = List.map ~f:Imports.string_of_t (Imports_set.elements import_of_global_vars) *)
+
+  let import_ast_of_global_vars, import_of_global_vars = get_import ~f:import_of_global_var
+
+  {
+    package = program.package; 
+    imports = import_of_global_vars;
+    global_vars = x; 
+    funcs = program.funcs; 
+  }
+
+
+
+(* 
 let string_of_id = function
   | ID ({name; _}) -> name
 
@@ -95,7 +123,7 @@ let string_of_func_call = function
   | Input -> "input()"
   | Open expr -> Fmt.str "open(%s)" (string_of_expr expr)
   | Read expr -> Fmt.str "read(%s)" (string_of_expr expr)
-  | Write write_template ->
+  | Write write_template ->set module signature
     Fmt.str "write(%s)" (string_of_write_template write_template)
   | Append write_template ->
     Fmt.str "append(%s)" (string_of_write_template write_template)
@@ -194,16 +222,16 @@ and string_of_func func =
     (string_of_id func.name)
     (map_concat ~sep:", " ~f:string_of_param func.params)
     (string_of_type_id func.return_type)
-    (string_of_block func.body)
+    (string_of_block func.body) *)
+
+(* let import_ast_of_program program =
 
 
-let string_of_program program =
-  Fmt.str "package %s\n\n" (string_of_id program.package)
-  ^ "\n\n"
-  ^ (match program.imports with
-    | None -> ""
-    | Some imports -> Fmt.str "%d" (Import_set.length imports)
-      ^ "\n\n")
-  ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
-  ^ "\n\n"
-  ^ map_concat ~sep:"\n" ~f:string_of_func program.funcs
+
+
+
+  import_ast_func_list, import_func_list = List.map ~f:import_of_func program.funcs
+
+  {
+
+  } *)
