@@ -4,7 +4,7 @@ open Ast_types
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
 
 let string_of_id = function
-  | ID ({name; _}) -> name
+  | ID { name; _ } -> name
 
 
 let string_of_type_id = function
@@ -178,7 +178,7 @@ and string_of_block_record block_record =
 
 and string_of_block = function
   | Block block_record -> Fmt.str "%s" (string_of_block_record block_record)
-  (* | Go_block commands ->
+(* | Go_block commands ->
     Fmt.str
       "go func (){%s}()"
       (List.map ~f:string_of_command commands |> String.concat ~sep:"\n") *)
@@ -202,8 +202,7 @@ let string_of_program program =
   ^ "\n\n"
   ^ (match program.imports with
     | None -> ""
-    | Some imports -> Fmt.str "%d" (Import_set.length imports)
-      ^ "\n\n")
+    | Some imports -> Fmt.str "%d" (Import_set.length imports) ^ "\n\n")
   ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
   ^ "\n\n"
   ^ map_concat ~sep:"\n" ~f:string_of_func program.funcs

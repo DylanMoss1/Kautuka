@@ -1,5 +1,6 @@
-open! Core 
+open! Core
 
 type t [@@deriving of_sexp, sexp_of, compare]
+
 val create : t
-val string_of_t : t -> string 
+val string_of_t : t -> string

@@ -14,7 +14,7 @@ module type Type_extended_set = sig
   val string_of_t : t -> string
 end
 
-module Make_extended_set (I : Type_item) : Type_extended_set 
+module Make_extended_set (I : Type_item) : Type_extended_set
 
 (* module type Extended_set = sig
   include module type of Set 

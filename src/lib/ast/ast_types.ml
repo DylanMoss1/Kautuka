@@ -1,11 +1,11 @@
 open! Core
 open Util.Extended_set
 
-type imports = 
-| Fmt [@@deriving of_sexp, sexp_of, compare]
+type imports = Fmt [@@deriving of_sexp, sexp_of, compare]
 
-let string_of_imports = function 
-| Fmt -> "fmt"
+let string_of_imports = function
+  | Fmt -> "fmt"
+
 
 module Import : Type_item = struct
   type t = imports [@@deriving of_sexp, sexp_of, compare]
@@ -21,11 +21,7 @@ type block_type =
   | Force_par
   | Force_seq
 
-type id_record =
-  { name : string
-  (* ; uuid : Uuid.t *)
-  }
-
+type id_record = { name : string (* ; uuid : Uuid.t *) }
 type id = ID of id_record
 
 type type_id =
@@ -143,9 +139,7 @@ and 'a block_record =
   ; annotations : 'a
   }
 
-and 'a block =
-  | Block of 'a block_record
-
+and 'a block = Block of 'a block_record
 and param = id * type_id
 
 and 'a func =
@@ -157,7 +151,7 @@ and 'a func =
 
 type 'a program =
   { package : id
-  ; imports : (Import_set.t) option
+  ; imports : Import_set.t option
   ; global_vars : var list
   ; funcs : 'a func list
   }

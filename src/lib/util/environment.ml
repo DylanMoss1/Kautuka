@@ -40,8 +40,9 @@ let string_of_scope ~string_of_key ~string_of_val scope =
     "[%s]"
     (String.concat
        (List.map
-          ~f:(string_of_key_value_pair ~string_of_key:string_of_key ~string_of_val:string_of_val)
+          ~f:(string_of_key_value_pair ~string_of_key ~string_of_val)
           scope))
+
 
 let string_of_t ~string_of_key ~string_of_val t =
   Fmt.str

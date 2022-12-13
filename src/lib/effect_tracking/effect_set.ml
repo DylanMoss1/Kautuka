@@ -63,5 +63,6 @@ module Effect_set = struct
             ~compare:String.compare
             (List.map ~f:string_of_effect (elements set))))
 
-  let create effect = add empty effect 
+
+  let create effect = add empty effect
 end
