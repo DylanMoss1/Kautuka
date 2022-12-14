@@ -1,4 +1,4 @@
-open! Core
+(* open! Core
 
 module type Type_item = sig
   type t [@@deriving of_sexp, sexp_of, compare]
@@ -23,4 +23,4 @@ module Make_extended_set (I : Type_item) : Type_extended_set
   val string_of_t : ('elt, 'cmp) t -> string
 end
 
-module Make_extended_set (I : Item) : Extended_set with type t = I.t *)
+module Make_extended_set (I : Item) : Extended_set with type t = I.t *) *)

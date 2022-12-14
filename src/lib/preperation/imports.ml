@@ -2,236 +2,252 @@ open Core
 open Ast.Ast_types
 open Util.Extended_set
 
-let ast_set_pair_mapping ~mapping ~union x = 
-  let ast_x, x_list = List.map ~f:mapping x in 
-  let x = union x_list in 
-  (ast_x, x)
+type import =
+  | I_Fmt
+  | I_Os
+[@@deriving of_sexp, sexp_of, compare]
 
-let get_import = ast_set_pair_mapping ~union:Import_set.union_of_list
-
-
-(* let string_list_of_import_set import_set = List.map ~f:Imports.string_of_t (Imports_set.elements import_set) *)
-
-let import_of_global_var global_var = (global_var, Import_set.empty)
-
-let import_ast_of_program program = 
-  (* let import_ast_of_global_vars, import_of_global_vars_list = List.map ~f:import_of_global_vars program.global_vars in
-  let import_of_global_vars = Imports_set.union_of_list import_of_global_vars_list in 
-  let x = List.map ~f:Imports.string_of_t (Imports_set.elements import_of_global_vars) *)
-
-  let import_ast_of_global_vars, import_of_global_vars = get_import ~f:import_of_global_var
-
-  {
-    package = program.package; 
-    imports = import_of_global_vars;
-    global_vars = x; 
-    funcs = program.funcs; 
-  }
+let string_of_import = function
+  | I_Fmt -> "fmt"
+  | I_Os -> "os"
 
 
+module type Type_import = sig
+  include Type_item
 
-(* 
-let string_of_id = function
-  | ID ({name; _}) -> name
+  val create : import -> t
+end
 
+module Import : Type_import = struct
+  type t = import [@@deriving of_sexp, sexp_of, compare]
 
-let string_of_type_id = function
-  | T_Int -> "int"
-  | T_Bool -> "bool"
-  | T_String -> "string"
-  | T_Unit -> ""
+  let string_of_t t = Fmt.str "import \"%s\"" (string_of_import t)
+  let create x = x
+end
 
+module Import_set = Make_extended_set (Import)
 
-let string_of_unop = function
-  | Not -> "!"
-  | U_Minus -> "-"
+let append_tuple (xs, ys) (x, y) = x :: xs, y :: ys
+let unzip l = List.fold_left ~f:append_tuple ~init:([], []) l
 
-
-let string_of_binop = function
-  | Plus -> "+"
-  | B_Minus -> "-"
-  | Mult -> "*"
-  | Div -> "/"
-  | Mod -> "%"
-  | Lt -> "<"
-  | Le -> "<="
-  | Gt -> ">"
-  | Ge -> ">="
-  | Eq -> "=="
-  | Ne -> "!="
-  | And -> "&&"
-  | Or -> "||"
+(* Takes an ast mapping function and result union function 
+   and returns (modified_ast, results) *)
+let modify_ast_list_and_get_results ~ast_mapping ~result_union ast =
+  let modified_ast, result_list = unzip (List.map ~f:ast_mapping ast) in
+  let result = result_union result_list in
+  modified_ast, result
 
 
-let string_of_value = function
-  | Int i -> string_of_int i
-  | Bool b -> string_of_bool b
-  | String s -> Fmt.str "\"%s\"" s
+(* An implementation of modify_ast_and_get_results for imports*)
+let get_import_list =
+  modify_ast_list_and_get_results ~result_union:Import_set.union_of_list
 
 
-let rec string_of_expr = function
+let no_import item = item, Import_set.empty
+
+let nested_import_on_ast ~ast_mapping ~modified_ast ?(add_import = None) ast =
+  let import_ast, import = ast_mapping ast in
+  match add_import with
+  | None -> modified_ast import_ast, import
+  | Some add_import -> modified_ast import_ast, Import_set.add import add_import
+
+
+let rec import_of_expr expr =
+  let nested_import_on_expr expr =
+    nested_import_on_ast ~ast_mapping:import_of_expr expr
+  in
+  match expr with
   | Unop (unop, expr) ->
-    Fmt.str "%s %s" (string_of_unop unop) (string_of_expr expr)
+    nested_import_on_expr ~modified_ast:(fun x -> Unop (unop, x)) expr
   | Binop (expr1, binop, expr2) ->
-    Fmt.str
-      "%s %s %s"
-      (string_of_expr expr1)
-      (string_of_binop binop)
-      (string_of_expr expr2)
-  | Paren expr -> Fmt.str "(%s)" (string_of_expr expr)
-  | Value value -> Fmt.str "%s" (string_of_value value)
-  | Var id -> Fmt.str "%s" (string_of_id id)
+    let import_ast_expr1, import_expr1 = import_of_expr expr1 in
+    let import_ast_expr2, import_expr2 = import_of_expr expr2 in
+    ( Binop (import_ast_expr1, binop, import_ast_expr2)
+    , Import_set.union import_expr1 import_expr2 )
+  | Paren expr -> nested_import_on_expr ~modified_ast:(fun x -> Paren x) expr
+  | expr -> no_import expr
 
 
-let string_of_var = function
-  | VarNonInit (id, type_id) ->
-    Fmt.str "var %s %s" (string_of_id id) (string_of_type_id type_id)
+let nested_import_on_expr expr =
+  nested_import_on_ast ~ast_mapping:import_of_expr expr
+
+
+let import_of_var = function
   | VarInit (id, type_id, expr) ->
-    Fmt.str
-      "var %s %s = %s"
-      (string_of_id id)
-      (string_of_type_id type_id)
-      (string_of_expr expr)
+    nested_import_on_expr ~modified_ast:(fun x -> VarInit (id, type_id, x)) expr
   | VarDecl (id, expr) ->
-    Fmt.str "%s := %s" (string_of_id id) (string_of_expr expr)
+    nested_import_on_expr ~modified_ast:(fun x -> VarDecl (id, x)) expr
   | VarAssign (id, expr) ->
-    Fmt.str "%s = %s" (string_of_id id) (string_of_expr expr)
-  | Pre_inc id -> Fmt.str "++%s" (string_of_id id)
-  | Pre_dec id -> Fmt.str "--%s" (string_of_id id)
-  | Post_inc id -> Fmt.str "%s++" (string_of_id id)
-  | Post_dec id -> Fmt.str "%s--" (string_of_id id)
+    nested_import_on_expr ~modified_ast:(fun x -> VarAssign (id, x)) expr
+  | var -> no_import var
 
 
-(* REMOVE TYPE ANNOTATION HERE *)
-let string_of_user_func (user_func : user_func) =
-  Fmt.str
-    "%s(%s)"
-    (string_of_id user_func.name)
-    (map_concat ~sep:", " ~f:string_of_expr user_func.args)
+let import_of_write_template (write_template : write_template)
+    : write_template * Import_set.t
+  =
+  nested_import_on_expr
+    ~modified_ast:(fun x -> { write_template with contents = x })
+    write_template.contents
 
 
-let string_of_write_template write_template =
-  Fmt.str
-    "%s, %s"
-    (string_of_id write_template.file)
-    (string_of_expr write_template.contents)
-
-
-let string_of_func_call = function
-  | User_func user_func -> string_of_user_func user_func
-  | Print expr -> Fmt.str "println(%s)" (string_of_expr expr)
-  | Input -> "input()"
-  | Open expr -> Fmt.str "open(%s)" (string_of_expr expr)
-  | Read expr -> Fmt.str "read(%s)" (string_of_expr expr)
-  | Write write_template ->set module signature
-    Fmt.str "write(%s)" (string_of_write_template write_template)
+let import_of_func_call = function
+  | Print expr -> nested_import_on_expr ~modified_ast:(fun x -> Print x) expr
+  | Input -> Input, Import_set.create (Import.create I_Fmt)
+  | Open expr -> nested_import_on_expr ~modified_ast:(fun x -> Open x) expr
+  | Read expr -> nested_import_on_expr ~modified_ast:(fun x -> Read x) expr
+  | Write write_template ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_write_template
+      ~modified_ast:(fun x -> Write x)
+      ~add_import:(Some (Import.create I_Os))
+      write_template
   | Append write_template ->
-    Fmt.str "append(%s)" (string_of_write_template write_template)
+    nested_import_on_ast
+      ~ast_mapping:import_of_write_template
+      ~modified_ast:(fun x -> Append x)
+      ~add_import:(Some (Import.create I_Os))
+      write_template
+  | func_call -> no_import func_call
 
 
-let string_of_control = function
-  | Continue -> "continue"
-  | Break -> "break"
+let import_of_statement = function
+  | Var var ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_var
+      ~modified_ast:(fun x -> Var x)
+      var
+  | Func_call func_call ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_func_call
+      ~modified_ast:(fun x -> Func_call x)
+      func_call
+  | statement -> no_import statement
 
 
-let string_of_statement = function
-  | Control control -> string_of_control control
-  | Var var -> string_of_var var
-  | Func_call func_call -> string_of_func_call func_call
+let rec import_of_for_loop for_loop =
+  let import_ast_init, import_init = import_of_var for_loop.init in
+  let import_ast_cond, import_cond = import_of_expr for_loop.cond in
+  let import_ast_iter, import_iter = import_of_var for_loop.iter in
+  let import_ast_contents, import_contents =
+    import_of_block for_loop.contents
+  in
+  let import_for_loop =
+    Import_set.union_of_list
+      [ import_init; import_cond; import_iter; import_contents ]
+  in
+  ( { init = import_ast_init
+    ; cond = import_ast_cond
+    ; iter = import_ast_iter
+    ; contents = import_ast_contents
+    }
+  , import_for_loop )
 
 
-let rec string_of_for_loop for_loop =
-  Fmt.str
-    "for %s;%s;%s {\n%s\n}"
-    (string_of_var for_loop.init)
-    (string_of_expr for_loop.cond)
-    (string_of_var for_loop.iter)
-    (string_of_block for_loop.contents)
+and import_of_for_each (for_each: 'a for_each) =
+  nested_import_on_ast
+    ~ast_mapping:import_of_block
+    ~modified_ast:(fun x -> { for_each with contents = x })
+    for_each.contents
 
 
-and string_of_for_each for_each =
-  Fmt.str
-    "for %s := %s {\n%s\n}"
-    (string_of_id for_each.item)
-    (string_of_id for_each.iterator)
-    (string_of_block for_each.contents)
+and import_of_condition_template condition_template =
+  let import_ast_condition, import_condition =
+    import_of_expr condition_template.condition
+  in
+  let import_ast_contents, import_contents =
+    import_of_block condition_template.contents
+  in
+  ( { condition = import_ast_condition; contents = import_ast_contents }
+  , Import_set.union import_condition import_contents )
 
 
-and string_of_condition_template condition_template =
-  Fmt.str
-    "%s {\n%s\n}"
-    (string_of_expr condition_template.condition)
-    (string_of_block condition_template.contents)
+and import_of_if_record if_record =
+  let import_ast_if, import_if = import_of_condition_template if_record._if in
+  let import_ast_else_if, import_else_if =
+    get_import_list ~ast_mapping:import_of_condition_template if_record.else_if
+  in
+  let import_ast_else_contents, import_else_contents =
+    match if_record.else_contents with
+    | Some contents ->
+      nested_import_on_ast
+        ~ast_mapping:import_of_block
+        ~modified_ast:(fun x -> Some x)
+        contents
+    | None -> None, Import_set.empty
+  in
+  ( { _if = import_ast_if
+    ; else_if = import_ast_else_if
+    ; else_contents = import_ast_else_contents
+    }
+  , Import_set.union_of_list [ import_if; import_else_if; import_else_contents ]
+  )
 
 
-and string_of_while while_loop =
-  Fmt.str "for %s" (string_of_condition_template while_loop)
+and import_of_structure = function
+  | Block_struct block ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_block
+      ~modified_ast:(fun x -> Block_struct x)
+      block
+  | If if_record ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_if_record
+      ~modified_ast:(fun x -> If x)
+      if_record
+  | While condition_template ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_condition_template
+      ~modified_ast:(fun x -> While x)
+      condition_template
+  | For_loop for_loop ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_for_loop
+      ~modified_ast:(fun x -> For_loop x)
+      for_loop
+  | For_each for_each ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_for_each
+      ~modified_ast:(fun x -> For_each x)
+      for_each
 
 
-and string_of_if_record if_record =
-  Fmt.str
-    "if %s %s"
-    (map_concat
-       ~sep:" else if "
-       ~f:string_of_condition_template
-       (List.append [ if_record._if ] if_record.else_if))
-    (match if_record.else_contents with
-    | Some else_contents -> string_of_block else_contents
-    | None -> "")
+and import_of_command = function
+  | Structure structure ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_structure
+      ~modified_ast:(fun x -> Structure x)
+      structure
+  | Statement statement ->
+    nested_import_on_ast
+      ~ast_mapping:import_of_statement
+      ~modified_ast:(fun x -> Statement x)
+      statement
 
 
-and string_of_structure = function
-  | Block_struct block -> string_of_block block
-  | If if_record -> string_of_if_record if_record
-  | While while_loop -> string_of_while while_loop
-  | For_loop for_loop -> string_of_for_loop for_loop
-  | For_each for_each -> string_of_for_each for_each
+and import_of_block block =
+  let import_ast_contents, import_contents =
+    get_import_list ~ast_mapping:import_of_command block.contents
+  in
+  { block with contents = import_ast_contents }, import_contents
 
 
-and string_of_command = function
-  | Structure structure -> string_of_structure structure
-  | Statement statement -> string_of_statement statement
+and import_of_func func =
+  nested_import_on_ast
+    ~ast_mapping:import_of_block
+    ~modified_ast:(fun x -> { func with body = x })
+    func.body
 
 
-and string_of_block_type = function
-  | Default -> "Default"
-  | Ignore -> "Ignore"
-  | Force_par -> "Force_par"
-  | Force_seq -> "Force_seq"
-
-
-and string_of_block_record block_record =
-  map_concat ~sep:"\n" ~f:string_of_command block_record.contents
-
-
-and string_of_block = function
-  | Block block_record -> Fmt.str "%s" (string_of_block_record block_record)
-  (* | Go_block commands ->
-    Fmt.str
-      "go func (){%s}()"
-      (List.map ~f:string_of_command commands |> String.concat ~sep:"\n") *)
-
-
-and string_of_param (id, type_id) =
-  Fmt.str "%s %s" (string_of_id id) (string_of_type_id type_id)
-
-
-and string_of_func func =
-  Fmt.str
-    "func %s (%s) %s {\n%s\n}"
-    (string_of_id func.name)
-    (map_concat ~sep:", " ~f:string_of_param func.params)
-    (string_of_type_id func.return_type)
-    (string_of_block func.body) *)
-
-(* let import_ast_of_program program =
-
-
-
-
-
-  import_ast_func_list, import_func_list = List.map ~f:import_of_func program.funcs
-
-  {
-
-  } *)
+let import_ast_of_program program =
+  let import_ast_global_vars, import_global_vars =
+    get_import_list ~ast_mapping:import_of_var program.global_vars
+  in
+  let import_ast_funcs, import_funcs =
+    get_import_list ~ast_mapping:import_of_func program.funcs
+  in
+  let imports = Import_set.union import_global_vars import_funcs in
+  { package = program.package
+  ; imports = Some imports
+  ; global_vars = import_ast_global_vars
+  ; funcs = import_ast_funcs
+  }

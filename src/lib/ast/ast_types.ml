@@ -1,20 +1,6 @@
 open! Core
 open Util.Extended_set
 
-type imports = Fmt [@@deriving of_sexp, sexp_of, compare]
-
-let string_of_imports = function
-  | Fmt -> "fmt"
-
-
-module Import : Type_item = struct
-  type t = imports [@@deriving of_sexp, sexp_of, compare]
-
-  let string_of_t t = Fmt.str "import \"%s\"" (string_of_imports t)
-end
-
-module Import_set = Make_extended_set (Import)
-
 type block_type =
   | Default
   | Ignore
@@ -59,7 +45,7 @@ type expr =
   | Binop of expr * binop * expr
   | Paren of expr
   | Value of value
-  | Var of id
+  | VarRead of id
 
 type var =
   | VarNonInit of id * type_id
@@ -134,12 +120,11 @@ and 'a command =
   | Structure of 'a structure
   | Statement of statement
 
-and 'a block_record =
+and 'a block =
   { contents : 'a command list
   ; annotations : 'a
   }
 
-and 'a block = Block of 'a block_record
 and param = id * type_id
 
 and 'a func =
@@ -149,9 +134,9 @@ and 'a func =
   ; return_type : type_id
   }
 
-type 'a program =
+type ('a, 'b) program =
   { package : id
-  ; imports : Import_set.t option
+  ; imports : 'b
   ; global_vars : var list
   ; funcs : 'a func list
   }

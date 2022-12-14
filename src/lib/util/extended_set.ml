@@ -15,7 +15,7 @@ module type Type_extended_set = sig
 end
 
 module Make_extended_set (I : Type_item) = struct
-  include Set.Make (I)
+  include Set.Make (I) 
 
   let create elt = add empty elt
   let union_of_list l = List.fold_left ~f:union ~init:empty l
