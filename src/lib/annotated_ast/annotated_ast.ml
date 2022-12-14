@@ -42,18 +42,16 @@ module Func_cost_annotations = struct
 end
 
 module Import_empty_annotations = struct
-  type t = unit 
+  type t = unit
 
   let string_of_annotations _ = "[No annotations]"
-
   let create = ()
-end 
+end
 
-module Import_full_annotations = struct 
-  type t = string list 
+module Import_full_annotations = struct
+  type t = string list
 
-  let string_of_annotations t = String.concat ~sep:", " t 
-
+  let string_of_annotations t = String.concat ~sep:", " t
   let create x = x
 end
 
@@ -64,12 +62,12 @@ module Init_ast = struct
   let annotated_ast_of_ast ast = ast
 end
 
-module Import_ast = struct 
+module Import_ast = struct
   type t = (Func_init_annotations.t, Import_full_annotations.t) program
 
   let string_of_ast = string_of_program
   let annotated_ast_of_ast ast = ast
-end 
+end
 
 (* module Effect_ast = struct
   type t = Effect_annotations.t program

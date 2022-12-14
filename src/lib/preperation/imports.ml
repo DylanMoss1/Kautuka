@@ -143,7 +143,7 @@ let rec import_of_for_loop for_loop =
   , import_for_loop )
 
 
-and import_of_for_each (for_each: 'a for_each) =
+and import_of_for_each (for_each : 'a for_each) =
   nested_import_on_ast
     ~ast_mapping:import_of_block
     ~modified_ast:(fun x -> { for_each with contents = x })

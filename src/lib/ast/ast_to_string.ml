@@ -118,7 +118,7 @@ let rec string_of_for_loop for_loop =
     (string_of_var for_loop.init)
     (string_of_expr for_loop.cond)
     (string_of_var for_loop.iter)
-    (string_of_block   for_loop.contents)
+    (string_of_block for_loop.contents)
 
 
 and string_of_for_each for_each =
@@ -126,14 +126,14 @@ and string_of_for_each for_each =
     "for %s := %s {\n%s\n}"
     (string_of_id for_each.item)
     (string_of_id for_each.iterator)
-    (string_of_block   for_each.contents)
+    (string_of_block for_each.contents)
 
 
 and string_of_condition_template condition_template =
   Fmt.str
     "%s {\n%s\n}"
     (string_of_expr condition_template.condition)
-    (string_of_block   condition_template.contents)
+    (string_of_block condition_template.contents)
 
 
 and string_of_while while_loop =
@@ -148,12 +148,12 @@ and string_of_if_record if_record =
        ~f:string_of_condition_template
        (List.append [ if_record._if ] if_record.else_if))
     (match if_record.else_contents with
-    | Some else_contents -> string_of_block   else_contents
+    | Some else_contents -> string_of_block else_contents
     | None -> "")
 
 
 and string_of_structure = function
-  | Block_struct block -> string_of_block   block
+  | Block_struct block -> string_of_block block
   | If if_record -> string_of_if_record if_record
   | While while_loop -> string_of_while while_loop
   | For_loop for_loop -> string_of_for_loop for_loop
@@ -172,8 +172,8 @@ and string_of_block_type = function
   | Force_seq -> "Force_seq"
 
 
-and string_of_block   block   =
-  map_concat ~sep:"\n" ~f:string_of_command block .contents
+and string_of_block block =
+  map_concat ~sep:"\n" ~f:string_of_command block.contents
 
 
 and string_of_param (id, type_id) =
@@ -186,7 +186,7 @@ and string_of_func func =
     (string_of_id func.name)
     (map_concat ~sep:", " ~f:string_of_param func.params)
     (string_of_type_id func.return_type)
-    (string_of_block  func.body)
+    (string_of_block func.body)
 
 
 let string_of_program program =
