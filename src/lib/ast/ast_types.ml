@@ -1,14 +1,7 @@
 open! Core
 open Util.Extended_set
 
-type block_type =
-  | Default
-  | Ignore
-  | Force_par
-  | Force_seq
-
-type id_record = { name : string (* ; uuid : Uuid.t *) }
-type id = ID of id_record
+type id = { name : string } 
 
 type type_id =
   | T_Int

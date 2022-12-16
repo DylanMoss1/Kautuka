@@ -1,11 +1,11 @@
 %{ 
-    open Annotated_ast 
     open Ast.Ast_types
+    open Parser_types 
 
     let block_wrapper command =
         Block_struct
           { contents = [ command ];
-            annotations: Func_init_annotations.t = { block_type = Default }
+            annotations = Parsed_ast.create_block_annotation Default
           }
 
     let parse_return_type = function 
@@ -31,20 +31,20 @@
 %token INCREMENT DECREMENT
 %token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
 %token PRINT INPUT OPEN READ WRITE APPEND 
-%type <(Func_init_annotations.t, Import_empty_annotations.t) program> program
-%type <id> id 
+%type <(Parsed_ast.block_annotation, Parsed_ast.import_annotation) program> program
+%type <id> id
 %type <id> package
 %type <statement> statement 
 %type <var> var global_var var_mod
 %type <type_id> type_id
 %type <value> value 
-%type <Func_init_annotations.t func> func
+%type <Parsed_ast.block_annotation func> func
 %type <param> param
 %type <expr> expr
-%type <Func_init_annotations.t block> block _else 
-%type <Func_init_annotations.t structure> structure condition
-%type <Func_init_annotations.t command> command
-%type <Func_init_annotations.t condition_template> condition_template else_if
+%type <Parsed_ast.block_annotation block> block _else 
+%type <Parsed_ast.block_annotation structure> structure condition
+%type <Parsed_ast.block_annotation command> command
+%type <Parsed_ast.block_annotation condition_template> condition_template else_if
 %type <control> control
 %type <func_call> func_call 
 %type <unop> unop
@@ -52,10 +52,10 @@
 
 %type <type_id option> option(type_id)
 %type <expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
-%type <Func_init_annotations.t block option> option(_else)
-%type <Func_init_annotations.t condition_template list> list(else_if)
-%type <Func_init_annotations.t command list> list(command)
-%type <Func_init_annotations.t func list> list(func)
+%type <Parsed_ast.block_annotation block option> option(_else)
+%type <Parsed_ast.block_annotation condition_template list> list(else_if)
+%type <Parsed_ast.block_annotation command list> list(command)
+%type <Parsed_ast.block_annotation func list> list(func)
 %type <var list> list(global_var)
 %type <param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 
@@ -71,14 +71,14 @@
 
 program:
 | package=package; global_vars=list(global_var) funcs=list(func) EOF { 
-    { package = package; imports = (); global_vars = global_vars; funcs = funcs } 
+    { package = package; imports = Parsed_ast.create_import_annotation (); global_vars = global_vars; funcs = funcs } 
 }
 
 package: 
 | PACKAGE id=id { id } 
 
 id: 
-| id=ID { ID({ name = id }) }
+| id=ID { { name = id } }
 
 type_id: 
 | T_INT { T_Int } 
@@ -113,11 +113,11 @@ func:
 
 block: 
 | LBRACE commands=list(command) RBRACE { 
-    { contents = commands; annotations = { block_type = Default } }
+    { contents = commands; annotations = Parsed_ast.create_block_annotation Default }
   }
-| IGNORE LBRACE commands=list(command) RBRACE { { contents = commands; annotations = { block_type = Ignore } } }
-| FORCEPAR LBRACE commands=list(command) RBRACE { { contents = commands; annotations = { block_type = Force_par } } }
-| FORCESEQ LBRACE commands=list(command) RBRACE { { contents = commands; annotations = { block_type = Force_seq } } }
+| IGNORE LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annotation Ignore } }
+| FORCEPAR LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annotation Force_par } }
+| FORCESEQ LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annotation Force_seq } }
 
 command: 
 | structure=structure { Structure(structure) }

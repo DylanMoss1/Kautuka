@@ -2,6 +2,7 @@ open Core
 open Lexing
 open Parser
 open Format
+open Parser_types
 
 let pprint_tokens ppf = function
   | LPAREN -> Fmt.pf ppf "LPAREN@."
@@ -87,7 +88,7 @@ let parse ~debug input_program =
     pprint_lexbuf lexbuf;
     print_endline "");
   let lexbuf = Lexing.from_string input_program in
-  try Ok (Parser.program Lexer.read_token lexbuf) with
+  try Ok (Parsed_ast.create (Parser.program Lexer.read_token lexbuf)) with
   | Lexer.Lexer_error msg ->
     let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
     Result.Error (`Lexer_error error_msg)

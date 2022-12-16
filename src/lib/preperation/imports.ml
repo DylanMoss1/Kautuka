@@ -1,4 +1,89 @@
-open Core
+open! Core
+open Util.Extended_set
+open Ast.Ast_types
+open Ast.Annotated_ast
+open Pipeline_ast
+open Parsing.Parser_types
+
+type import =
+  | I_Fmt
+  | I_Os
+[@@deriving of_sexp, sexp_of, compare]
+
+module Import = struct
+  type t = import [@@deriving of_sexp, sexp_of, compare]
+
+  let string_of_t t =
+    Fmt.str
+      "import \"%s\""
+      (match t with
+      | I_Fmt -> "fmt"
+      | I_Os -> "os")
+
+
+  let create x = x
+end
+
+module Import_set = Make_extended_set (Import)
+module Import_ast = Annotated_ast (Block_type_annotation) (Import_set)
+
+module Import_ast_mapping : Type_ast_mapping = struct
+  type result = Import_ast.import_annotation
+  type old_block_annot = Parsed_ast.block_annotation
+  type old_import_annot = Parsed_ast.import_annotation
+  type block_annot = Import_ast.block_annotation
+  type import_annot = Import_ast.import_annotation
+
+  let empty_result () = Import_set.empty
+  let collect_results = Import_set.union_of_list
+  let no_import new_ast = new_ast, Import_set.empty
+  let relay_import new_ast result = new_ast, result
+  let program new_program result = { new_program with imports = result }, result
+  let func = relay_import
+  let param = relay_import
+  let block = relay_import
+  let command = relay_import
+  let structure = relay_import
+  let statement = relay_import
+  let for_loop = relay_import
+  let for_each = relay_import
+  let condition_template = relay_import
+  let if_record = relay_import
+  let control = no_import
+
+  let func_call func_call result =
+    match func_call with
+    | User_func user_func -> User_func user_func, result
+    | Print expr -> Print expr, Import_set.add result I_Fmt
+    | Input -> Input, Import_set.add result I_Fmt
+    | Open expr -> Open expr, Import_set.add result I_Fmt
+    | Read expr -> Read expr, Import_set.add result I_Fmt
+    | Write write_template -> Write write_template, Import_set.add result I_Fmt
+    | Append write_template ->
+      Append write_template, Import_set.add result I_Fmt
+
+
+  let write_template = relay_import
+  let user_func = relay_import
+  let var = relay_import
+  let expr = relay_import
+  let binop = no_import
+  let unop = no_import
+  let value = no_import
+  let type_id = no_import
+  let id = no_import
+end
+
+module Import_pipeline = Ast_pipeline (Import_ast_mapping)
+
+(* 
+   
+  Import_pipeline.pipeline_program : 
+
+*)
+
+
+(* open Core
 open Ast.Ast_types
 open Util.Extended_set
 
@@ -6,11 +91,6 @@ type import =
   | I_Fmt
   | I_Os
 [@@deriving of_sexp, sexp_of, compare]
-
-let string_of_import = function
-  | I_Fmt -> "fmt"
-  | I_Os -> "os"
-
 
 module type Type_import = sig
   include Type_item
@@ -21,7 +101,14 @@ end
 module Import : Type_import = struct
   type t = import [@@deriving of_sexp, sexp_of, compare]
 
-  let string_of_t t = Fmt.str "import \"%s\"" (string_of_import t)
+  let string_of_t t =
+    Fmt.str
+      "import \"%s\""
+      (match t with
+      | I_Fmt -> "fmt"
+      | I_Os -> "os")
+
+
   let create x = x
 end
 
@@ -29,6 +116,13 @@ module Import_set = Make_extended_set (Import)
 
 let append_tuple (xs, ys) (x, y) = x :: xs, y :: ys
 let unzip l = List.fold_left ~f:append_tuple ~init:([], []) l
+
+
+(* let map_ast ~map ast =
+  let mapped_ast, result = map ast in 
+ *)
+
+
 
 (* Takes an ast mapping function and result union function 
    and returns (modified_ast, results) *)
@@ -250,4 +344,4 @@ let import_ast_of_program program =
   ; imports = Some imports
   ; global_vars = import_ast_global_vars
   ; funcs = import_ast_funcs
-  }
+  } *)

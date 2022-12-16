@@ -3,8 +3,7 @@ open Ast_types
 
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
 
-let string_of_id = function
-  | ID { name; _ } -> name
+let string_of_id (id : id) = id.name
 
 
 let string_of_type_id = function
@@ -112,85 +111,80 @@ let string_of_statement = function
   | Func_call func_call -> string_of_func_call func_call
 
 
-let rec string_of_for_loop for_loop =
+let rec string_of_for_loop ~string_of_block_annotation for_loop =
   Fmt.str
     "for %s;%s;%s {\n%s\n}"
     (string_of_var for_loop.init)
     (string_of_expr for_loop.cond)
     (string_of_var for_loop.iter)
-    (string_of_block for_loop.contents)
+    (string_of_block ~string_of_block_annotation for_loop.contents)
 
 
-and string_of_for_each for_each =
+and string_of_for_each ~string_of_block_annotation for_each =
   Fmt.str
     "for %s := %s {\n%s\n}"
     (string_of_id for_each.item)
     (string_of_id for_each.iterator)
-    (string_of_block for_each.contents)
+    (string_of_block ~string_of_block_annotation for_each.contents)
 
 
-and string_of_condition_template condition_template =
+and string_of_condition_template ~string_of_block_annotation condition_template =
   Fmt.str
     "%s {\n%s\n}"
     (string_of_expr condition_template.condition)
-    (string_of_block condition_template.contents)
+    (string_of_block ~string_of_block_annotation condition_template.contents)
 
 
-and string_of_while while_loop =
-  Fmt.str "for %s" (string_of_condition_template while_loop)
+and string_of_while ~string_of_block_annotation while_loop =
+  Fmt.str "for %s" (string_of_condition_template ~string_of_block_annotation while_loop)
 
 
-and string_of_if_record if_record =
+and string_of_if_record ~string_of_block_annotation if_record =
   Fmt.str
     "if %s %s"
     (map_concat
        ~sep:" else if "
-       ~f:string_of_condition_template
+       ~f:(string_of_condition_template ~string_of_block_annotation)
        (List.append [ if_record._if ] if_record.else_if))
     (match if_record.else_contents with
-    | Some else_contents -> string_of_block else_contents
+    | Some else_contents -> string_of_block ~string_of_block_annotation else_contents
     | None -> "")
 
 
-and string_of_structure = function
-  | Block_struct block -> string_of_block block
-  | If if_record -> string_of_if_record if_record
-  | While while_loop -> string_of_while while_loop
-  | For_loop for_loop -> string_of_for_loop for_loop
-  | For_each for_each -> string_of_for_each for_each
+and string_of_structure ~string_of_block_annotation = function
+  | Block_struct block -> string_of_block ~string_of_block_annotation block
+  | If if_record -> string_of_if_record ~string_of_block_annotation if_record
+  | While while_loop -> string_of_while ~string_of_block_annotation while_loop
+  | For_loop for_loop -> string_of_for_loop ~string_of_block_annotation for_loop
+  | For_each for_each -> string_of_for_each ~string_of_block_annotation for_each
 
 
-and string_of_command = function
-  | Structure structure -> string_of_structure structure
+and string_of_command ~string_of_block_annotation = function
+  | Structure structure -> (string_of_structure ~string_of_block_annotation) structure
   | Statement statement -> string_of_statement statement
 
 
-and string_of_block_type = function
-  | Default -> "Default"
-  | Ignore -> "Ignore"
-  | Force_par -> "Force_par"
-  | Force_seq -> "Force_seq"
-
-
-and string_of_block block =
-  map_concat ~sep:"\n" ~f:string_of_command block.contents
+and string_of_block ~string_of_block_annotation block =
+  Fmt.str "//%s\n%s" (string_of_block_annotation block.annotations)
+  (map_concat ~sep:"\n" ~f:(string_of_command ~string_of_block_annotation) block.contents)
 
 
 and string_of_param (id, type_id) =
   Fmt.str "%s %s" (string_of_id id) (string_of_type_id type_id)
 
 
-and string_of_func func =
+and string_of_func ~string_of_block_annotation func =
   Fmt.str
     "func %s (%s) %s {\n%s\n}"
     (string_of_id func.name)
     (map_concat ~sep:", " ~f:string_of_param func.params)
     (string_of_type_id func.return_type)
-    (string_of_block func.body)
+    (string_of_block ~string_of_block_annotation func.body)
 
 
-let string_of_program program =
+let string_of_program ~string_of_block_annotation ~string_of_import_annotation program =
   Fmt.str "package %s\n\n" (string_of_id program.package)
+  ^ string_of_import_annotation program.imports
   ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
   ^ "\n\n"
-  ^ map_concat ~sep:"\n" ~f:string_of_func program.funcs
+  ^ map_concat ~sep:"\n" ~f:(string_of_func ~string_of_block_annotation) program.funcs

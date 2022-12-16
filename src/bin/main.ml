@@ -1,6 +1,8 @@
 open! Core
 open Parsing
-open Annotated_ast
+open! Ast
+open Parser_types
+open Preperation 
 
 let usage_msg = "x [--debug]"
 let debug = ref false
@@ -12,12 +14,13 @@ let () =
   print_endline "\n";
   In_channel.read_all "./files/kau_program.kau"
   |> Lex_and_parse.parse ~debug:!debug
+  |> Result.map ~f:Imports.Import_pipeline.pipeline_program 
   |> fun parse_result ->
   match parse_result with
   | Ok ast ->
     Out_channel.write_all
       "./files/compiled_program.go"
-      ~data:(Init_ast.string_of_ast (Init_ast.annotated_ast_of_ast ast))
+      ~data:(Parsed_ast.string_of_t ast)
   | Error error ->
     (match error with
     | `Lexer_error msg -> print_endline msg
