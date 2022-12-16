@@ -2,9 +2,7 @@ open Core
 open Ast_types
 
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
-
 let string_of_id (id : id) = id.name
-
 
 let string_of_type_id = function
   | T_Int -> "int"
@@ -136,7 +134,9 @@ and string_of_condition_template ~string_of_block_annotation condition_template 
 
 
 and string_of_while ~string_of_block_annotation while_loop =
-  Fmt.str "for %s" (string_of_condition_template ~string_of_block_annotation while_loop)
+  Fmt.str
+    "for %s"
+    (string_of_condition_template ~string_of_block_annotation while_loop)
 
 
 and string_of_if_record ~string_of_block_annotation if_record =
@@ -147,7 +147,8 @@ and string_of_if_record ~string_of_block_annotation if_record =
        ~f:(string_of_condition_template ~string_of_block_annotation)
        (List.append [ if_record._if ] if_record.else_if))
     (match if_record.else_contents with
-    | Some else_contents -> string_of_block ~string_of_block_annotation else_contents
+    | Some else_contents ->
+      string_of_block ~string_of_block_annotation else_contents
     | None -> "")
 
 
@@ -160,13 +161,19 @@ and string_of_structure ~string_of_block_annotation = function
 
 
 and string_of_command ~string_of_block_annotation = function
-  | Structure structure -> (string_of_structure ~string_of_block_annotation) structure
+  | Structure structure ->
+    (string_of_structure ~string_of_block_annotation) structure
   | Statement statement -> string_of_statement statement
 
 
 and string_of_block ~string_of_block_annotation block =
-  Fmt.str "//%s\n%s" (string_of_block_annotation block.annotations)
-  (map_concat ~sep:"\n" ~f:(string_of_command ~string_of_block_annotation) block.contents)
+  Fmt.str
+    "//%s\n%s"
+    (string_of_block_annotation block.annotations)
+    (map_concat
+       ~sep:"\n"
+       ~f:(string_of_command ~string_of_block_annotation)
+       block.contents)
 
 
 and string_of_param (id, type_id) =
@@ -182,9 +189,16 @@ and string_of_func ~string_of_block_annotation func =
     (string_of_block ~string_of_block_annotation func.body)
 
 
-let string_of_program ~string_of_block_annotation ~string_of_import_annotation program =
+let string_of_program
+    ~string_of_block_annotation
+    ~string_of_import_annotation
+    program
+  =
   Fmt.str "package %s\n\n" (string_of_id program.package)
   ^ string_of_import_annotation program.imports
   ^ map_concat ~sep:"\n" ~f:string_of_var program.global_vars
   ^ "\n\n"
-  ^ map_concat ~sep:"\n" ~f:(string_of_func ~string_of_block_annotation) program.funcs
+  ^ map_concat
+      ~sep:"\n"
+      ~f:(string_of_func ~string_of_block_annotation)
+      program.funcs

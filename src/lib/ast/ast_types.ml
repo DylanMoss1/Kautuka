@@ -1,7 +1,7 @@
 open! Core
 open Util.Extended_set
 
-type id = { name : string } 
+type id = { name : string }
 
 type type_id =
   | T_Int

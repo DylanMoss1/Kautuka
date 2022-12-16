@@ -11,7 +11,7 @@ module Import_empty_annotation = struct
   type t = unit
 
   let string_of_t _ = ""
-  let create () = () 
+  let create () = ()
 end
 
 module Block_type_annotation = struct
@@ -24,7 +24,9 @@ module Block_type_annotation = struct
     | Force_par -> "Force_par"
     | Force_seq -> "Force_seq"
 
-  let create block_type = block_type 
+
+  let create block_type = block_type
 end
 
-module Parsed_ast = Annotated_ast (Block_type_annotation) (Import_empty_annotation)
+module Parsed_ast =
+  Annotated_ast (Block_type_annotation) (Import_empty_annotation)

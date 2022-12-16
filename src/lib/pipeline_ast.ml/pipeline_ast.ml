@@ -4,7 +4,7 @@ open Ast.Ast_types
 module type Type_ast_mapping = sig
   type result
   type old_block_annot
-  type old_import_annot 
+  type old_import_annot
   type block_annot
   type import_annot
 
