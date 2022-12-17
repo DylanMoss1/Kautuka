@@ -5,8 +5,8 @@ module type Type_ast_mapping = sig
   type result
   type old_block_annot
   type old_import_annot
-  type block_annot
-  type import_annot
+  type new_block_annot
+  type new_import_annot
 
   val collect_results : result list -> result
   val empty_result : unit -> result
@@ -22,33 +22,106 @@ module type Type_ast_mapping = sig
   val func_call : func_call -> result -> func_call * result
   val control : control -> control * result
   val statement : statement -> result -> statement * result
-  val for_loop : block_annot for_loop -> result -> block_annot for_loop * result
-  val for_each : block_annot for_each -> result -> block_annot for_each * result
+
+  val for_loop
+    :  new_block_annot for_loop
+    -> result
+    -> new_block_annot for_loop * result
+
+  val for_each
+    :  new_block_annot for_each
+    -> result
+    -> new_block_annot for_each * result
 
   val condition_template
-    :  block_annot condition_template
+    :  new_block_annot condition_template
     -> result
-    -> block_annot condition_template * result
+    -> new_block_annot condition_template * result
 
   val if_record
-    :  block_annot if_record
+    :  new_block_annot if_record
     -> result
-    -> block_annot if_record * result
+    -> new_block_annot if_record * result
 
   val structure
-    :  block_annot structure
+    :  new_block_annot structure
     -> result
-    -> block_annot structure * result
+    -> new_block_annot structure * result
 
-  val command : block_annot command -> result -> block_annot command * result
-  val block : block_annot block -> result -> block_annot block * result
+  val command
+    :  new_block_annot command
+    -> result
+    -> new_block_annot command * result
+
+  val block
+    :  new_block_annot command list
+    -> old_block_annot
+    -> result
+    -> new_block_annot block * result
+
   val param : id * type_id -> result -> (id * type_id) * result
-  val func : block_annot func -> result -> block_annot func * result
+  val func : new_block_annot func -> result -> new_block_annot func * result
 
   val program
-    :  (block_annot, import_annot) program
+    :  id
+    -> old_import_annot
+    -> var list
+    -> new_block_annot func list
     -> result
-    -> (block_annot, import_annot) program * result
+    -> (new_block_annot, new_import_annot) program * result
+end
+
+module type Type_ast_mapping_types = sig
+  type result
+  type old_block_annot
+  type old_import_annot
+  type new_block_annot
+  type new_import_annot
+
+  val collect_results : result list -> result
+  val empty_result : unit -> result
+end
+
+module Default_ast_mapping (U : Type_ast_mapping_types) = struct
+  include U
+
+  let no_result new_ast = new_ast, empty_result ()
+  let relay_result new_ast result = new_ast, result
+
+  let program new_package old_import new_global_vars new_funcs result =
+    ( { package = new_package
+      ; imports = old_import
+      ; global_vars = new_global_vars
+      ; funcs = new_funcs
+      }
+    , result )
+
+
+  let func = relay_result
+  let param = relay_result
+
+  let block new_contents old_annotations result =
+    { contents = new_contents; annotations = old_annotations }, result
+
+
+  let command = relay_result
+  let structure = relay_result
+  let statement = relay_result
+  let for_loop = relay_result
+  let for_each = relay_result
+  let condition_template = relay_result
+  let if_record = relay_result
+  let control = no_result
+  let func_call = relay_result
+  let write_template = relay_result
+  let user_func = relay_result
+  let var = relay_result
+  let expr = relay_result
+  let binop = no_result
+  let unop = no_result
+  let value = no_result
+  let type_id = no_result
+  let id = no_result
 end
 
 module Ast_pipeline (Mapping : Type_ast_mapping) = struct
@@ -353,7 +426,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     let new_contents, contents_result =
       pipeline_map ~f:pipeline_command block.contents
     in
-    Mapping.block { block with contents = new_contents } contents_result
+    Mapping.block new_contents block.annotations contents_result
 
 
   and pipeline_param (id, type_id) =
@@ -393,11 +466,10 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       Mapping.collect_results
         [ package_result; global_vars_result; funcs_result ]
     in
-    Mapping.program
-      { package = new_package
-      ; imports = program.imports
-      ; global_vars = new_global_vars
-      ; funcs = new_funcs
-      }
-      result
+    Mapping.program new_package program.imports new_global_vars new_funcs result
+
+
+  let pipeline_ast program =
+    let new_program, _ = pipeline_program program in
+    new_program
 end

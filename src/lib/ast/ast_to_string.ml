@@ -71,7 +71,6 @@ let string_of_var = function
   | Post_dec id -> Fmt.str "%s--" (string_of_id id)
 
 
-(* REMOVE TYPE ANNOTATION HERE *)
 let string_of_user_func (user_func : user_func) =
   Fmt.str
     "%s(%s)"
@@ -88,7 +87,7 @@ let string_of_write_template write_template =
 
 let string_of_func_call = function
   | User_func user_func -> string_of_user_func user_func
-  | Print expr -> Fmt.str "println(%s)" (string_of_expr expr)
+  | Print expr -> Fmt.str "fmt.Println(%s)" (string_of_expr expr)
   | Input -> "input()"
   | Open expr -> Fmt.str "open(%s)" (string_of_expr expr)
   | Read expr -> Fmt.str "read(%s)" (string_of_expr expr)

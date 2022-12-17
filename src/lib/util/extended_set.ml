@@ -22,9 +22,9 @@ module Make_extended_set (I : Type_item) = struct
 
   let string_of_t t =
     Fmt.str
-      "{%s}"
+      "import (%s)\n"
       (String.concat
-         ~sep:", "
+         ~sep:"\n"
          (List.sort
             ~compare:String.compare
             (List.map ~f:I.string_of_t (elements t))))
