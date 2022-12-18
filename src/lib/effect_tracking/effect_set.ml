@@ -1,4 +1,4 @@
-open Core
+(* open Core
 
 (* open Ast.Ast_to_string  *)
 open Util
@@ -65,4 +65,4 @@ module Effect_set = struct
 
 
   let create effect = add empty effect
-end
+end *)

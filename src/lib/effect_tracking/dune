@@ -1,6 +1,6 @@
 (library
  (name effect_tracking)
- (libraries core fmt ast util)
+ (libraries core fmt ast ast_pipeline parsing)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))
  (lint

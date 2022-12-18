@@ -1,5 +1,5 @@
 (library
- (name pipeline_ast)
+ (name ast_pipeline)
  (libraries core fmt ast)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))

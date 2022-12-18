@@ -1,42 +1,18 @@
-open! Core
+(* open! Core
 open Util.Extended_set
 open Ast.Ast_types
 open Ast.Annotated_ast
 open Ast_pipeline
 open Parsing.Parser_types
 
-type import =
-  | I_Fmt
-  | I_Os
-[@@deriving of_sexp, sexp_of, compare]
-
-module Import = struct
-  type t = import [@@deriving of_sexp, sexp_of, compare]
-
-  let string_of_t t =
-    Fmt.str
-      "\"%s\""
-      (match t with
-      | I_Fmt -> "fmt"
-      | I_Os -> "os")
-
-
-  let create x = x
-end
-
-module Import_set = Make_extended_set (Import)
-
-module Import_ast =
-  Annotated_ast (Block_type_annotation) (Var_name_annotation) (Import_set)
+module Variable_ast = Annotated_ast (Block_type_annotation) (Import_set)
 
 module Unknown_import_ast_mapping = struct
-  type result = Import_ast.import_annot
-  type old_block_annot = Parsed_ast.block_annot
-  type old_var_annot = Parsed_ast.var_annot
-  type old_import_annot = Parsed_ast.import_annot
-  type new_block_annot = Import_ast.block_annot
-  type new_var_annot = Import_ast.var_annot
-  type new_import_annot = Import_ast.import_annot
+  type result = Import_ast.import_annotation
+  type old_block_annot = Parsed_ast.block_annotation
+  type old_import_annot = Parsed_ast.import_annotation
+  type new_block_annot = Import_ast.block_annotation
+  type new_import_annot = Import_ast.import_annotation
 
   let collect_results = Import_set.union_of_list
   let empty_result () = Import_set.empty
@@ -66,4 +42,4 @@ module Import_ast_mapping = struct
     , result )
 end
 
-module Import_ast_pipeline = Ast_pipeline (Import_ast_mapping)
+module Import_ast_pipeline = Ast_pipeline (Import_ast_mapping) *)

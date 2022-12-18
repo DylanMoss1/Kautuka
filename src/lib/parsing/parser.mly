@@ -5,7 +5,7 @@
     let block_wrapper command =
         Block_struct
           { contents = [ command ];
-            annotations = Parsed_ast.create_block_annotation Default
+            annotations = Parsed_ast.create_block_annot Default
           }
 
     let parse_return_type = function 
@@ -31,33 +31,33 @@
 %token INCREMENT DECREMENT
 %token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
 %token PRINT INPUT OPEN READ WRITE APPEND 
-%type <(Parsed_ast.block_annotation, Parsed_ast.import_annotation) program> program
-%type <id> id
-%type <id> package
-%type <statement> statement 
-%type <var> var global_var var_mod
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.import_annot) program> program
+%type <string> package
+%type <Parsed_ast.var_annot statement> statement 
+%type <Parsed_ast.var_annot var> var
+%type <Parsed_ast.var_annot var_statement> var_statement global_var var_mod
 %type <type_id> type_id
 %type <value> value 
-%type <Parsed_ast.block_annotation func> func
-%type <param> param
-%type <expr> expr
-%type <Parsed_ast.block_annotation block> block _else 
-%type <Parsed_ast.block_annotation structure> structure condition
-%type <Parsed_ast.block_annotation command> command
-%type <Parsed_ast.block_annotation condition_template> condition_template else_if
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) func> func
+%type <Parsed_ast.var_annot param> param
+%type <Parsed_ast.var_annot expr> expr
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) block> block _else 
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) structure> structure condition
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) command> command
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) condition_template> condition_template else_if
 %type <control> control
-%type <func_call> func_call 
+%type <Parsed_ast.var_annot func_call> func_call 
 %type <unop> unop
 %type <binop> binop
 
 %type <type_id option> option(type_id)
-%type <expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
-%type <Parsed_ast.block_annotation block option> option(_else)
-%type <Parsed_ast.block_annotation condition_template list> list(else_if)
-%type <Parsed_ast.block_annotation command list> list(command)
-%type <Parsed_ast.block_annotation func list> list(func)
-%type <var list> list(global_var)
-%type <param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
+%type <Parsed_ast.var_annot expr list> loption(separated_nonempty_list(COMMA,expr)) separated_nonempty_list(COMMA,expr)
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) block option> option(_else)
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) condition_template list> list(else_if)
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) command list> list(command)
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot) func list> list(func)
+%type <Parsed_ast.var_annot var_statement list> list(global_var)
+%type <Parsed_ast.var_annot param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 
 %left MINUS PLUS
 %left MULT DIV MOD
@@ -71,14 +71,11 @@
 
 program:
 | package=package; global_vars=list(global_var) funcs=list(func) EOF { 
-    { package = package; imports = Parsed_ast.create_import_annotation (); global_vars = global_vars; funcs = funcs } 
+    { package; imports = Parsed_ast.create_import_annot (); global_vars; funcs } 
 }
 
 package: 
-| PACKAGE id=id { id } 
-
-id: 
-| id=ID { { name = id } }
+| PACKAGE id=ID { id } 
 
 type_id: 
 | T_INT { T_Int } 
@@ -90,48 +87,51 @@ value:
 | bool_val=BOOL { Bool(bool_val) }
 | string_val=STRING { String(string_val) }
 
-var:
-| var=global_var { var }
-| id=id DECL expr=expr { VarDecl(id, expr) }
-| id=id EQUALS expr=expr { VarAssign(id, expr) }
+var: 
+| name=ID { { name } }
+
+var_statement:
+| var_statement=global_var { var_statement }
+| var=var DECL expr=expr { VarDecl(var, expr) }
+| var=var EQUALS expr=expr { VarAssign(var, expr) }
 | var_mod=var_mod { var_mod }
 
 global_var:
-| VAR id=id type_id=type_id { VarNonInit(id, type_id) }
-| VAR id=id type_id=type_id EQUALS expr=expr { VarInit(id, type_id, expr) }
+| VAR var=var type_id=type_id { VarNonInit(var, type_id) }
+| VAR var=var type_id=type_id EQUALS expr=expr { VarInit(var, type_id, expr) }
 
 var_mod: 
-| INCREMENT id=id { Pre_inc(id) }
-| DECREMENT id=id { Pre_dec(id) }
-| id=id INCREMENT { Post_inc(id) }
-| id=id DECREMENT { Post_dec(id) }
+| INCREMENT var=var { Pre_inc(var) }
+| DECREMENT var=var { Pre_dec(var) }
+| var=var INCREMENT { Post_inc(var) }
+| var=var DECREMENT { Post_dec(var) }
 
 func: 
-| FUNC id=id LPAREN params=separated_list(COMMA, param) RPAREN return_type=option(type_id) block=block {
-     { name = id; params = params; body = block; return_type = (parse_return_type return_type) } 
+| FUNC var=var LPAREN params=separated_list(COMMA, param) RPAREN return_type=option(type_id) block=block {
+     { name = var; params = params; body = block; return_type = (parse_return_type return_type) } 
   }
 
 block: 
 | LBRACE commands=list(command) RBRACE { 
-    { contents = commands; annotations = Parsed_ast.create_block_annotation Default }
+    { contents = commands; annotations = Parsed_ast.create_block_annot Default }
   }
-| IGNORE LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annotation Ignore } }
-| FORCEPAR LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annotation Force_par } }
-| FORCESEQ LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annotation Force_seq } }
+| IGNORE LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annot Ignore } }
+| FORCEPAR LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annot Force_par } }
+| FORCESEQ LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annot Force_seq } }
 
 command: 
 | structure=structure { Structure(structure) }
 | statement=statement { Statement(statement) }
 
 param: 
-| id=id type_id=type_id { (id, type_id) }
+| var=var type_id=type_id { (var, type_id) }
 
 expr: 
 | unop=unop expr=expr { Unop(unop, expr) }
 | expr1=expr binop=binop expr2=expr { Binop(expr1, binop, expr2) }
 | LPAREN expr=expr RPAREN { Paren(expr) } 
 | value=value { Value(value) }
-| var=id { VarRead(var) }
+| var=var { VarRead(var) }
 
 %inline unop: 
 | NOT { Not }
@@ -153,7 +153,7 @@ expr:
 | OR { Or }
 
 statement:
-| var=var { Var(var) }
+| var_statement=var_statement { Var_statement(var_statement) }
 | func_call=func_call { Func_call(func_call) }
 | control=control { Control(control) }
 
@@ -162,22 +162,22 @@ control:
 | CONTINUE { Continue }
 
 func_call: 
-| name=id LPAREN args=separated_list(COMMA, expr) RPAREN { User_func( { name = name; args = args } ) }
+| name=var LPAREN args=separated_list(COMMA, expr) RPAREN { User_func( { name; args } ) }
 | PRINT LPAREN arg=expr RPAREN { Print(arg) }
 | INPUT LPAREN RPAREN { Input }
 | OPEN LPAREN arg=expr RPAREN { Open(arg) } 
 | READ LPAREN arg=expr RPAREN { Read(arg) }
-| WRITE LPAREN arg1=id COMMA arg2=expr RPAREN { Write( { file = arg1; contents = arg2 } ) } 
-| APPEND LPAREN arg1=id COMMA arg2=expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
+| WRITE LPAREN arg1=var COMMA arg2=expr RPAREN { Write( { file = arg1; contents = arg2 } ) } 
+| APPEND LPAREN arg1=var COMMA arg2=expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
 
 structure:
 | condition=condition { condition }
 | block=block { Block_struct(block) }
 | WHILE cond=expr block=block { While( { condition = cond; contents = block } ) }
-| FOR init=var SEMICOLON cond=expr SEMICOLON iter=var contents=block {
+| FOR init=var_statement SEMICOLON cond=expr SEMICOLON iter=var_statement contents=block {
     block_wrapper (Structure(For_loop( { init = init; cond = cond; iter = iter; contents = contents } )))
 } 
-| FOR item=id DECL RANGE iterator=id contents=block {
+| FOR item=var DECL RANGE iterator=var contents=block {
     block_wrapper (Structure(For_each( { item = item; iterator = iterator; contents = contents } )))
 }
 | FOR cond=expr contents=block { While( { condition = cond; contents = contents } ) }

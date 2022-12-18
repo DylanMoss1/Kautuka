@@ -4,78 +4,110 @@ open Ast.Ast_types
 module type Type_ast_mapping = sig
   type result
   type old_block_annot
+  type old_var_annot
   type old_import_annot
   type new_block_annot
+  type new_var_annot
   type new_import_annot
 
   val collect_results : result list -> result
   val empty_result : unit -> result
-  val id : id -> id * result
   val type_id : type_id -> type_id * result
   val value : value -> value * result
+  val var : old_var_annot var -> new_var_annot var * result
   val unop : unop -> unop * result
   val binop : binop -> binop * result
-  val expr : expr -> result -> expr * result
-  val var : var -> result -> var * result
-  val user_func : user_func -> result -> user_func * result
-  val write_template : write_template -> result -> write_template * result
-  val func_call : func_call -> result -> func_call * result
+  val expr : new_var_annot expr -> result -> new_var_annot expr * result
+
+  val var_statement
+    :  new_var_annot var_statement
+    -> result
+    -> new_var_annot var_statement * result
+
+  val user_func
+    :  new_var_annot user_func
+    -> result
+    -> new_var_annot user_func * result
+
+  val write_template
+    :  new_var_annot write_template
+    -> result
+    -> new_var_annot write_template * result
+
+  val func_call
+    :  new_var_annot func_call
+    -> result
+    -> new_var_annot func_call * result
+
   val control : control -> control * result
-  val statement : statement -> result -> statement * result
+
+  val statement
+    :  new_var_annot statement
+    -> result
+    -> new_var_annot statement * result
 
   val for_loop
-    :  new_block_annot for_loop
+    :  (new_block_annot, new_var_annot) for_loop
     -> result
-    -> new_block_annot for_loop * result
+    -> (new_block_annot, new_var_annot) for_loop * result
 
   val for_each
-    :  new_block_annot for_each
+    :  (new_block_annot, new_var_annot) for_each
     -> result
-    -> new_block_annot for_each * result
+    -> (new_block_annot, new_var_annot) for_each * result
 
   val condition_template
-    :  new_block_annot condition_template
+    :  (new_block_annot, new_var_annot) condition_template
     -> result
-    -> new_block_annot condition_template * result
+    -> (new_block_annot, new_var_annot) condition_template * result
 
   val if_record
-    :  new_block_annot if_record
+    :  (new_block_annot, new_var_annot) if_record
     -> result
-    -> new_block_annot if_record * result
+    -> (new_block_annot, new_var_annot) if_record * result
 
   val structure
-    :  new_block_annot structure
+    :  (new_block_annot, new_var_annot) structure
     -> result
-    -> new_block_annot structure * result
+    -> (new_block_annot, new_var_annot) structure * result
 
   val command
-    :  new_block_annot command
+    :  (new_block_annot, new_var_annot) command
     -> result
-    -> new_block_annot command * result
+    -> (new_block_annot, new_var_annot) command * result
 
   val block
-    :  new_block_annot command list
+    :  (new_block_annot, new_var_annot) command list
     -> old_block_annot
     -> result
-    -> new_block_annot block * result
+    -> (new_block_annot, new_var_annot) block * result
 
-  val param : id * type_id -> result -> (id * type_id) * result
-  val func : new_block_annot func -> result -> new_block_annot func * result
+  val param
+    :  new_var_annot var * type_id
+    -> result
+    -> (new_var_annot var * type_id) * result
+
+  val func
+    :  (new_block_annot, new_var_annot) func
+    -> result
+    -> (new_block_annot, new_var_annot) func * result
 
   val program
-    :  id
+    :  string
     -> old_import_annot
-    -> var list
-    -> new_block_annot func list
+    -> new_var_annot var_statement list
+    -> (new_block_annot, new_var_annot) func list
     -> result
-    -> (new_block_annot, new_import_annot) program * result
+    -> (new_block_annot, new_var_annot, new_import_annot) program * result
 end
 
 module type Type_ast_mapping_types = sig
   type result
   type old_block_annot
+  type old_var_annot
   type old_import_annot
   type new_block_annot
+  type new_var_annot
   type new_import_annot
 
   val collect_results : result list -> result
@@ -87,6 +119,31 @@ module Default_ast_mapping (U : Type_ast_mapping_types) = struct
 
   let no_result new_ast = new_ast, empty_result ()
   let relay_result new_ast result = new_ast, result
+  let var = no_result
+  let type_id = no_result
+  let value = no_result
+  let unop = no_result
+  let binop = no_result
+  let expr = relay_result
+  let var_statement = relay_result
+  let user_func = relay_result
+  let write_template = relay_result
+  let func_call = relay_result
+  let control = no_result
+  let if_record = relay_result
+  let condition_template = relay_result
+  let for_each = relay_result
+  let for_loop = relay_result
+  let statement = relay_result
+  let structure = relay_result
+  let command = relay_result
+
+  let block new_contents old_annotations result =
+    { contents = new_contents; annotations = old_annotations }, result
+
+
+  let param = relay_result
+  let func = relay_result
 
   let program new_package old_import new_global_vars new_funcs result =
     ( { package = new_package
@@ -95,33 +152,6 @@ module Default_ast_mapping (U : Type_ast_mapping_types) = struct
       ; funcs = new_funcs
       }
     , result )
-
-
-  let func = relay_result
-  let param = relay_result
-
-  let block new_contents old_annotations result =
-    { contents = new_contents; annotations = old_annotations }, result
-
-
-  let command = relay_result
-  let structure = relay_result
-  let statement = relay_result
-  let for_loop = relay_result
-  let for_each = relay_result
-  let condition_template = relay_result
-  let if_record = relay_result
-  let control = no_result
-  let func_call = relay_result
-  let write_template = relay_result
-  let user_func = relay_result
-  let var = relay_result
-  let expr = relay_result
-  let binop = no_result
-  let unop = no_result
-  let value = no_result
-  let type_id = no_result
-  let id = no_result
 end
 
 module Ast_pipeline (Mapping : Type_ast_mapping) = struct
@@ -139,9 +169,9 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     new_ast, ast_result
 
 
-  let pipeline_id = Mapping.id
   let pipeline_type_id = Mapping.type_id
   let pipeline_value = Mapping.value
+  let pipeline_var = Mapping.var
   let pipeline_unop = Mapping.unop
   let pipeline_binop = Mapping.binop
 
@@ -171,73 +201,73 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         ~mapping:Mapping.expr
         ~new_ast_fun:(fun x -> Value x)
         value
-    | VarRead id ->
+    | VarRead var ->
       single_pipeline
-        ~sub_pipeline:pipeline_id
+        ~sub_pipeline:pipeline_var
         ~mapping:Mapping.expr
         ~new_ast_fun:(fun x -> VarRead x)
-        id
+        var
 
 
-  let pipeline_var = function
-    | VarNonInit (id, type_id) ->
-      let new_id, id_result = pipeline_id id in
+  let pipeline_var_statement = function
+    | VarNonInit (var, type_id) ->
+      let new_var, var_result = pipeline_var var in
       let new_type_id, type_id_result = pipeline_type_id type_id in
-      let result = Mapping.collect_results [ id_result; type_id_result ] in
-      Mapping.var (VarNonInit (new_id, new_type_id)) result
-    | VarInit (id, type_id, expr) ->
-      let new_id, id_result = pipeline_id id in
+      let result = Mapping.collect_results [ var_result; type_id_result ] in
+      Mapping.var_statement (VarNonInit (new_var, new_type_id)) result
+    | VarInit (var, type_id, expr) ->
+      let new_var, var_result = pipeline_var var in
       let new_type_id, type_id_result = pipeline_type_id type_id in
       let new_expr, expr_result = pipeline_expr expr in
       let result =
-        Mapping.collect_results [ id_result; type_id_result; expr_result ]
+        Mapping.collect_results [ var_result; type_id_result; expr_result ]
       in
-      Mapping.var (VarInit (new_id, new_type_id, new_expr)) result
-    | VarDecl (id, expr) ->
-      let new_id, id_result = pipeline_id id in
+      Mapping.var_statement (VarInit (new_var, new_type_id, new_expr)) result
+    | VarDecl (var, expr) ->
+      let new_var, var_result = pipeline_var var in
       let new_expr, expr_result = pipeline_expr expr in
-      let result = Mapping.collect_results [ id_result; expr_result ] in
-      Mapping.var (VarDecl (new_id, new_expr)) result
-    | VarAssign (id, expr) ->
-      let new_id, id_result = pipeline_id id in
+      let result = Mapping.collect_results [ var_result; expr_result ] in
+      Mapping.var_statement (VarDecl (new_var, new_expr)) result
+    | VarAssign (var, expr) ->
+      let new_var, var_result = pipeline_var var in
       let new_expr, expr_result = pipeline_expr expr in
-      let result = Mapping.collect_results [ id_result; expr_result ] in
-      Mapping.var (VarAssign (new_id, new_expr)) result
-    | Pre_inc id ->
+      let result = Mapping.collect_results [ var_result; expr_result ] in
+      Mapping.var_statement (VarAssign (new_var, new_expr)) result
+    | Pre_inc var ->
       single_pipeline
-        ~sub_pipeline:pipeline_id
-        ~mapping:Mapping.var
+        ~sub_pipeline:pipeline_var
+        ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Pre_inc x)
-        id
-    | Pre_dec id ->
+        var
+    | Pre_dec var ->
       single_pipeline
-        ~sub_pipeline:pipeline_id
-        ~mapping:Mapping.var
+        ~sub_pipeline:pipeline_var
+        ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Pre_dec x)
-        id
-    | Post_inc id ->
+        var
+    | Post_inc var ->
       single_pipeline
-        ~sub_pipeline:pipeline_id
-        ~mapping:Mapping.var
+        ~sub_pipeline:pipeline_var
+        ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Post_inc x)
-        id
-    | Post_dec id ->
+        var
+    | Post_dec var ->
       single_pipeline
-        ~sub_pipeline:pipeline_id
-        ~mapping:Mapping.var
+        ~sub_pipeline:pipeline_var
+        ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Post_dec x)
-        id
+        var
 
 
-  let pipeline_user_func (user_func : user_func) =
-    let new_name, name_result = pipeline_id user_func.name in
+  let pipeline_user_func (user_func : 'var user_func) =
+    let new_name, name_result = pipeline_var user_func.name in
     let new_args, args_result = pipeline_map ~f:pipeline_expr user_func.args in
     let result = Mapping.collect_results [ name_result; args_result ] in
     Mapping.user_func { name = new_name; args = new_args } result
 
 
   let pipeline_write_template write_template =
-    let new_file, file_result = pipeline_id write_template.file in
+    let new_file, file_result = pipeline_var write_template.file in
     let new_contents, contents_result = pipeline_expr write_template.contents in
     let result = Mapping.collect_results [ file_result; contents_result ] in
     Mapping.write_template { file = new_file; contents = new_contents } result
@@ -286,12 +316,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
   let pipeline_control = Mapping.control
 
   let pipeline_statement = function
-    | Var var ->
+    | Var_statement var_statement ->
       single_pipeline
-        ~sub_pipeline:pipeline_var
+        ~sub_pipeline:pipeline_var_statement
         ~mapping:Mapping.statement
-        ~new_ast_fun:(fun x -> Var x)
-        var
+        ~new_ast_fun:(fun x -> Var_statement x)
+        var_statement
     | Func_call func_call ->
       single_pipeline
         ~sub_pipeline:pipeline_func_call
@@ -307,9 +337,9 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
 
   let rec pipeline_for_loop for_loop =
-    let new_init, init_result = pipeline_var for_loop.init in
+    let new_init, init_result = pipeline_var_statement for_loop.init in
     let new_cond, cond_result = pipeline_expr for_loop.cond in
-    let new_iter, iter_result = pipeline_var for_loop.iter in
+    let new_iter, iter_result = pipeline_var_statement for_loop.iter in
     let new_contents, contents_result = pipeline_block for_loop.contents in
     let result =
       Mapping.collect_results
@@ -325,8 +355,8 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
 
   and pipeline_for_each for_each =
-    let new_item, item_result = pipeline_id for_each.item in
-    let new_iterator, iterator_result = pipeline_id for_each.iterator in
+    let new_item, item_result = pipeline_var for_each.item in
+    let new_iterator, iterator_result = pipeline_var for_each.iterator in
     let new_contents, contents_result = pipeline_block for_each.contents in
     let result =
       Mapping.collect_results [ item_result; iterator_result; contents_result ]
@@ -429,15 +459,15 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     Mapping.block new_contents block.annotations contents_result
 
 
-  and pipeline_param (id, type_id) =
-    let new_id, id_result = pipeline_id id in
+  and pipeline_param (var, type_id) =
+    let new_var, var_result = pipeline_var var in
     let new_type_id, type_id_result = pipeline_type_id type_id in
-    let result = Mapping.collect_results [ id_result; type_id_result ] in
-    Mapping.param (new_id, new_type_id) result
+    let result = Mapping.collect_results [ var_result; type_id_result ] in
+    Mapping.param (new_var, new_type_id) result
 
 
   and pipeline_func func =
-    let new_name, name_result = pipeline_id func.name in
+    let new_name, name_result = pipeline_var func.name in
     let new_param, param_result = pipeline_map ~f:pipeline_param func.params in
     let new_body, body_result = pipeline_block func.body in
     let new_return_type, return_type_result =
@@ -457,16 +487,17 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
 
   let pipeline_program program =
-    let new_package, package_result = pipeline_id program.package in
     let new_global_vars, global_vars_result =
-      pipeline_map ~f:pipeline_var program.global_vars
+      pipeline_map ~f:pipeline_var_statement program.global_vars
     in
     let new_funcs, funcs_result = pipeline_map ~f:pipeline_func program.funcs in
-    let result =
-      Mapping.collect_results
-        [ package_result; global_vars_result; funcs_result ]
-    in
-    Mapping.program new_package program.imports new_global_vars new_funcs result
+    let result = Mapping.collect_results [ global_vars_result; funcs_result ] in
+    Mapping.program
+      program.package
+      program.imports
+      new_global_vars
+      new_funcs
+      result
 
 
   let pipeline_ast program =

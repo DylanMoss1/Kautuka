@@ -1,7 +1,7 @@
 open! Core
 open Util.Extended_set
 
-type id = { name : string }
+type 'var var = 'var
 
 type type_id =
   | T_Int
@@ -33,103 +33,103 @@ type binop =
   | And
   | Or
 
-type expr =
-  | Unop of unop * expr
-  | Binop of expr * binop * expr
-  | Paren of expr
+type 'var expr =
+  | Unop of unop * 'var expr
+  | Binop of 'var expr * binop * 'var expr
+  | Paren of 'var expr
   | Value of value
-  | VarRead of id
+  | VarRead of 'var var
 
-type var =
-  | VarNonInit of id * type_id
-  | VarInit of id * type_id * expr
-  | VarDecl of id * expr
-  | VarAssign of id * expr
-  | Pre_inc of id
-  | Pre_dec of id
-  | Post_inc of id
-  | Post_dec of id
+type 'var var_statement =
+  | VarNonInit of 'var var * type_id
+  | VarInit of 'var var * type_id * 'var expr
+  | VarDecl of 'var var * 'var expr
+  | VarAssign of 'var var * 'var expr
+  | Pre_inc of 'var var
+  | Pre_dec of 'var var
+  | Post_inc of 'var var
+  | Post_dec of 'var var
 
-type user_func =
-  { name : id
-  ; args : expr list
+type 'var user_func =
+  { name : 'var var 
+  ; args : 'var expr list
   }
 
-type write_template =
-  { file : id
-  ; contents : expr
+type 'var write_template =
+  { file : 'var var
+  ; contents : 'var expr
   }
 
-type func_call =
-  | User_func of user_func
-  | Print of expr
+type 'var func_call =
+  | User_func of 'var user_func
+  | Print of 'var expr
   | Input
-  | Open of expr
-  | Read of expr
-  | Write of write_template
-  | Append of write_template
+  | Open of 'var expr
+  | Read of 'var expr
+  | Write of 'var write_template
+  | Append of 'var write_template
 
 type control =
   | Break
   | Continue
 
-type statement =
-  | Var of var
-  | Func_call of func_call
+type 'var statement =
+  | Var_statement of 'var var_statement
+  | Func_call of 'var func_call
   | Control of control
 
-type 'a for_loop =
-  { init : var
-  ; cond : expr
-  ; iter : var
-  ; contents : 'a block
+type ('block, 'var) for_loop =
+  { init : 'var var_statement
+  ; cond : 'var expr
+  ; iter : 'var var_statement
+  ; contents : ('block, 'var) block
   }
 
-and 'a for_each =
-  { item : id
-  ; iterator : id
-  ; contents : 'a block
+and ('block, 'var) for_each =
+  { item : 'var var
+  ; iterator : 'var var
+  ; contents : ('block, 'var) block
   }
 
-and 'a condition_template =
-  { condition : expr
-  ; contents : 'a block
+and ('block, 'var) condition_template =
+  { condition : 'var expr
+  ; contents : ('block, 'var) block
   }
 
-and 'a if_record =
-  { _if : 'a condition_template
-  ; else_if : 'a condition_template list
-  ; else_contents : 'a block option
+and ('block, 'var) if_record =
+  { _if : ('block, 'var) condition_template
+  ; else_if : ('block, 'var) condition_template list
+  ; else_contents : ('block, 'var) block option
   }
 
-and 'a structure =
-  | Block_struct of 'a block
-  | If of 'a if_record
-  | While of 'a condition_template
-  | For_loop of 'a for_loop
-  | For_each of 'a for_each
+and ('block, 'var) structure =
+  | Block_struct of ('block, 'var) block
+  | If of ('block, 'var) if_record
+  | While of ('block, 'var) condition_template
+  | For_loop of ('block, 'var) for_loop
+  | For_each of ('block, 'var) for_each
 
-and 'a command =
-  | Structure of 'a structure
-  | Statement of statement
+and ('block, 'var) command =
+  | Structure of ('block, 'var) structure
+  | Statement of 'var statement
 
-and 'a block =
-  { contents : 'a command list
-  ; annotations : 'a
+and ('block, 'var) block =
+  { contents : ('block, 'var) command list
+  ; annotations : 'block
   }
 
-and param = id * type_id
+and 'var param = 'var var * type_id
 
-and 'a func =
-  { name : id
-  ; params : param list
-  ; body : 'a block
+and ('block, 'var) func =
+  { name : 'var var
+  ; params : 'var param list
+  ; body : ('block, 'var) block
   ; return_type : type_id
   }
 
-type ('a, 'b) program =
-  { package : id
-  ; imports : 'b
-  ; global_vars : var list
-  ; funcs : 'a func list
+type ('block, 'var, 'import) program =
+  { package : string
+  ; imports : 'import
+  ; global_vars : 'var var_statement list
+  ; funcs : ('block, 'var) func list
   }
