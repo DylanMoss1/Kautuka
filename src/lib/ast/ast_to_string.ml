@@ -2,10 +2,7 @@ open Core
 open Ast_types
 
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
-
-let string_of_var ~string_of_var_annot (var : 'var) =
-  string_of_var_annot var
-
+let string_of_var ~string_of_var_annot (var : 'var) = string_of_var_annot var
 
 let string_of_type_id = function
   | T_Int -> "int"

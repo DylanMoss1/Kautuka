@@ -51,7 +51,7 @@ type 'var var_statement =
   | Post_dec of 'var var
 
 type 'var user_func =
-  { name : 'var var 
+  { name : 'var var
   ; args : 'var expr list
   }
 

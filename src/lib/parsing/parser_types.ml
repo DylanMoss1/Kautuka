@@ -28,13 +28,13 @@ module Block_type_annotation = struct
   let create block_type = block_type
 end
 
-module Var_name_annotation = struct 
+module Var_name_annotation = struct
   type t = { name : string }
 
-  let string_of_t t = t.name 
-
+  let string_of_t t = t.name
   let create name = { name }
-end 
+end
 
 module Parsed_ast =
-  Annotated_ast (Block_type_annotation) (Var_name_annotation) (Import_empty_annotation)
+  Annotated_ast (Block_type_annotation) (Var_name_annotation)
+    (Import_empty_annotation)

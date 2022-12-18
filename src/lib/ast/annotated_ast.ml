@@ -22,7 +22,7 @@ struct
   let string_of_t =
     string_of_program
       ~string_of_block_annot:Block_annotation.string_of_t
-      ~string_of_var_annot: Var_annotation.string_of_t
+      ~string_of_var_annot:Var_annotation.string_of_t
       ~string_of_import_annot:Import_annotation.string_of_t
 
 
@@ -32,12 +32,8 @@ struct
     block_annot
 
 
-  let create_var_annot (var_annot : Var_annotation.t) : var_annot =
-    var_annot
+  let create_var_annot (var_annot : Var_annotation.t) : var_annot = var_annot
 
-
-  let create_import_annot (import_annot : Import_annotation.t)
-      : import_annot
-    =
+  let create_import_annot (import_annot : Import_annotation.t) : import_annot =
     import_annot
 end
