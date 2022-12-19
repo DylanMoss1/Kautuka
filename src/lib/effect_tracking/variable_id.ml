@@ -14,14 +14,14 @@ type var_uuid =
   }
 [@@deriving compare, sexp_of, of_sexp]
 
-module Var_uuid_annotation : Type_item = struct
+module Var_uuid_annotation = struct
   type t = var_uuid [@@deriving compare, sexp_of, of_sexp]
 
   let string_of_t t = t.name
   let create name uuid = { name; uuid }
 end
 
-module String_item : Type_item = struct
+module String_item = struct
   include String
 
   let string_of_t t = t
@@ -45,17 +45,45 @@ module Unknown_variable_uuid_ast_mapping = struct
   type env_key = String_item.t
   type env_value = Var_uuid_annotation.t
 
+  let empty_env = Var_uuid_environment.empty
   let add_to_env = Var_uuid_environment.add_new_item
   let add_new_scope = Var_uuid_environment.add_new_scope
   let remove_scope = Var_uuid_environment.remove_scope
-  let get_key = Var_uuid_environment.get_value
-  let get_key_outside_scope = Var_uuid_environment.get_value_outside_scope
+  let get_value = Var_uuid_environment.get_value
+  let get_value_outside_scope = Var_uuid_environment.get_value_outside_scope
 
   include No_result
 end
 
 module Uuid_ast_mapping = struct
   include Default_ast_mapping (Unknown_variable_uuid_ast_mapping)
+
+  (* HANDLE EXCEPTIONS *)
+
+  exception Unbound_var of string
+
+  let var env var =
+    match Var_uuid_environment.get_value (String_item.create var.name) env with
+    | Some uuid -> env, { var with uuid }, empty_result ()
+    | None -> raise (Unbound_var var.name)
+
+
+  let block env block = add_new_scope env, block, empty_result ()
+
+  let var_statement env = function 
+  | 
+
+
+
+    (* let _ = Var_uuid_environment.get_value_outside_scope
+        (String_item.create var.name)
+        env
+  in 
+    with
+    | Some uuid -> env, { var with uuid }, empty_result ()
+    | None -> raise (Unbound_var var.name) *)
+
+  (* env.add_to_env var.name  *)
 end
 
 (* open! Core

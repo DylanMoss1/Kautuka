@@ -5,8 +5,9 @@ module Environment_ (Key : Type_item) (Value : Type_item) = struct
   type t = (Key.t * Value.t) list list
 
   exception Empty_scope
+  exception Key_in_inner_scope
 
-  let empty = [ [] ]
+  let empty () = [ [] ]
 
   let add_new_item key value t =
     match t with
@@ -36,7 +37,10 @@ module Environment_ (Key : Type_item) (Value : Type_item) = struct
 
 
   let get_value_outside_scope key = function
-    | _ :: tss -> get_value key tss
+    | ts :: tss ->
+      (match get_value_in_scope key ts with
+      | Some _ -> raise Key_in_inner_scope
+      | None -> get_value key tss)
     | [] -> raise Empty_scope
 
 

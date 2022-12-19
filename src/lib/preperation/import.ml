@@ -48,21 +48,21 @@ end
 module Import_ast_mapping = struct
   include Default_ast_mapping (Unknown_import_ast_mapping)
 
-  let func_call func_call (result : result) =
+  let func_call env func_call (result : result) =
     match func_call with
-    | User_func user_func -> User_func user_func, result
-    | Print expr -> Print expr, Import_some_annotation.add result I_Fmt
-    | Input -> Input, Import_some_annotation.add result I_Fmt
-    | Open expr -> Open expr, Import_some_annotation.add result I_Fmt
-    | Read expr -> Read expr, Import_some_annotation.add result I_Fmt
+    | User_func user_func -> env, User_func user_func, result
+    | Print expr -> env, Print expr, Import_some_annotation.add result I_Fmt
+    | Input -> env, Input, Import_some_annotation.add result I_Fmt
+    | Open expr -> env, Open expr, Import_some_annotation.add result I_Fmt
+    | Read expr -> env, Read expr, Import_some_annotation.add result I_Fmt
     | Write write_template ->
-      Write write_template, Import_some_annotation.add result I_Fmt
+      env, Write write_template, Import_some_annotation.add result I_Fmt
     | Append write_template ->
-      Append write_template, Import_some_annotation.add result I_Fmt
+      env, Append write_template, Import_some_annotation.add result I_Fmt
 
 
-  let program new_package _ new_global_vars new_funcs result =
-    ( { package = new_package
+  let program ~env ~new_package ~old_import:_ ~new_global_vars ~new_funcs ~result =
+    (env, { package = new_package
       ; imports = result
       ; global_vars = new_global_vars
       ; funcs = new_funcs

@@ -13,15 +13,14 @@ module type Type_ast_mapping = sig
   type new_var_annot
   type new_import_annot
 
-  (* val add_to_env :  *)
   val collect_results : result list -> result
   val empty_result : unit -> result
   val add_to_env : env_key -> env_value -> env -> env
   val empty_env : unit -> env
   val add_new_scope : env -> env
   val remove_scope : env -> env
-  val get_key : env_key -> env -> env_value option
-  val get_key_outside_scope : env_key -> env -> env_value option
+  val get_value : env_key -> env -> env_value option
+  val get_value_outside_scope : env_key -> env -> env_value option
   val type_id : env -> type_id -> env * type_id * result
   val value : env -> value -> env * value * result
   val var : env -> old_var_annot var -> env * new_var_annot var * result
@@ -103,10 +102,10 @@ module type Type_ast_mapping = sig
     -> env * (new_block_annot, new_var_annot) command * result
 
   val block
-    :  env
-    -> (new_block_annot, new_var_annot) command list
-    -> old_block_annot
-    -> result
+    :  env:env
+    -> new_contents:(new_block_annot, new_var_annot) command list
+    -> old_annotations:old_block_annot
+    -> result:result
     -> env * (new_block_annot, new_var_annot) block * result
 
   val param
@@ -122,12 +121,12 @@ module type Type_ast_mapping = sig
     -> env * (new_block_annot, new_var_annot) func * result
 
   val program
-    :  env
-    -> string
-    -> old_import_annot
-    -> new_var_annot var_statement list
-    -> (new_block_annot, new_var_annot) func list
-    -> result
+    :  env:env
+    -> new_package:string
+    -> old_import:old_import_annot
+    -> new_global_vars:new_var_annot var_statement list
+    -> new_funcs:(new_block_annot, new_var_annot) func list
+    -> result:result
     -> env * (new_block_annot, new_var_annot, new_import_annot) program * result
 end
 
@@ -143,11 +142,12 @@ module No_env = struct
   type env_key = unit
   type env_value = unit
 
+  let empty_env () = ()
   let add_to_env () () () = ()
   let add_new_scope () = ()
   let remove_scope () = ()
-  let get_key () () = None
-  let get_key_outside_scope () () = None
+  let get_value () () = None
+  let get_value_outside_scope () () = None
 end
 
 module type Type_ast_mapping_types = sig
@@ -164,46 +164,48 @@ module type Type_ast_mapping_types = sig
 
   val collect_results : result list -> result
   val empty_result : unit -> result
+  val empty_env : unit -> env 
   val add_to_env : env_key -> env_value -> env -> env
   val add_new_scope : env -> env
   val remove_scope : env -> env
-  val get_key : env_key -> env -> env_value option
-  val get_key_outside_scope : env_key -> env -> env_value option
+  val get_value : env_key -> env -> env_value option
+  val get_value_outside_scope : env_key -> env -> env_value option
 end
 
 module Default_ast_mapping (U : Type_ast_mapping_types) = struct
   include U
 
-  let no_result new_ast = new_ast, empty_result ()
-  let relay_result new_ast result = new_ast, result
-  let var = no_result
-  let type_id = no_result
-  let value = no_result
-  let unop = no_result
-  let binop = no_result
-  let expr = relay_result
-  let var_statement = relay_result
-  let user_func = relay_result
-  let write_template = relay_result
-  let func_call = relay_result
-  let control = no_result
-  let if_record = relay_result
-  let condition_template = relay_result
-  let for_each = relay_result
-  let for_loop = relay_result
-  let statement = relay_result
-  let structure = relay_result
-  let command = relay_result
+  let ignore_leaf env ast = env, ast, empty_result ()
+  let ignore_branch env ast result = env, ast, result
+  let var = ignore_leaf
+  let type_id = ignore_leaf
+  let value = ignore_leaf
+  let unop = ignore_leaf
+  let binop = ignore_leaf
+  let expr = ignore_branch
+  let var_statement = ignore_branch
+  let user_func = ignore_branch
+  let write_template = ignore_branch
+  let func_call = ignore_branch
+  let control = ignore_leaf
+  let if_record = ignore_branch
+  let condition_template = ignore_branch
+  let for_each = ignore_branch
+  let for_loop = ignore_branch
+  let statement = ignore_branch
+  let structure = ignore_branch
+  let command = ignore_branch
 
-  let block new_contents old_annotations result =
-    { contents = new_contents; annotations = old_annotations }, result
+  let block ~env ~new_contents ~old_annotations ~result =
+    env, { contents = new_contents; annotations = old_annotations }, result
 
 
-  let param = relay_result
-  let func = relay_result
+  let param = ignore_branch
+  let func = ignore_branch
 
-  let program new_package old_import new_global_vars new_funcs result =
-    ( { package = new_package
+  let program ~env ~new_package ~old_import ~new_global_vars ~new_funcs ~result =
+    ( env
+    , { package = new_package
       ; imports = old_import
       ; global_vars = new_global_vars
       ; funcs = new_funcs
@@ -566,7 +568,11 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     let env, new_contents, contents_result =
       pipeline_map_collect ~env ~f:pipeline_command block.contents
     in
-    Mapping.block env new_contents block.annotations contents_result
+    Mapping.block
+      ~env
+      ~new_contents
+      ~old_annotations:block.annotations
+      ~result:contents_result
 
 
   and pipeline_param env (var, type_id) =
@@ -608,12 +614,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     in
     let result = Mapping.collect_results [ global_vars_result; funcs_result ] in
     Mapping.program
-      env
-      program.package
-      program.imports
-      new_global_vars
-      new_funcs
-      result
+      ~env
+      ~new_package:program.package
+      ~old_import:program.imports
+      ~new_global_vars
+      ~new_funcs
+      ~result
 
 
   let pipeline_ast program =
