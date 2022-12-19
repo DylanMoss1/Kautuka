@@ -1,10 +1,5 @@
 open! Core
-
-module type Type_item = sig
-  type t [@@deriving of_sexp, sexp_of, compare]
-
-  val string_of_t : t -> string
-end
+open Item 
 
 module type Type_extended_set = sig
   include Set.S

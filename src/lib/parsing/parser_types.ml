@@ -7,7 +7,7 @@ type block_type =
   | Force_par
   | Force_seq
 
-module Import_empty_annotation = struct
+module Import_none_annotation = struct
   type t = unit
 
   let string_of_t _ = ""
@@ -37,4 +37,4 @@ end
 
 module Parsed_ast =
   Annotated_ast (Block_type_annotation) (Var_name_annotation)
-    (Import_empty_annotation)
+    (Import_none_annotation)

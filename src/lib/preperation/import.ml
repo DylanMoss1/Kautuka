@@ -24,10 +24,11 @@ module Import = struct
   let create x = x
 end
 
-module Import_set = Make_extended_set (Import)
+module Import_some_annotation = Make_extended_set (Import)
 
 module Import_ast =
-  Annotated_ast (Block_type_annotation) (Var_name_annotation) (Import_set)
+  Annotated_ast (Block_type_annotation) (Var_name_annotation)
+    (Import_some_annotation)
 
 module Unknown_import_ast_mapping = struct
   type result = Import_ast.import_annot
@@ -38,8 +39,10 @@ module Unknown_import_ast_mapping = struct
   type new_var_annot = Import_ast.var_annot
   type new_import_annot = Import_ast.import_annot
 
-  let collect_results = Import_set.union_of_list
-  let empty_result () = Import_set.empty
+  let collect_results = Import_some_annotation.union_of_list
+  let empty_result () = Import_some_annotation.empty
+
+  include No_env
 end
 
 module Import_ast_mapping = struct
@@ -48,13 +51,14 @@ module Import_ast_mapping = struct
   let func_call func_call (result : result) =
     match func_call with
     | User_func user_func -> User_func user_func, result
-    | Print expr -> Print expr, Import_set.add result I_Fmt
-    | Input -> Input, Import_set.add result I_Fmt
-    | Open expr -> Open expr, Import_set.add result I_Fmt
-    | Read expr -> Read expr, Import_set.add result I_Fmt
-    | Write write_template -> Write write_template, Import_set.add result I_Fmt
+    | Print expr -> Print expr, Import_some_annotation.add result I_Fmt
+    | Input -> Input, Import_some_annotation.add result I_Fmt
+    | Open expr -> Open expr, Import_some_annotation.add result I_Fmt
+    | Read expr -> Read expr, Import_some_annotation.add result I_Fmt
+    | Write write_template ->
+      Write write_template, Import_some_annotation.add result I_Fmt
     | Append write_template ->
-      Append write_template, Import_set.add result I_Fmt
+      Append write_template, Import_some_annotation.add result I_Fmt
 
 
   let program new_package _ new_global_vars new_funcs result =

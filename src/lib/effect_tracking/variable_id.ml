@@ -1,3 +1,65 @@
+open! Core
+open Util
+open Util.Environment_
+open Util.Item
+open Ast.Ast_types
+open Ast.Annotated_ast
+open Ast_pipeline
+open Parsing.Parser_types
+open Preperation.Import
+
+type var_uuid =
+  { name : string
+  ; uuid : Uuid.t
+  }
+[@@deriving compare, sexp_of, of_sexp]
+
+module Var_uuid_annotation : Type_item = struct
+  type t = var_uuid [@@deriving compare, sexp_of, of_sexp]
+
+  let string_of_t t = t.name
+  let create name uuid = { name; uuid }
+end
+
+module String_item : Type_item = struct
+  include String
+
+  let string_of_t t = t
+  let create t = t
+end
+
+module Var_uuid_environment = Environment_ (String_item) (Var_uuid_annotation)
+
+module Variable_uuid_ast =
+  Annotated_ast (Block_type_annotation) (Var_uuid_annotation)
+    (Import_some_annotation)
+
+module Unknown_variable_uuid_ast_mapping = struct
+  type old_block_annot = Import_ast.block_annot
+  type old_var_annot = Import_ast.var_annot
+  type old_import_annot = Import_ast.import_annot
+  type new_block_annot = Variable_uuid_ast.block_annot
+  type new_var_annot = Variable_uuid_ast.var_annot
+  type new_import_annot = Variable_uuid_ast.import_annot
+  type env = Var_uuid_environment.t
+  type env_key = String_item.t
+  type env_value = Var_uuid_annotation.t
+
+  let add_to_env = Var_uuid_environment.add_new_item
+  let add_new_scope = Var_uuid_environment.add_new_scope
+  let remove_scope = Var_uuid_environment.remove_scope
+  let get_key = Var_uuid_environment.get_value
+  let get_key_outside_scope = Var_uuid_environment.get_value_outside_scope
+
+  include No_result
+end
+
+module Uuid_ast_mapping = struct 
+  include Default_ast_mapping (Unknown_variable_uuid_ast_mapping) 
+
+  
+end 
+
 (* open! Core
 open Util.Extended_set
 open Ast.Ast_types
