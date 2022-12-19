@@ -54,11 +54,9 @@ module Unknown_variable_uuid_ast_mapping = struct
   include No_result
 end
 
-module Uuid_ast_mapping = struct 
-  include Default_ast_mapping (Unknown_variable_uuid_ast_mapping) 
-
-  
-end 
+module Uuid_ast_mapping = struct
+  include Default_ast_mapping (Unknown_variable_uuid_ast_mapping)
+end
 
 (* open! Core
 open Util.Extended_set

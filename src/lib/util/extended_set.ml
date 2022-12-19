@@ -1,5 +1,5 @@
 open! Core
-open Item 
+open Item
 
 module type Type_extended_set = sig
   include Set.S
