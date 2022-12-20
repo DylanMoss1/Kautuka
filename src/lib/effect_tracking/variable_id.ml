@@ -77,7 +77,6 @@ module Variable_uuid_ast_mapping = struct
     | Some uuid -> env, constructor { var with uuid }, result
     | None -> raise (Unbound_var var.name) *)
 
-
   let new_var env (var : old_var_annot) =
     let _ =
       Var_uuid_environment.get_value_outside_scope
@@ -85,12 +84,14 @@ module Variable_uuid_ast_mapping = struct
         env
     in
     let uuid = Uuid.create () in
-    add_to_env (String_item.create var.name) uuid env, { name = var.name ; uuid }, empty_result ()
+    ( add_to_env (String_item.create var.name) uuid env
+    , { name = var.name; uuid }
+    , empty_result () )
 
 
   let existing_var env (var : old_var_annot) =
     match Var_uuid_environment.get_value (String_item.create var.name) env with
-    | Some uuid -> env, { name = var.name ; uuid }, empty_result ()
+    | Some uuid -> env, { name = var.name; uuid }, empty_result ()
     | None -> raise (Unbound_var var.name)
 
   (* let expr env expr result =

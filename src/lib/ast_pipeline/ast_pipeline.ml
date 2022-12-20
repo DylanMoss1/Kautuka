@@ -180,6 +180,7 @@ module Default_ast_mapping (U : Type_ast_mapping_types) = struct
   let ignore_branch env ast result = env, ast, result
   let new_var = ignore_leaf
   let existing_var = ignore_leaf
+
   (* let existing_var = ignore_leaf  *)
   let type_id = ignore_leaf
   let value = ignore_leaf
