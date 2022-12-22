@@ -106,7 +106,7 @@ let string_of_func_call ~string_of_var_annot = function
     Fmt.str "fmt.Println(%s)" (string_of_expr ~string_of_var_annot expr)
   | Input -> "input()"
   | Open expr -> Fmt.str "open(%s)" (string_of_expr ~string_of_var_annot expr)
-  | Read expr -> Fmt.str "read(%s)" (string_of_expr ~string_of_var_annot expr)
+  | Read var -> Fmt.str "read(%s)" (string_of_var ~string_of_var_annot var)
   | Write write_template ->
     Fmt.str
       "write(%s)"

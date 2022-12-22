@@ -65,7 +65,7 @@ type 'var func_call =
   | Print of 'var expr
   | Input
   | Open of 'var expr
-  | Read of 'var expr
+  | Read of 'var var
   | Write of 'var write_template
   | Append of 'var write_template
 

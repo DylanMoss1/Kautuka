@@ -13,6 +13,11 @@ module type Type_ast_mapping = sig
   type new_var_annot
   type new_import_annot
 
+  type var_effect =
+    | Init
+    | Read
+    | Write
+
   val collect_results : result list -> result
   val empty_result : unit -> result
   val add_to_env : env_key -> env_value -> env -> env
@@ -23,8 +28,13 @@ module type Type_ast_mapping = sig
   val get_value_outside_scope : env_key -> env -> env_value option
   val type_id : env -> type_id -> env * type_id * result
   val value : env -> value -> env * value * result
-  val new_var : env -> old_var_annot -> env * new_var_annot var * result
-  val existing_var : env -> old_var_annot -> env * new_var_annot var * result
+
+  val var
+    :  env
+    -> old_var_annot
+    -> var_effect:var_effect
+    -> env * new_var_annot var * result
+
   val unop : env -> unop -> env * unop * result
   val binop : env -> binop -> env * binop * result
 
@@ -176,10 +186,14 @@ end
 module Default_ast_mapping (U : Type_ast_mapping_types) = struct
   include U
 
+  type var_effect =
+    | Init
+    | Read
+    | Write
+
   let ignore_leaf env ast = env, ast, empty_result ()
   let ignore_branch env ast result = env, ast, result
-  let new_var = ignore_leaf
-  let existing_var = ignore_leaf
+  let var env old_var_annot ~var_effect:_ = ignore_leaf env old_var_annot
 
   (* let existing_var = ignore_leaf  *)
   let type_id = ignore_leaf
@@ -242,11 +256,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   let pipeline_type_id = Mapping.type_id
   let pipeline_value = Mapping.value
-
-  let pipeline_var ~is_new =
-    if is_new then Mapping.new_var else Mapping.existing_var
-
-
+  let pipeline_var = Mapping.var
   let pipeline_unop = Mapping.unop
   let pipeline_binop = Mapping.binop
 
@@ -281,7 +291,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     | VarRead var ->
       single_pipeline
         ~env
-        ~sub_pipeline:(pipeline_var ~is_new:false)
+        ~sub_pipeline:(pipeline_var ~var_effect:Read)
         ~mapping:Mapping.expr
         ~new_ast_fun:(fun x -> VarRead x)
         var
@@ -289,12 +299,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   let pipeline_var_statement env = function
     | VarNonInit (var, type_id) ->
-      let env, new_var, var_result = pipeline_var ~is_new:true env var in
+      let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_type_id, type_id_result = pipeline_type_id env type_id in
       let result = Mapping.collect_results [ var_result; type_id_result ] in
       Mapping.var_statement env (VarNonInit (new_var, new_type_id)) result
     | VarInit (var, type_id, expr) ->
-      let env, new_var, var_result = pipeline_var ~is_new:true env var in
+      let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_type_id, type_id_result = pipeline_type_id env type_id in
       let env, new_expr, expr_result = pipeline_expr env expr in
       let result =
@@ -305,40 +315,40 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         (VarInit (new_var, new_type_id, new_expr))
         result
     | VarDecl (var, expr) ->
-      let env, new_var, var_result = pipeline_var ~is_new:true env var in
+      let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_expr, expr_result = pipeline_expr env expr in
       let result = Mapping.collect_results [ var_result; expr_result ] in
       Mapping.var_statement env (VarDecl (new_var, new_expr)) result
     | VarAssign (var, expr) ->
-      let env, new_var, var_result = pipeline_var ~is_new:true env var in
+      let env, new_var, var_result = pipeline_var ~var_effect:Write env var in
       let env, new_expr, expr_result = pipeline_expr env expr in
       let result = Mapping.collect_results [ var_result; expr_result ] in
       Mapping.var_statement env (VarAssign (new_var, new_expr)) result
     | Pre_inc var ->
       single_pipeline
         ~env
-        ~sub_pipeline:(pipeline_var ~is_new:false)
+        ~sub_pipeline:(pipeline_var ~var_effect:Write)
         ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Pre_inc x)
         var
     | Pre_dec var ->
       single_pipeline
         ~env
-        ~sub_pipeline:(pipeline_var ~is_new:false)
+        ~sub_pipeline:(pipeline_var ~var_effect:Write)
         ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Pre_dec x)
         var
     | Post_inc var ->
       single_pipeline
         ~env
-        ~sub_pipeline:(pipeline_var ~is_new:false)
+        ~sub_pipeline:(pipeline_var ~var_effect:Write)
         ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Post_inc x)
         var
     | Post_dec var ->
       single_pipeline
         ~env
-        ~sub_pipeline:(pipeline_var ~is_new:false)
+        ~sub_pipeline:(pipeline_var ~var_effect:Write)
         ~mapping:Mapping.var_statement
         ~new_ast_fun:(fun x -> Post_dec x)
         var
@@ -346,7 +356,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   let pipeline_user_func env (user_func : 'var user_func) =
     let env, new_name, name_result =
-      pipeline_var ~is_new:false env user_func.name
+      pipeline_var ~var_effect:Read env user_func.name
     in
     let env, new_args, args_result =
       pipeline_map_collect ~env ~f:pipeline_expr user_func.args
@@ -357,7 +367,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   let pipeline_write_template env write_template =
     let env, new_file, file_result =
-      pipeline_var ~is_new:false env write_template.file
+      pipeline_var ~var_effect:Write env write_template.file
     in
     let env, new_contents, contents_result =
       pipeline_expr env write_template.contents
@@ -392,13 +402,13 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         ~mapping:Mapping.func_call
         ~new_ast_fun:(fun x -> Open x)
         expr
-    | Read expr ->
+    | Read var ->
       single_pipeline
         ~env
-        ~sub_pipeline:pipeline_expr
+        ~sub_pipeline:(pipeline_var ~var_effect:Read)
         ~mapping:Mapping.func_call
         ~new_ast_fun:(fun x -> Read x)
-        expr
+        var
     | Write write_template ->
       single_pipeline
         ~env
@@ -464,10 +474,10 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   and pipeline_for_each env for_each =
     let env, new_item, item_result =
-      pipeline_var ~is_new:true env for_each.item
+      pipeline_var ~var_effect:Init env for_each.item
     in
     let env, new_iterator, iterator_result =
-      pipeline_var ~is_new:false env for_each.iterator
+      pipeline_var ~var_effect:Read env for_each.iterator
     in
     let env, new_contents, contents_result =
       pipeline_block env for_each.contents
@@ -592,14 +602,16 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
 
   and pipeline_param env (var, type_id) =
-    let env, new_var, var_result = pipeline_var ~is_new:true env var in
+    let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
     let env, new_type_id, type_id_result = pipeline_type_id env type_id in
     let result = Mapping.collect_results [ var_result; type_id_result ] in
     Mapping.param env (new_var, new_type_id) result
 
 
   and pipeline_func env func =
-    let env, new_name, name_result = pipeline_var ~is_new:true env func.name in
+    let env, new_name, name_result =
+      pipeline_var ~var_effect:Init env func.name
+    in
     let env, new_param, param_result =
       pipeline_map_collect ~env ~f:pipeline_param func.params
     in

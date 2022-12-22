@@ -166,7 +166,7 @@ func_call:
 | PRINT LPAREN arg=expr RPAREN { Print(arg) }
 | INPUT LPAREN RPAREN { Input }
 | OPEN LPAREN arg=expr RPAREN { Open(arg) } 
-| READ LPAREN arg=expr RPAREN { Read(arg) }
+| READ LPAREN arg=var RPAREN { Read(arg) }
 | WRITE LPAREN arg1=var COMMA arg2=expr RPAREN { Write( { file = arg1; contents = arg2 } ) } 
 | APPEND LPAREN arg1=var COMMA arg2=expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
 
