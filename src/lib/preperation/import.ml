@@ -61,7 +61,7 @@ end
 module Import_ast_mapping = struct
   include Default_ast_mapping (Unknown_import_ast_mapping)
 
-  let add_result = Import_some_annotation.add 
+  let add_result = Import_some_annotation.add
 
   let func_call env func_call result =
     match func_call with
@@ -70,8 +70,7 @@ module Import_ast_mapping = struct
     | Input -> env, Input, add_result result I_Fmt
     | Open expr -> env, Open expr, add_result result I_Fmt
     | Read expr -> env, Read expr, add_result result I_Fmt
-    | Write write_template ->
-      env, Write write_template, add_result result I_Fmt
+    | Write write_template -> env, Write write_template, add_result result I_Fmt
     | Append write_template ->
       env, Append write_template, add_result result I_Fmt
 

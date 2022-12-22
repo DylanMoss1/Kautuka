@@ -60,15 +60,15 @@ module Alpha_var_ast_mapping = struct
   exception Unbound_var of string
 
   let var env (var : old_var_annot) ~var_effect =
-    match var_effect with 
-    | Init -> (let _ = Alpha_var_environment.get_value_outside_scope var.name env in
-    let alpha = Alpha.create () in
-    add_to_env var.name alpha env, { name = var.name; alpha }, empty_result ())
-    | Read | Write -> (match Alpha_var_environment.get_value var.name env with
-    | Some alpha -> env, { name = var.name; alpha }, empty_result ()
-    | None -> raise (Unbound_var var.name))
-
-
+    match var_effect with
+    | Init ->
+      let _ = Alpha_var_environment.get_value_outside_scope var.name env in
+      let alpha = Alpha.create () in
+      add_to_env var.name alpha env, { name = var.name; alpha }, empty_result ()
+    | Read | Write ->
+      (match Alpha_var_environment.get_value var.name env with
+      | Some alpha -> env, { name = var.name; alpha }, empty_result ()
+      | None -> raise (Unbound_var var.name))
 end
 
 module Alpha_var_ast_pipeline = Ast_pipeline (Alpha_var_ast_mapping)
