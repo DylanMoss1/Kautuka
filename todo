@@ -1,0 +1,5 @@
+- Some AST variants have wrong capitalization 
+- Handle thrown errors (from variable_id)
+- Abstract out old_annot and new_annot 
+- Abstract out env and result in same manner
+- If alpha is no longer needed, variable_id can be merged into effect tracking 
