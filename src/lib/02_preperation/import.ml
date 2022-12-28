@@ -24,7 +24,7 @@ module Import = struct
   let create x = x
 end
 
-module Import_set = struct
+module Import_annotation = struct
   include Make_extended_set (Import)
 
   let string_of_t t =
@@ -37,32 +37,16 @@ module Import_set = struct
             (List.map ~f:Import.string_of_t (elements t))))
 end
 
-module Import_some_annotation = Import_set
-
 module Import_ast =
   Annotated_ast (Block_type_annotation) (Var_name_annotation)
-    (Import_some_annotation)
-
-module Unknown_import_ast_mapping = struct
-  type old_block_annot = Parsed_ast.block_annot
-  type old_var_annot = Parsed_ast.var_annot
-  type old_import_annot = Parsed_ast.import_annot
-  type new_block_annot = Import_ast.block_annot
-  type new_var_annot = Import_ast.var_annot
-  type new_import_annot = Import_ast.import_annot
-  type result = Import_set.t
-
-  let collect_results = Import_set.union_of_list
-  let union_results = Import_set.union
-  let empty_result () = Import_set.empty
-
-  include No_env
-end
+    (Import_annotation)
 
 module Import_ast_mapping = struct
-  include Default_ast_mapping (Unknown_import_ast_mapping)
+  include
+    Default_ast_mapping (Parsed_ast) (Import_ast) (Empty_environment)
+      (Import_annotation)
 
-  let add_result = Import_some_annotation.add
+  let add_result = Import_annotation.add
 
   let func_call env func_call result =
     match func_call with

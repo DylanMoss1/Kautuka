@@ -9,6 +9,16 @@ module type Type_annotation = sig
   val string_of_t : t -> string
 end
 
+module type Type_annotated_ast = sig
+  type block_annot
+  type var_annot
+  type import_annot
+  type t
+
+  val string_of_t : t -> string
+  val create : (block_annot, var_annot, import_annot) program -> t
+end
+
 module Annotated_ast
     (Block_annotation : Type_annotation)
     (Var_annotation : Type_annotation)
@@ -31,6 +41,8 @@ struct
   let create_block_annot (block_annot : Block_annotation.t) : block_annot =
     block_annot
 
+
+    
 
   let create_var_annot (var_annot : Var_annotation.t) : var_annot = var_annot
 

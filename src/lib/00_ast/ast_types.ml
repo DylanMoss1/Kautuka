@@ -8,6 +8,7 @@ type type_id =
   | T_Bool
   | T_String
   | T_Unit
+[@@deriving of_sexp, sexp_of, compare]
 
 type value =
   | Int of int
