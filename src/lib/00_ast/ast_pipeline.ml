@@ -489,7 +489,8 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       pipeline_block env for_each.contents
     in
     let result =
-      Mapping.join_results_list [ item_result; iterator_result; contents_result ]
+      Mapping.join_results_list
+        [ item_result; iterator_result; contents_result ]
     in
     Mapping.for_each
       env
@@ -646,7 +647,9 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     let env, new_funcs, funcs_result =
       pipeline_map_collect ~env ~f:pipeline_func program.funcs
     in
-    let result = Mapping.join_results_list [ global_vars_result; funcs_result ] in
+    let result =
+      Mapping.join_results_list [ global_vars_result; funcs_result ]
+    in
     Mapping.program
       ~env
       ~new_package:program.package

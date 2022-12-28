@@ -42,8 +42,6 @@ struct
     block_annot
 
 
-    
-
   let create_var_annot (var_annot : Var_annotation.t) : var_annot = var_annot
 
   let create_import_annot (import_annot : Import_annotation.t) : import_annot =
