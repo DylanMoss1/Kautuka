@@ -64,8 +64,6 @@ rule read_token = parse
   | "+"                              { PLUS }
   | "-"                              { MINUS }
   | "*"                              { MULT }
-  | "/"                              { DIV }
-  | "%"                              { MOD }
   | "=="                             { EQ }
   | "!="                             { NE }
   | "<"                              { LT }

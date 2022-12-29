@@ -32,7 +32,7 @@ func main() {
 	// Default
 	for n := 0; n <= 5; n++ {
 		// Default
-		if n%2 == 0 {
+		if n == 0 {
 			// Default
 			continue
 		}

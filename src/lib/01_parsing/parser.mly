@@ -29,7 +29,7 @@
 %token WHILE FOR
 %token BREAK CONTINUE
 %token INCREMENT DECREMENT
-%token PLUS MINUS MULT DIV MOD EQ NE LT LE GT GE AND OR NOT 
+%token PLUS MINUS MULT EQ NE LT LE GT GE AND OR NOT 
 %token PRINT INPUT OPEN READ WRITE APPEND 
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.import_annot) program> program
 %type <string> package
@@ -60,7 +60,7 @@
 %type <Parsed_ast.var_annot param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 
 %left MINUS PLUS
-%left MULT DIV MOD
+%left MULT
 %left EQ NE LT LE GT GE
 %left AND OR  
 %nonassoc NOT
@@ -132,6 +132,7 @@ expr:
 | LPAREN expr=expr RPAREN { Paren(expr) } 
 | value=value { Value(value) }
 | var=var { VarRead(var) }
+| func_call=func_call { Func_call(func_call) }
 
 %inline unop: 
 | NOT { Not }
@@ -141,8 +142,6 @@ expr:
 | PLUS { Plus }
 | MINUS { B_Minus }
 | MULT { Mult }
-| DIV { Div }
-| MOD { Mod }
 | LT { Lt }
 | LE { Le }
 | GT { Gt }
@@ -154,8 +153,8 @@ expr:
 
 statement:
 | var_statement=var_statement { Var_statement(var_statement) }
-| func_call=func_call { Func_call(func_call) }
 | control=control { Control(control) }
+| expr=expr { Expr(expr) }
 
 control: 
 | BREAK { Break }

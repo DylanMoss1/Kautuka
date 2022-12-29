@@ -23,8 +23,6 @@ type binop =
   | Plus
   | B_Minus
   | Mult
-  | Div
-  | Mod
   | Lt
   | Le
   | Gt
@@ -34,12 +32,32 @@ type binop =
   | And
   | Or
 
-type 'var expr =
+type 'var user_func =
+  { name : 'var var
+  ; args : 'var expr list
+  }
+
+and 'var write_template =
+  { file : 'var var
+  ; contents : 'var expr
+  }
+
+and 'var func_call =
+  | User_func of 'var user_func
+  | Print of 'var expr
+  | Input
+  | Open of 'var expr
+  | Read of 'var var
+  | Write of 'var write_template
+  | Append of 'var write_template
+
+and 'var expr =
   | Unop of unop * 'var expr
   | Binop of 'var expr * binop * 'var expr
   | Paren of 'var expr
   | Value of value
   | VarRead of 'var var
+  | Func_call of 'var func_call
 
 type 'var var_statement =
   | VarNonInit of 'var var * type_id
@@ -51,33 +69,14 @@ type 'var var_statement =
   | Post_inc of 'var var
   | Post_dec of 'var var
 
-type 'var user_func =
-  { name : 'var var
-  ; args : 'var expr list
-  }
-
-type 'var write_template =
-  { file : 'var var
-  ; contents : 'var expr
-  }
-
-type 'var func_call =
-  | User_func of 'var user_func
-  | Print of 'var expr
-  | Input
-  | Open of 'var expr
-  | Read of 'var var
-  | Write of 'var write_template
-  | Append of 'var write_template
-
 type control =
   | Break
   | Continue
 
 type 'var statement =
   | Var_statement of 'var var_statement
-  | Func_call of 'var func_call
   | Control of control
+  | Expr of 'var expr
 
 type ('block, 'var) for_loop =
   { init : 'var var_statement

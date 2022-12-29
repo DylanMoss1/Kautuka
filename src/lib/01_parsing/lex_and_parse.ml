@@ -45,8 +45,6 @@ let pprint_tokens ppf = function
   | PLUS -> Fmt.pf ppf "PLUS@."
   | MINUS -> Fmt.pf ppf "MINUS@."
   | MULT -> Fmt.pf ppf "MULT@."
-  | DIV -> Fmt.pf ppf "DIV@."
-  | MOD -> Fmt.pf ppf "MOD@."
   | EQ -> Fmt.pf ppf "EQ@."
   | NE -> Fmt.pf ppf "NE@."
   | LT -> Fmt.pf ppf "LT@."

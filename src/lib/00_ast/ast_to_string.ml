@@ -20,8 +20,6 @@ let string_of_binop = function
   | Plus -> "+"
   | B_Minus -> "-"
   | Mult -> "*"
-  | Div -> "/"
-  | Mod -> "%"
   | Lt -> "<"
   | Le -> "<="
   | Gt -> ">"
@@ -38,7 +36,41 @@ let string_of_value = function
   | String s -> Fmt.str "\"%s\"" s
 
 
-let rec string_of_expr ~string_of_var_annot = function
+let rec string_of_user_func ~string_of_var_annot (user_func : 'var user_func) =
+  Fmt.str
+    "%s(%s)"
+    (string_of_var ~string_of_var_annot user_func.name)
+    (map_concat
+       ~sep:", "
+       ~f:(string_of_expr ~string_of_var_annot)
+       user_func.args)
+
+
+and string_of_write_template ~string_of_var_annot write_template =
+  Fmt.str
+    "%s, %s"
+    (string_of_var ~string_of_var_annot write_template.file)
+    (string_of_expr ~string_of_var_annot write_template.contents)
+
+
+and string_of_func_call ~string_of_var_annot = function
+  | User_func user_func -> string_of_user_func ~string_of_var_annot user_func
+  | Print expr ->
+    Fmt.str "fmt.Println(%s)" (string_of_expr ~string_of_var_annot expr)
+  | Input -> "input()"
+  | Open expr -> Fmt.str "open(%s)" (string_of_expr ~string_of_var_annot expr)
+  | Read var -> Fmt.str "read(%s)" (string_of_var ~string_of_var_annot var)
+  | Write write_template ->
+    Fmt.str
+      "write(%s)"
+      (string_of_write_template ~string_of_var_annot write_template)
+  | Append write_template ->
+    Fmt.str
+      "append(%s)"
+      (string_of_write_template ~string_of_var_annot write_template)
+
+
+and string_of_expr ~string_of_var_annot = function
   | Unop (unop, expr) ->
     Fmt.str
       "%s %s"
@@ -51,8 +83,9 @@ let rec string_of_expr ~string_of_var_annot = function
       (string_of_binop binop)
       (string_of_expr ~string_of_var_annot expr2)
   | Paren expr -> Fmt.str "(%s)" (string_of_expr ~string_of_var_annot expr)
-  | Value value -> Fmt.str "%s" (string_of_value value)
-  | VarRead var -> Fmt.str "%s" (string_of_var ~string_of_var_annot var)
+  | Value value -> string_of_value value
+  | VarRead var -> string_of_var ~string_of_var_annot var
+  | Func_call func_call -> string_of_func_call ~string_of_var_annot func_call
 
 
 let string_of_var_statement ~string_of_var_annot = function
@@ -83,40 +116,6 @@ let string_of_var_statement ~string_of_var_annot = function
   | Post_dec var -> Fmt.str "%s--" (string_of_var ~string_of_var_annot var)
 
 
-let string_of_user_func ~string_of_var_annot (user_func : 'var user_func) =
-  Fmt.str
-    "%s(%s)"
-    (string_of_var ~string_of_var_annot user_func.name)
-    (map_concat
-       ~sep:", "
-       ~f:(string_of_expr ~string_of_var_annot)
-       user_func.args)
-
-
-let string_of_write_template ~string_of_var_annot write_template =
-  Fmt.str
-    "%s, %s"
-    (string_of_var ~string_of_var_annot write_template.file)
-    (string_of_expr ~string_of_var_annot write_template.contents)
-
-
-let string_of_func_call ~string_of_var_annot = function
-  | User_func user_func -> string_of_user_func ~string_of_var_annot user_func
-  | Print expr ->
-    Fmt.str "fmt.Println(%s)" (string_of_expr ~string_of_var_annot expr)
-  | Input -> "input()"
-  | Open expr -> Fmt.str "open(%s)" (string_of_expr ~string_of_var_annot expr)
-  | Read var -> Fmt.str "read(%s)" (string_of_var ~string_of_var_annot var)
-  | Write write_template ->
-    Fmt.str
-      "write(%s)"
-      (string_of_write_template ~string_of_var_annot write_template)
-  | Append write_template ->
-    Fmt.str
-      "append(%s)"
-      (string_of_write_template ~string_of_var_annot write_template)
-
-
 let string_of_control = function
   | Continue -> "continue"
   | Break -> "break"
@@ -126,7 +125,7 @@ let string_of_statement ~string_of_var_annot = function
   | Control control -> string_of_control control
   | Var_statement var_statement ->
     string_of_var_statement ~string_of_var_annot var_statement
-  | Func_call func_call -> string_of_func_call ~string_of_var_annot func_call
+  | Expr expr -> string_of_expr ~string_of_var_annot expr
 
 
 let rec string_of_for_loop ~string_of_block_annot ~string_of_var_annot for_loop =
