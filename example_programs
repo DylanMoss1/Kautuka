@@ -1,0 +1,7 @@
+WordLetterCount 
+
+Find word in file system (requires disjoin file arrays)
+
+Calculate quartiles of an array ("rewrite of stats")
+https://github.com/montanaflynn/stats/blob/v0.6.6/quartile.go
+
