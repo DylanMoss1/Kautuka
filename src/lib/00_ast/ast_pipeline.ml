@@ -8,7 +8,6 @@ module type Type_ast_mapping = sig
   type env
   type env_key
   type env_value
-  type env_scope_tag
   type result
   type old_block_annot
   type old_var_annot
@@ -24,11 +23,10 @@ module type Type_ast_mapping = sig
 
   val empty_env : env
   val add_to_env : env_key -> env_value -> env -> env
-  val add_new_scope : env -> env_scope_tag -> env
-  val remove_scope : env -> env * env_scope_tag 
+  val add_new_scope : env -> env
+  val remove_scope : env -> env
   val get_value : env_key -> env -> env_value option
   val get_value_outside_scope : env_key -> env -> env_value option
-  val empty_scope_tag : env_scope_tag
   val empty_result : result
   val join_results : result -> result -> result
   val join_results_list : result list -> result
@@ -123,7 +121,6 @@ module type Type_ast_mapping = sig
     -> new_contents:(new_block_annot, new_var_annot) command list
     -> old_annotations:old_block_annot
     -> result:result
-    -> scope_tag:env_scope_tag
     -> env * (new_block_annot, new_var_annot) block * result
 
   val param
@@ -152,15 +149,13 @@ module Empty_environment = struct
   type t = unit
   type key = unit
   type value = unit
-  type scope_tag = unit 
 
   let empty = ()
   let add_new_item () () () = ()
-  let add_new_scope () () = ()
-  let remove_scope () = (), ()
+  let add_new_scope () = ()
+  let remove_scope () = ()
   let get_value () () = None
   let get_value_outside_scope () () = None
-  let empty_scope_tag = ()
 end
 
 module Empty_result = struct
@@ -179,7 +174,6 @@ struct
   type env = Env.t
   type env_key = Env.key
   type env_value = Env.value
-  type env_scope_tag = Env.scope_tag 
   type result = Result.t
   type old_block_annot = Old_ast.block_annot
   type old_var_annot = Old_ast.var_annot
@@ -194,7 +188,6 @@ struct
   let remove_scope = Env.remove_scope
   let get_value = Env.get_value
   let get_value_outside_scope = Env.get_value_outside_scope
-  let empty_scope_tag = Env.empty_scope_tag 
   let empty_result = Result.empty
   let join_results = Result.join
   let join_results_list = List.fold_left ~init:empty_result ~f:join_results
@@ -476,7 +469,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     let env, new_cond, cond_result = pipeline_expr env for_loop.cond in
     let env, new_iter, iter_result = pipeline_var_statement env for_loop.iter in
     let env, new_contents, contents_result =
-      pipeline_block env for_loop.contents Mapping.empty_scope_tag
+      pipeline_block env for_loop.contents
     in
     let result =
       Mapping.join_results_list
@@ -500,7 +493,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       pipeline_var ~var_effect:Read env for_each.iterator
     in
     let env, new_contents, contents_result =
-      pipeline_block env for_each.contents Mapping.empty_scope_tag
+      pipeline_block env for_each.contents
     in
     let result =
       Mapping.join_results_list
@@ -517,7 +510,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       pipeline_expr env condition_template.condition
     in
     let env, new_contents, contents_result =
-      pipeline_block env condition_template.contents Mapping.empty_scope_tag
+      pipeline_block env condition_template.contents
     in
     let result =
       Mapping.join_results_list [ condition_result; contents_result ]
@@ -539,7 +532,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       match if_record.else_contents with
       | Some else_contents ->
         let env, else_contents, else_contents_result =
-          pipeline_block env else_contents Mapping.empty_scope_tag
+          pipeline_block env else_contents
         in
         env, Some else_contents, else_contents_result
       | None -> env, None, Mapping.empty_result
@@ -609,18 +602,17 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         statement
 
 
-  and pipeline_block env block ~scope_tag =
-    let env = Mapping.add_new_scope env scope_tag in
+  and pipeline_block env block =
+    let env = Mapping.add_new_scope env in
     let env, new_contents, contents_result =
       pipeline_map_collect ~env ~f:pipeline_command block.contents
     in
-    let env, scope_tag = Mapping.remove_scope env in
+    let env = Mapping.remove_scope env in
     Mapping.block
       ~env
       ~new_contents
       ~old_annotations:block.annotations
       ~result:contents_result
-      ~scope_tag 
 
 
   and pipeline_param env (var, type_id) =
@@ -637,7 +629,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     let env, new_param, param_result =
       pipeline_map_collect ~env ~f:pipeline_param func.params
     in
-    let env, new_body, body_result = pipeline_block env func.body ~scope_tag:Mapping.empty_scope_tag in
+    let env, new_body, body_result = pipeline_block env func.body in
     let env, new_return_type, return_type_result =
       pipeline_type_id env func.return_type
     in

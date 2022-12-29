@@ -52,7 +52,6 @@ module Runtime_cost = struct
   let join = sum
 end
 
-
 module Cost_type_ast =
   Annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
     (Import_annotation)
@@ -63,9 +62,6 @@ module Cost_type_ast_mapping = struct
       (Cost_type_environment)
       (Runtime_cost)
 end
-
-
-
 
 type cost_type_var =
   { name : string
@@ -90,112 +86,112 @@ module Cost_type_ast_mapping = struct
       (Cost_type_environment)
       (Empty_result)
 
-
   let type_cost_of_unop expr = function
-  | Not ->
-    (match expr with
-    | C_Bool -> C_Bool
-    | _ -> raise Type_error)
-  | U_Minus ->
-    (match expr with
-    | C_Int type_cost -> C_Int (Cost.negate type_cost)
-    | _ -> raise Type_error)
-
-
-let bin_op_int_to_bool expr1 expr2 =
-  match expr1, expr2 with
-  | C_Int _, C_Int _ -> C_Bool
-  | _ -> raise Type_error
-
-
-let bin_op_bool_to_bool expr1 expr2 =
-  match expr1, expr2 with
-  | C_Bool, C_Bool -> C_Bool
-  | _ -> raise Type_error
-
-
-let type_cost_of_binop expr1 expr2 = function
-  | Plus ->
-    (match expr1, expr2 with
-    | C_Int type_cost1, C_Int type_cost2 ->
-      C_Int (Cost.sum type_cost1 type_cost2)
-    | C_String type_cost1, C_String type_cost2 ->
-      C_String (Cost.sum type_cost1 type_cost2)
-    | _ -> raise Type_error)
-  | B_Minus ->
-    (match expr1, expr2 with
-    | C_Int type_cost1, C_Int type_cost2 ->
-      C_Int (Cost.subtract type_cost1 type_cost2)
-    | _ -> raise Type_error)
-  | Mult ->
-    (match expr1, expr2 with
-    | C_Int type_cost1, C_Int type_cost2 ->
-      C_Int (Cost.multiply type_cost1 type_cost2)
-    | _ -> raise Type_error)
-  | Lt -> bin_op_int_to_bool expr1 expr2
-  | Le -> bin_op_int_to_bool expr1 expr2
-  | Gt -> bin_op_int_to_bool expr1 expr2
-  | Ge -> bin_op_int_to_bool expr1 expr2
-  | Eq -> bin_op_int_to_bool expr1 expr2
-  | Ne -> bin_op_int_to_bool expr1 expr2
-  | And -> bin_op_bool_to_bool expr1 expr2
-  | Or -> bin_op_bool_to_bool expr1 expr2
-
-
-let type_cost_of_value = function
-  | Int i -> C_Int (Cost.create_int_cost (Integer_bound.create (i, i)))
-  | Bool _ -> C_Bool
-  | String s ->
-    let len = String.length s in
-    C_String (Cost.create_int_cost (Integer_bound.create (len, len)))
-
-
-let rec type_cost_of_user_func _ _ = C_Unit
-
-and type_cost_of_func_call env = function
-  | User_func user_func -> type_cost_of_user_func env user_func
-  | Print expr ->
-    (match type_cost_of_expr env expr with
-    | C_String _ | C_Int _ -> C_Unit
-    | _ -> raise Type_error)
-  | Input ->
-    C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
-    (* CHANGE INPUT *)
-  | Open expr ->
-    (match type_cost_of_expr env expr with
-    | C_String _ -> C_File
-    | _ -> raise Type_error)
-  | Read var ->
-    (match Cost_type_environment.get_value var env with
-    | Some type_cost ->
-      (match type_cost with
-      | C_File -> C_String
+    | Not ->
+      (match expr with
+      | C_Bool -> C_Bool
       | _ -> raise Type_error)
-    | None -> raise (Unbound_var var.name))
-  | Write { file; contents } ->
-    (match type_cost_of_expr env file, type_cost_of_expr env contents with
-    | C_File, C_String _ -> C_Unit
-    | _ -> raise Type_error)
-  | Append { file; contents } ->
-    (match type_cost_of_expr env file, type_cost_of_expr env contents with
-    | C_File, C_String _ -> C_Unit
-    | _ -> raise Type_error)
+    | U_Minus ->
+      (match expr with
+      | C_Int type_cost -> C_Int (Cost.negate type_cost)
+      | _ -> raise Type_error)
 
 
-and type_cost_of_expr env = function
-  | Unop (unop, expr) -> type_cost_of_unop (type_cost_of_expr env expr) unop
-  | Binop (expr1, binop, expr2) ->
-    type_cost_of_binop (type_cost_of_expr env expr1) (type_cost_of_expr env expr2) binop
-  | Paren expr -> type_cost_of_expr env expr
-  | Value value -> type_cost_of_value value
-  | VarRead var ->
-    (match Cost_type_environment.get_value var env with
-    | Some type_cost -> type_cost
-    | None -> raise (Unbound_var var.name))
-  | Func_call func_call -> type_cost_of_func_call env func_call
+  let bin_op_int_to_bool expr1 expr2 =
+    match expr1, expr2 with
+    | C_Int _, C_Int _ -> C_Bool
+    | _ -> raise Type_error
+
+
+  let bin_op_bool_to_bool expr1 expr2 =
+    match expr1, expr2 with
+    | C_Bool, C_Bool -> C_Bool
+    | _ -> raise Type_error
+
+
+  let type_cost_of_binop expr1 expr2 = function
+    | Plus ->
+      (match expr1, expr2 with
+      | C_Int type_cost1, C_Int type_cost2 ->
+        C_Int (Cost.sum type_cost1 type_cost2)
+      | C_String type_cost1, C_String type_cost2 ->
+        C_String (Cost.sum type_cost1 type_cost2)
+      | _ -> raise Type_error)
+    | B_Minus ->
+      (match expr1, expr2 with
+      | C_Int type_cost1, C_Int type_cost2 ->
+        C_Int (Cost.subtract type_cost1 type_cost2)
+      | _ -> raise Type_error)
+    | Mult ->
+      (match expr1, expr2 with
+      | C_Int type_cost1, C_Int type_cost2 ->
+        C_Int (Cost.multiply type_cost1 type_cost2)
+      | _ -> raise Type_error)
+    | Lt -> bin_op_int_to_bool expr1 expr2
+    | Le -> bin_op_int_to_bool expr1 expr2
+    | Gt -> bin_op_int_to_bool expr1 expr2
+    | Ge -> bin_op_int_to_bool expr1 expr2
+    | Eq -> bin_op_int_to_bool expr1 expr2
+    | Ne -> bin_op_int_to_bool expr1 expr2
+    | And -> bin_op_bool_to_bool expr1 expr2
+    | Or -> bin_op_bool_to_bool expr1 expr2
+
+
+  let type_cost_of_value = function
+    | Int i -> C_Int (Cost.create_int_cost (Integer_bound.create (i, i)))
+    | Bool _ -> C_Bool
+    | String s ->
+      let len = String.length s in
+      C_String (Cost.create_int_cost (Integer_bound.create (len, len)))
+
+
+  let rec type_cost_of_user_func _ _ = C_Unit
+
+  and type_cost_of_func_call env = function
+    | User_func user_func -> type_cost_of_user_func env user_func
+    | Print expr ->
+      (match type_cost_of_expr env expr with
+      | C_String _ | C_Int _ -> C_Unit
+      | _ -> raise Type_error)
+    | Input ->
+      C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
+      (* CHANGE INPUT *)
+    | Open expr ->
+      (match type_cost_of_expr env expr with
+      | C_String _ -> C_File
+      | _ -> raise Type_error)
+    | Read var ->
+      (match Cost_type_environment.get_value var env with
+      | Some type_cost ->
+        (match type_cost with
+        | C_File -> C_String
+        | _ -> raise Type_error)
+      | None -> raise (Unbound_var var.name))
+    | Write { file; contents } ->
+      (match type_cost_of_expr env file, type_cost_of_expr env contents with
+      | C_File, C_String _ -> C_Unit
+      | _ -> raise Type_error)
+    | Append { file; contents } ->
+      (match type_cost_of_expr env file, type_cost_of_expr env contents with
+      | C_File, C_String _ -> C_Unit
+      | _ -> raise Type_error)
+
+
+  and type_cost_of_expr env = function
+    | Unop (unop, expr) -> type_cost_of_unop (type_cost_of_expr env expr) unop
+    | Binop (expr1, binop, expr2) ->
+      type_cost_of_binop
+        (type_cost_of_expr env expr1)
+        (type_cost_of_expr env expr2)
+        binop
+    | Paren expr -> type_cost_of_expr env expr
+    | Value value -> type_cost_of_value value
+    | VarRead var ->
+      (match Cost_type_environment.get_value var env with
+      | Some type_cost -> type_cost
+      | None -> raise (Unbound_var var.name))
+    | Func_call func_call -> type_cost_of_func_call env func_call
 end
-
-
 
 (* 
 
