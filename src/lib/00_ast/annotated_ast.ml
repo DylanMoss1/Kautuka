@@ -13,7 +13,7 @@ module type Type_annotated_ast = sig
   type block_annot
   type var_annot
   type import_annot
-  type expr_annot 
+  type expr_annot
   type t
 
   val string_of_t : t -> string
@@ -36,7 +36,8 @@ struct
     string_of_program
       ~string_of_block_annot:Block_annotation.string_of_t
       ~string_of_var_annot:Var_annotation.string_of_t
-      ~string_of_import_annot:Import_annotation.string_of_t t 
+      ~string_of_import_annot:Import_annotation.string_of_t
+      t
 
 
   let create (x : (block_annot, var_annot, import_annot, expr_annot) program)

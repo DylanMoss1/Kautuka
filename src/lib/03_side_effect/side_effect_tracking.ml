@@ -69,7 +69,8 @@ module Func_side_effect_environment = Environment_ (Alpha) (Side_effect_set)
 
 module Side_effect_ast =
   Annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
-    (Import_annotation) (Expr_empty_annotation)
+    (Import_annotation)
+    (Expr_empty_annotation)
 
 module Side_effect_ast_mapping = struct
   include

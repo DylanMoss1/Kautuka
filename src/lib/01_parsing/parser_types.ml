@@ -35,13 +35,14 @@ module Var_name_annotation = struct
   let create name = { name }
 end
 
-module Expr_empty_annotation = struct 
-  type t = unit 
+module Expr_empty_annotation = struct
+  type t = unit
 
   let string_of_t _ = ""
-  let create = () 
-end 
+  let create = ()
+end
 
 module Parsed_ast =
   Annotated_ast (Block_type_annotation) (Var_name_annotation)
-    (Import_empty_annotation) (Expr_empty_annotation)
+    (Import_empty_annotation)
+    (Expr_empty_annotation)

@@ -39,7 +39,8 @@ end
 
 module Import_ast =
   Annotated_ast (Block_type_annotation) (Var_name_annotation)
-    (Import_annotation) (Expr_empty_annotation)
+    (Import_annotation)
+    (Expr_empty_annotation)
 
 module Import_ast_mapping = struct
   include

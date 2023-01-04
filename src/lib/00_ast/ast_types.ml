@@ -59,10 +59,9 @@ and ('var, 'expr) expr =
   | VarRead of 'var var
   | Func_call of ('var, 'expr) func_call
 
-and ('var, 'expr) annotated_expr = 
-  { 
-    expr : ('var, 'expr) expr; 
-    annotations : 'expr 
+and ('var, 'expr) annotated_expr =
+  { expr : ('var, 'expr) expr
+  ; annotations : 'expr
   }
 
 type ('var, 'expr) var_statement =
