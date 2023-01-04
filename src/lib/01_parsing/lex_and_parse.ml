@@ -28,7 +28,6 @@ let pprint_tokens ppf = function
   | IF -> Fmt.pf ppf "IF@."
   | ELSE -> Fmt.pf ppf "ELSE@."
   | ELIF -> Fmt.pf ppf "ELIF@."
-  | WHILE -> Fmt.pf ppf "WHILE@."
   | FOR -> Fmt.pf ppf "FOR@."
   | RANGE -> Fmt.pf ppf "RANGE@."
   | SEMICOLON -> Fmt.pf ppf "SEMICOLON@."

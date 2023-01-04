@@ -6,3 +6,10 @@
 - Sum by reduction is bugged if both sets contain the same values 
   List.fold_left ~f:(add_to_bound b1 item) b2 
 - Rename environment to context? 
+- Simplify join and join_list 
+- Ensure integers are positive? 
+- Make write_template.file not a var
+- Input(max_size), Read(var, max_size)
+- Add lists, append, split and full file functionality 
+- Remove pre/post dec
+- Add a way to return things from functions 

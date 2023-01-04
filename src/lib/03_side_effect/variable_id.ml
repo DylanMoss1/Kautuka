@@ -23,7 +23,7 @@ module Alpha_var_environment = Environment_ (String_item) (Alpha)
 
 module Alpha_var_ast =
   Annotated_ast (Block_type_annotation) (Alpha_var_annotation)
-    (Import_annotation)
+    (Import_annotation) (Expr_empty_annotation)
 
 module Alpha_var_ast_mapping = struct
   include

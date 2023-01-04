@@ -64,11 +64,19 @@ module Integer_bound = struct
   let string_of_t t =
     let l, u = t in
     Fmt.str "<%d,%d>" l u
+
+
+  let union t1 t2 =
+    let l1, u1 = t1 in
+    let l2, u2 = t2 in
+    Int.min l1 l2, Int.max u1 u2
 end
 
 module Variable_bound = struct
   type t = (Alpha.t * int) list
   (* αⁿβᵐ... *) [@@deriving of_sexp, sexp_of, compare]
+
+  exception Variable_not_in_map
 
   let string_of_item (alpha, power) =
     Fmt.str "%s^%s" (Alpha.string_of_t alpha) (Int.to_string power)
@@ -96,12 +104,23 @@ module Variable_bound = struct
 
 
   let multiply t1 t2 = reduce (t1 @ t2)
+
+  let apply_map map t =
+    let alpha, power = t in
+    let rec iterate_map = function
+      | (beta, cost) :: map ->
+        if Alpha.compare alpha beta = 0 then cost, power else iterate_map map
+      | [] -> raise Variable_not_in_map
+    in
+    iterate_map map
 end
 
 module Cost = struct
   type t = (Integer_bound.t * Variable_bound.t) list
   [@@deriving of_sexp, sexp_of, compare]
   (* (<l1,u1>αⁿβᵐ...) + (<l2,u2>αˢβᵗ...) + ... *)
+
+  exception Negative_power
 
   let string_of_item (int_bound, var_bound) =
     Fmt.str
@@ -126,15 +145,15 @@ module Cost = struct
 
   let empty = []
   let create_int_cost int_bound = [ int_bound, Variable_bound.empty ]
-  (* let zero = create_int_cost Integer_bound.zero *)
-  (* let one = create_int_cost Integer_bound.one *)
+  let zero = create_int_cost Integer_bound.zero
+  let one = create_int_cost Integer_bound.one
 
-  let reduce =
+  let sum_reduce =
     List.fold_left ~init:[] ~f:(fun acc cost_term ->
         add_cost_term cost_term acc)
 
 
-  let sum t1 t2 = reduce (t1 @ t2)
+  let sum t1 t2 = sum_reduce (t1 @ t2)
 
   let negate =
     List.map ~f:(fun cost_term ->
@@ -143,7 +162,7 @@ module Cost = struct
 
 
   let subtract t1 t2 = sum t1 (negate t2)
-  let add_cost_term cost_term t = reduce (cost_term :: t)
+  let add_cost_term cost_term t = sum_reduce (cost_term :: t)
   (* let join = sum *)
 
   let multiply_cost_terms
@@ -158,5 +177,51 @@ module Cost = struct
 
 
   let multiply (t1 : t) (t2 : t) : t =
-    reduce (all_pairs_map ~f:(fun (x, y) -> multiply_cost_terms x y) t1 t2)
+    sum_reduce (all_pairs_map ~f:(fun (x, y) -> multiply_cost_terms x y) t1 t2)
+
+
+  let rec exponent t power =
+    if power = 0
+    then one
+    else if power > 1
+    then multiply t (exponent t (power - 1))
+    else raise Negative_power
+
+
+  let substitute_cost_term map (cost_term : Integer_bound.t * Variable_bound.t) =
+    let int_bound, var_bound = cost_term in
+    List.fold_left
+      ~init:(create_int_cost int_bound)
+      ~f:(fun acc var_term ->
+        multiply
+          acc
+          (let cost, power = Variable_bound.apply_map map var_term in
+           exponent cost power))
+      var_bound
+
+
+  let substitute map =
+    List.fold_left ~init:zero ~f:(fun acc cost_term ->
+        sum acc (substitute_cost_term map cost_term))
+
+
+  let union_cost_terms_if_matching cost_term1 cost_term2 =
+    let int_bound1, var_bound1 = cost_term1 in
+    let int_bound2, var_bound2 = cost_term2 in
+    if Variable_bound.compare var_bound1 var_bound2 = 0
+    then Some (Integer_bound.union int_bound1 int_bound2, var_bound1)
+    else None
+
+
+  let union_cost_term cost_term t =
+    join_term ~join_term_if_matching:union_cost_terms_if_matching cost_term t
+
+
+  let union_reduce =
+    List.fold_left ~init:[] ~f:(fun acc cost_term ->
+        union_cost_term cost_term acc)
+
+
+  let union t1 t2 = union_reduce (t1 @ t2)
+  let union_of_list = List.fold_left ~init:[] ~f:union
 end

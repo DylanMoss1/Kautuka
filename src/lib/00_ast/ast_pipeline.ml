@@ -12,9 +12,11 @@ module type Type_ast_mapping = sig
   type old_block_annot
   type old_var_annot
   type old_import_annot
+  type old_expr_annot
   type new_block_annot
   type new_var_annot
   type new_import_annot
+  type new_expr_annot
 
   type var_effect =
     | Init
@@ -32,6 +34,7 @@ module type Type_ast_mapping = sig
   val join_results_list : result list -> result
   val type_id : env -> type_id -> env * type_id * result
   val value : env -> value -> env * value * result
+  (* val for_break_point :  *)
 
   val var
     :  env
@@ -44,84 +47,94 @@ module type Type_ast_mapping = sig
 
   val expr
     :  env
-    -> new_var_annot expr
+    -> (new_var_annot, new_expr_annot) expr
     -> result
-    -> env * new_var_annot expr * result
+    -> env * (new_var_annot, new_expr_annot) expr * result
+
+  val annotated_expr
+    :  env:env
+    -> new_expr:(new_var_annot, new_expr_annot) expr
+    -> old_annotations:old_expr_annot
+    -> result:result
+    -> env * (new_var_annot, new_expr_annot) annotated_expr * result
 
   val var_statement
     :  env
-    -> new_var_annot var_statement
+    -> (new_var_annot, new_expr_annot) var_statement
     -> result
-    -> env * new_var_annot var_statement * result
+    -> env * (new_var_annot, new_expr_annot) var_statement * result
 
   val user_func
     :  env
-    -> new_var_annot user_func
+    -> (new_var_annot, new_expr_annot) user_func
     -> result
-    -> env * new_var_annot user_func * result
+    -> env * (new_var_annot, new_expr_annot) user_func * result
 
   val write_template
     :  env
-    -> new_var_annot write_template
+    -> (new_var_annot, new_expr_annot) write_template
     -> result
-    -> env * new_var_annot write_template * result
+    -> env * (new_var_annot, new_expr_annot) write_template * result
 
   val func_call
     :  env
-    -> new_var_annot func_call
+    -> (new_var_annot, new_expr_annot) func_call
     -> result
-    -> env * new_var_annot func_call * result
+    -> env * (new_var_annot, new_expr_annot) func_call * result
 
   val control : env -> control -> env * control * result
 
   val statement
     :  env
-    -> new_var_annot statement
+    -> (new_var_annot, new_expr_annot) statement
     -> result
-    -> env * new_var_annot statement * result
+    -> env * (new_var_annot, new_expr_annot) statement * result
 
   val for_loop
     :  env
-    -> (new_block_annot, new_var_annot) for_loop
+    -> (new_block_annot, new_var_annot, new_expr_annot) for_loop
     -> result
-    -> env * (new_block_annot, new_var_annot) for_loop * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) for_loop * result
 
   val for_each
     :  env
-    -> (new_block_annot, new_var_annot) for_each
+    -> (new_block_annot, new_var_annot, new_expr_annot) for_each
     -> result
-    -> env * (new_block_annot, new_var_annot) for_each * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) for_each * result
 
   val condition_template
     :  env
-    -> (new_block_annot, new_var_annot) condition_template
+    -> (new_block_annot, new_var_annot, new_expr_annot) condition_template
     -> result
-    -> env * (new_block_annot, new_var_annot) condition_template * result
+    -> env
+       * (new_block_annot, new_var_annot, new_expr_annot) condition_template
+       * result
 
   val if_record
     :  env
-    -> (new_block_annot, new_var_annot) if_record
+    -> (new_block_annot, new_var_annot, new_expr_annot) if_record
     -> result
-    -> env * (new_block_annot, new_var_annot) if_record * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) if_record * result
 
   val structure
     :  env
-    -> (new_block_annot, new_var_annot) structure
+    -> (new_block_annot, new_var_annot, new_expr_annot) structure
     -> result
-    -> env * (new_block_annot, new_var_annot) structure * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) structure * result
 
   val command
     :  env
-    -> (new_block_annot, new_var_annot) command
+    -> (new_block_annot, new_var_annot, new_expr_annot) command
     -> result
-    -> env * (new_block_annot, new_var_annot) command * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) command * result
 
   val block
     :  env:env
-    -> new_contents:(new_block_annot, new_var_annot) command list
+    -> new_contents:
+         (new_block_annot, new_var_annot, new_expr_annot) command list
     -> old_annotations:old_block_annot
     -> result:result
-    -> env * (new_block_annot, new_var_annot) block * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) block * result
 
   val param
     :  env
@@ -131,18 +144,24 @@ module type Type_ast_mapping = sig
 
   val func
     :  env
-    -> (new_block_annot, new_var_annot) func
+    -> (new_block_annot, new_var_annot, new_expr_annot) func
     -> result
-    -> env * (new_block_annot, new_var_annot) func * result
+    -> env * (new_block_annot, new_var_annot, new_expr_annot) func * result
 
   val program
     :  env:env
     -> new_package:string
     -> old_import:old_import_annot
-    -> new_global_vars:new_var_annot var_statement list
-    -> new_funcs:(new_block_annot, new_var_annot) func list
+    -> new_global_vars:(new_var_annot, new_expr_annot) var_statement list
+    -> new_funcs:(new_block_annot, new_var_annot, new_expr_annot) func list
     -> result:result
-    -> env * (new_block_annot, new_var_annot, new_import_annot) program * result
+    -> env
+       * ( new_block_annot
+         , new_var_annot
+         , new_import_annot
+         , new_expr_annot )
+         program
+       * result
 end
 
 module Empty_environment = struct
@@ -163,6 +182,7 @@ module Empty_result = struct
 
   let empty = ()
   let join _ _ = ()
+  let join_list _ = ()
 end
 
 module Default_ast_mapping
@@ -178,9 +198,11 @@ struct
   type old_block_annot = Old_ast.block_annot
   type old_var_annot = Old_ast.var_annot
   type old_import_annot = Old_ast.import_annot
+  type old_expr_annot = Old_ast.expr_annot
   type new_block_annot = New_ast.block_annot
   type new_var_annot = New_ast.var_annot
   type new_import_annot = New_ast.import_annot
+  type new_expr_annot = New_ast.expr_annot
 
   let empty_env = Env.empty
   let add_to_env = Env.add_new_item
@@ -190,7 +212,7 @@ struct
   let get_value_outside_scope = Env.get_value_outside_scope
   let empty_result = Result.empty
   let join_results = Result.join
-  let join_results_list = List.fold_left ~init:empty_result ~f:join_results
+  let join_results_list = Result.join_list
 
   type var_effect =
     | Init
@@ -207,6 +229,11 @@ struct
   let unop = ignore_leaf
   let binop = ignore_leaf
   let expr = ignore_branch
+
+  let annotated_expr ~env ~new_expr ~old_annotations ~result =
+    env, { expr = new_expr; annotations = old_annotations }, result
+
+
   let var_statement = ignore_branch
   let user_func = ignore_branch
   let write_template = ignore_branch
@@ -266,12 +293,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
   let pipeline_unop = Mapping.unop
   let pipeline_binop = Mapping.binop
 
-  let rec pipeline_user_func env (user_func : 'var user_func) =
+  let rec pipeline_user_func env (user_func : ('var, 'expr) user_func) =
     let env, new_name, name_result =
       pipeline_var ~var_effect:Read env user_func.name
     in
     let env, new_args, args_result =
-      pipeline_map_collect ~env ~f:pipeline_expr user_func.args
+      pipeline_map_collect ~env ~f:pipeline_annotated_expr user_func.args
     in
     let result = Mapping.join_results_list [ name_result; args_result ] in
     Mapping.user_func env { name = new_name; args = new_args } result
@@ -282,7 +309,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       pipeline_var ~var_effect:Write env write_template.file
     in
     let env, new_contents, contents_result =
-      pipeline_expr env write_template.contents
+      pipeline_annotated_expr env write_template.contents
     in
     let result = Mapping.join_results_list [ file_result; contents_result ] in
     Mapping.write_template
@@ -302,7 +329,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     | Print expr ->
       single_pipeline
         ~env
-        ~sub_pipeline:pipeline_expr
+        ~sub_pipeline:pipeline_annotated_expr
         ~mapping:Mapping.func_call
         ~new_ast_fun:(fun x -> Print x)
         expr
@@ -310,7 +337,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     | Open expr ->
       single_pipeline
         ~env
-        ~sub_pipeline:pipeline_expr
+        ~sub_pipeline:pipeline_annotated_expr
         ~mapping:Mapping.func_call
         ~new_ast_fun:(fun x -> Open x)
         expr
@@ -340,13 +367,13 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
   and pipeline_expr env = function
     | Unop (unop, expr) ->
       let env, new_unop, unop_result = pipeline_unop env unop in
-      let env, new_expr, expr_result = pipeline_expr env expr in
+      let env, new_expr, expr_result = pipeline_annotated_expr env expr in
       let result = Mapping.join_results_list [ unop_result; expr_result ] in
       Mapping.expr env (Unop (new_unop, new_expr)) result
     | Binop (expr1, binop, expr2) ->
-      let env, new_expr1, expr1_result = pipeline_expr env expr1 in
+      let env, new_expr1, expr1_result = pipeline_annotated_expr env expr1 in
       let env, new_binop, binop_result = pipeline_binop env binop in
-      let env, new_expr2, expr2_result = pipeline_expr env expr2 in
+      let env, new_expr2, expr2_result = pipeline_annotated_expr env expr2 in
       let result =
         Mapping.join_results_list [ expr1_result; binop_result; expr2_result ]
       in
@@ -354,7 +381,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     | Paren expr ->
       single_pipeline
         ~env
-        ~sub_pipeline:pipeline_expr
+        ~sub_pipeline:pipeline_annotated_expr
         ~mapping:Mapping.expr
         ~new_ast_fun:(fun x -> Paren x)
         expr
@@ -381,6 +408,15 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         func_call
 
 
+  and pipeline_annotated_expr env annotated_expr =
+    let env, new_expr, expr_result = pipeline_expr env annotated_expr.expr in
+    Mapping.annotated_expr
+      ~env
+      ~new_expr
+      ~old_annotations:annotated_expr.annotations
+      ~result:expr_result
+
+
   let pipeline_var_statement env = function
     | VarNonInit (var, type_id) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
@@ -390,7 +426,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     | VarInit (var, type_id, expr) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_type_id, type_id_result = pipeline_type_id env type_id in
-      let env, new_expr, expr_result = pipeline_expr env expr in
+      let env, new_expr, expr_result = pipeline_annotated_expr env expr in
       let result =
         Mapping.join_results_list [ var_result; type_id_result; expr_result ]
       in
@@ -400,12 +436,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         result
     | VarDecl (var, expr) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
-      let env, new_expr, expr_result = pipeline_expr env expr in
+      let env, new_expr, expr_result = pipeline_annotated_expr env expr in
       let result = Mapping.join_results_list [ var_result; expr_result ] in
       Mapping.var_statement env (VarDecl (new_var, new_expr)) result
     | VarAssign (var, expr) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Write env var in
-      let env, new_expr, expr_result = pipeline_expr env expr in
+      let env, new_expr, expr_result = pipeline_annotated_expr env expr in
       let result = Mapping.join_results_list [ var_result; expr_result ] in
       Mapping.var_statement env (VarAssign (new_var, new_expr)) result
     | Pre_inc var ->
@@ -458,7 +494,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
     | Expr expr ->
       single_pipeline
         ~env
-        ~sub_pipeline:pipeline_expr
+        ~sub_pipeline:pipeline_annotated_expr
         ~mapping:Mapping.statement
         ~new_ast_fun:(fun x -> Expr x)
         expr
@@ -466,7 +502,9 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   let rec pipeline_for_loop env for_loop =
     let env, new_init, init_result = pipeline_var_statement env for_loop.init in
-    let env, new_cond, cond_result = pipeline_expr env for_loop.cond in
+    let env, new_cond, cond_result =
+      pipeline_annotated_expr env for_loop.cond
+    in
     let env, new_iter, iter_result = pipeline_var_statement env for_loop.iter in
     let env, new_contents, contents_result =
       pipeline_block env for_loop.contents
@@ -507,7 +545,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
   and pipeline_condition_template env condition_template =
     let env, new_condition, condition_result =
-      pipeline_expr env condition_template.condition
+      pipeline_annotated_expr env condition_template.condition
     in
     let env, new_contents, contents_result =
       pipeline_block env condition_template.contents
@@ -562,13 +600,6 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         ~mapping:Mapping.structure
         ~new_ast_fun:(fun x -> If x)
         if_record
-    | While condition_template ->
-      single_pipeline
-        ~env
-        ~sub_pipeline:pipeline_condition_template
-        ~mapping:Mapping.structure
-        ~new_ast_fun:(fun x -> While x)
-        condition_template
     | For_loop for_loop ->
       single_pipeline
         ~env

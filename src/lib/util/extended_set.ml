@@ -24,6 +24,6 @@ module Make_extended_set (I : Type_item) = struct
             (List.map ~f:I.string_of_t (elements t))))
 
 
-  (* Can be overwritten *)
   let join = union
+  let join_list = List.fold_left ~init:empty ~f:union
 end

@@ -32,38 +32,44 @@ type binop =
   | And
   | Or
 
-type 'var user_func =
+type ('var, 'expr) user_func =
   { name : 'var var
-  ; args : 'var expr list
+  ; args : ('var, 'expr) annotated_expr list
   }
 
-and 'var write_template =
+and ('var, 'expr) write_template =
   { file : 'var var
-  ; contents : 'var expr
+  ; contents : ('var, 'expr) annotated_expr
   }
 
-and 'var func_call =
-  | User_func of 'var user_func
-  | Print of 'var expr
+and ('var, 'expr) func_call =
+  | User_func of ('var, 'expr) user_func
+  | Print of ('var, 'expr) annotated_expr
   | Input
-  | Open of 'var expr
+  | Open of ('var, 'expr) annotated_expr
   | Read of 'var var
-  | Write of 'var write_template
-  | Append of 'var write_template
+  | Write of ('var, 'expr) write_template
+  | Append of ('var, 'expr) write_template
 
-and 'var expr =
-  | Unop of unop * 'var expr
-  | Binop of 'var expr * binop * 'var expr
-  | Paren of 'var expr
+and ('var, 'expr) expr =
+  | Unop of unop * ('var, 'expr) annotated_expr
+  | Binop of ('var, 'expr) annotated_expr * binop * ('var, 'expr) annotated_expr
+  | Paren of ('var, 'expr) annotated_expr
   | Value of value
   | VarRead of 'var var
-  | Func_call of 'var func_call
+  | Func_call of ('var, 'expr) func_call
 
-type 'var var_statement =
+and ('var, 'expr) annotated_expr = 
+  { 
+    expr : ('var, 'expr) expr; 
+    annotations : 'expr 
+  }
+
+type ('var, 'expr) var_statement =
   | VarNonInit of 'var var * type_id
-  | VarInit of 'var var * type_id * 'var expr
-  | VarDecl of 'var var * 'var expr
-  | VarAssign of 'var var * 'var expr
+  | VarInit of 'var var * type_id * ('var, 'expr) annotated_expr
+  | VarDecl of 'var var * ('var, 'expr) annotated_expr
+  | VarAssign of 'var var * ('var, 'expr) annotated_expr
   | Pre_inc of 'var var
   | Pre_dec of 'var var
   | Post_inc of 'var var
@@ -73,63 +79,62 @@ type control =
   | Break
   | Continue
 
-type 'var statement =
-  | Var_statement of 'var var_statement
+type ('var, 'expr) statement =
+  | Var_statement of ('var, 'expr) var_statement
   | Control of control
-  | Expr of 'var expr
+  | Expr of ('var, 'expr) annotated_expr
 
-type ('block, 'var) for_loop =
-  { init : 'var var_statement
-  ; cond : 'var expr
-  ; iter : 'var var_statement
-  ; contents : ('block, 'var) block
+type ('block, 'var, 'expr) for_loop =
+  { init : ('var, 'expr) var_statement
+  ; cond : ('var, 'expr) annotated_expr
+  ; iter : ('var, 'expr) var_statement
+  ; contents : ('block, 'var, 'expr) block
   }
 
-and ('block, 'var) for_each =
+and ('block, 'var, 'expr) for_each =
   { item : 'var var
   ; iterator : 'var var
-  ; contents : ('block, 'var) block
+  ; contents : ('block, 'var, 'expr) block
   }
 
-and ('block, 'var) condition_template =
-  { condition : 'var expr
-  ; contents : ('block, 'var) block
+and ('block, 'var, 'expr) condition_template =
+  { condition : ('var, 'expr) annotated_expr
+  ; contents : ('block, 'var, 'expr) block
   }
 
-and ('block, 'var) if_record =
-  { _if : ('block, 'var) condition_template
-  ; else_if : ('block, 'var) condition_template list
-  ; else_contents : ('block, 'var) block option
+and ('block, 'var, 'expr) if_record =
+  { _if : ('block, 'var, 'expr) condition_template
+  ; else_if : ('block, 'var, 'expr) condition_template list
+  ; else_contents : ('block, 'var, 'expr) block option
   }
 
-and ('block, 'var) structure =
-  | Block_struct of ('block, 'var) block
-  | If of ('block, 'var) if_record
-  | While of ('block, 'var) condition_template
-  | For_loop of ('block, 'var) for_loop
-  | For_each of ('block, 'var) for_each
+and ('block, 'var, 'expr) structure =
+  | Block_struct of ('block, 'var, 'expr) block
+  | If of ('block, 'var, 'expr) if_record
+  | For_loop of ('block, 'var, 'expr) for_loop
+  | For_each of ('block, 'var, 'expr) for_each
 
-and ('block, 'var) command =
-  | Structure of ('block, 'var) structure
-  | Statement of 'var statement
+and ('block, 'var, 'expr) command =
+  | Structure of ('block, 'var, 'expr) structure
+  | Statement of ('var, 'expr) statement
 
-and ('block, 'var) block =
-  { contents : ('block, 'var) command list
+and ('block, 'var, 'expr) block =
+  { contents : ('block, 'var, 'expr) command list
   ; annotations : 'block
   }
 
 and 'var param = 'var var * type_id
 
-and ('block, 'var) func =
+and ('block, 'var, 'expr) func =
   { name : 'var var
   ; params : 'var param list
-  ; body : ('block, 'var) block
+  ; body : ('block, 'var, 'expr) block
   ; return_type : type_id
   }
 
-type ('block, 'var, 'import) program =
+type ('block, 'var, 'import, 'expr) program =
   { package : string
   ; imports : 'import
-  ; global_vars : 'var var_statement list
-  ; funcs : ('block, 'var) func list
+  ; global_vars : ('var, 'expr) var_statement list
+  ; funcs : ('block, 'var, 'expr) func list
   }

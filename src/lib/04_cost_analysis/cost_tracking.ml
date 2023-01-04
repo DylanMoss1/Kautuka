@@ -5,17 +5,18 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing.Parser_types
 open Preperation.Import
-open Bounds
 open Ast.Ast_to_string
 open Side_effect.Variable_id
 open Side_effect.Side_effect_tracking
-open Util
+open Util.Item
+open Cost
 
-module Unit_item = struct 
-  type t = unit [@@deriving of_sexp, sexp_of, compare]
+module Runtime_cost = struct
+  include Cost
 
-  let string_of_t _ = ""
-end 
+  let join = sum
+  let join_list = List.fold_left ~init:empty ~f:sum
+end
 
 module Cost_type = struct
   type t = type_id * Cost.t [@@deriving of_sexp, sexp_of, compare]
@@ -24,7 +25,7 @@ module Cost_type = struct
     Fmt.str "%s %s" (string_of_type_id type_id) (Cost.string_of_t bound_term)
 end
 
-module Cost_multiplier_environment = Environment_ (Unit_item) (Cost_type)
+module Cost_multiplier_environment = Environment_ (Unit_item) (Runtime_cost)
 
 type block_cost =
   { block_type : block_type
@@ -56,11 +57,9 @@ module Cost_ast =
 
 module Cost_ast_mapping = struct
   include
-    Default_ast_mapping (Side_effect_ast) (Cost_ast) (Cost_multiplier_environment)
-      (Cost)
-
-  
-
+    Default_ast_mapping (Side_effect_ast) (Cost_ast)
+      (Cost_multiplier_environment)
+      (Runtime_cost)
 
   let block ~env ~new_contents ~(old_annotations : old_block_annot) ~result =
     ( env

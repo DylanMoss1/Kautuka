@@ -47,7 +47,6 @@ rule read_token = parse
   | "if"                             { IF }
   | "else"                           { ELSE }
   | "else if"                        { ELIF }
-  | "while"                          { WHILE }
   | "for"                            { FOR }
   | "range"                          { RANGE }
   | ";"                              { SEMICOLON }

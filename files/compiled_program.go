@@ -13,21 +13,15 @@ var c string = "Hello world"
 
 func main() {
 	// Default
-	i := 1
-	for i <= 3 {
+	// Default
+	for i := 1; i <= 3; i++ {
 		// Default
 		fmt.Println(i)
-		i = i + 1
 	}
 	// Default
 	for j := 7; j <= 9; j++ {
 		// Default
 		fmt.Println(j)
-	}
-	for true {
-		// Default
-		fmt.Println("loop")
-		break
 	}
 	// Default
 	for n := 0; n <= 5; n++ {
