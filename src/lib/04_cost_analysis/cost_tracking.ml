@@ -59,12 +59,8 @@ module Cost_ast =
 
 module Cost_ast_mapping = struct
   include
-    Default_ast_mapping (Cost_type_ast) (Cost_ast)
-      (Cost_multiplier_environment)
+    Default_ast_mapping (Cost_type_ast) (Cost_ast) (Cost_multiplier_environment)
       (Runtime_cost)
-
-  
-
 
   let block ~env ~new_contents ~(old_annotations : old_block_annot) ~result =
     ( env
