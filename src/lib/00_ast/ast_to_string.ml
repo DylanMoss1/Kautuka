@@ -135,9 +135,14 @@ let string_of_control = function
 
 let string_of_statement ~string_of_var_annot = function
   | Control control -> string_of_control control
+  | Return annotated_expr ->
+    Fmt.str
+      "return %s"
+      (string_of_annotated_expr ~string_of_var_annot annotated_expr)
   | Var_statement var_statement ->
     string_of_var_statement ~string_of_var_annot var_statement
-  | Expr expr -> string_of_annotated_expr ~string_of_var_annot expr
+  | Expr annotated_expr ->
+    string_of_annotated_expr ~string_of_var_annot annotated_expr
 
 
 let rec string_of_for_loop ~string_of_block_annot ~string_of_var_annot for_loop =

@@ -91,15 +91,17 @@ module type Type_ast_mapping = sig
     -> env * (new_var_annot, new_expr_annot) statement * result
 
   val for_loop
-    :  env
-    -> (new_block_annot, new_var_annot, new_expr_annot) for_loop
-    -> result
+    :  start_env:env
+    -> end_env:env
+    -> for_loop:(new_block_annot, new_var_annot, new_expr_annot) for_loop
+    -> result:result
     -> env * (new_block_annot, new_var_annot, new_expr_annot) for_loop * result
 
   val for_each
-    :  env
-    -> (new_block_annot, new_var_annot, new_expr_annot) for_each
-    -> result
+    :  start_env:env
+    -> end_env:env
+    -> for_each:(new_block_annot, new_var_annot, new_expr_annot) for_each
+    -> result:result
     -> env * (new_block_annot, new_var_annot, new_expr_annot) for_each * result
 
   val condition_template
@@ -241,8 +243,8 @@ struct
   let control = ignore_leaf
   let if_record = ignore_branch
   let condition_template = ignore_branch
-  let for_each = ignore_branch
-  let for_loop = ignore_branch
+  let for_each ~start_env ~end_env ~for_each ~result = end_env, for_each, result
+  let for_loop ~start_env ~end_env ~for_loop ~result = end_env, for_loop, result
   let statement = ignore_branch
   let structure = ignore_branch
   let command = ignore_branch
@@ -484,6 +486,13 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         ~mapping:Mapping.statement
         ~new_ast_fun:(fun x -> Var_statement x)
         var_statement
+    | Return annotated_expr ->
+      single_pipeline
+        ~env
+        ~sub_pipeline:pipeline_annotated_expr
+        ~mapping:Mapping.statement
+        ~new_ast_fun:(fun x -> Return x)
+        annotated_expr
     | Control control ->
       single_pipeline
         ~env
@@ -501,6 +510,7 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
 
   let rec pipeline_for_loop env for_loop =
+    let start_env = env in
     let env, new_init, init_result = pipeline_var_statement env for_loop.init in
     let env, new_cond, cond_result =
       pipeline_annotated_expr env for_loop.cond
@@ -514,16 +524,19 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         [ init_result; cond_result; iter_result; contents_result ]
     in
     Mapping.for_loop
-      env
-      { init = new_init
-      ; cond = new_cond
-      ; iter = new_iter
-      ; contents = new_contents
-      }
-      result
+      ~start_env
+      ~end_env:env
+      ~for_loop:
+        { init = new_init
+        ; cond = new_cond
+        ; iter = new_iter
+        ; contents = new_contents
+        }
+      ~result
 
 
   and pipeline_for_each env for_each =
+    let start_env = env in
     let env, new_item, item_result =
       pipeline_var ~var_effect:Init env for_each.item
     in
@@ -538,9 +551,11 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         [ item_result; iterator_result; contents_result ]
     in
     Mapping.for_each
-      env
-      { item = new_item; iterator = new_iterator; contents = new_contents }
-      result
+      ~start_env
+      ~end_env:env
+      ~for_each:
+        { item = new_item; iterator = new_iterator; contents = new_contents }
+      ~result
 
 
   and pipeline_condition_template env condition_template =

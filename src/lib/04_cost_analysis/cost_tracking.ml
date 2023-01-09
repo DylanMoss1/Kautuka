@@ -1,4 +1,4 @@
-(* open! Core
+open! Core
 open Util.Environment
 open Ast.Ast_types
 open Ast.Annotated_ast
@@ -9,6 +9,7 @@ open Ast.Ast_to_string
 open Side_effect.Variable_id
 open Side_effect.Side_effect_tracking
 open Util.Item
+open Types_cost
 open Cost
 
 module Runtime_cost = struct
@@ -54,12 +55,16 @@ end
 module Cost_ast =
   Annotated_ast (Block_cost_annotation) (Alpha_var_annotation)
     (Import_annotation)
+    (Expr_type_cost_annotation)
 
 module Cost_ast_mapping = struct
   include
-    Default_ast_mapping (Side_effect_ast) (Cost_ast)
+    Default_ast_mapping (Cost_type_ast) (Cost_ast)
       (Cost_multiplier_environment)
       (Runtime_cost)
+
+  
+
 
   let block ~env ~new_contents ~(old_annotations : old_block_annot) ~result =
     ( env
@@ -73,4 +78,4 @@ module Cost_ast_mapping = struct
     , result )
 end
 
-module Cost_ast_pipeline = Ast_pipeline (Cost_ast_mapping) *)
+module Cost_ast_pipeline = Ast_pipeline (Cost_ast_mapping)

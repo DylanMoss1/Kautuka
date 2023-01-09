@@ -80,6 +80,7 @@ type control =
 
 type ('var, 'expr) statement =
   | Var_statement of ('var, 'expr) var_statement
+  | Return of ('var, 'expr) annotated_expr
   | Control of control
   | Expr of ('var, 'expr) annotated_expr
 

@@ -33,6 +33,7 @@ let pprint_tokens ppf = function
   | SEMICOLON -> Fmt.pf ppf "SEMICOLON@."
   | BREAK -> Fmt.pf ppf "BREAK@."
   | CONTINUE -> Fmt.pf ppf "CONTINUE@."
+  | RETURN -> Fmt.pf ppf "RETURN@."
   | PRINT -> Fmt.pf ppf "PRINT@."
   | INPUT -> Fmt.pf ppf "INPUT@."
   | OPEN -> Fmt.pf ppf "OPEN@."

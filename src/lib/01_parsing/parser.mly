@@ -27,7 +27,7 @@
 %token FORCEPAR FORCESEQ IGNORE
 %token IF ELSE ELIF
 %token FOR
-%token BREAK CONTINUE
+%token BREAK CONTINUE RETURN 
 %token INCREMENT DECREMENT
 %token PLUS MINUS MULT EQ NE LT LE GT GE AND OR NOT 
 %token PRINT INPUT OPEN READ WRITE APPEND 
@@ -156,6 +156,7 @@ annotated_expr:
 
 statement:
 | var_statement=var_statement { Var_statement(var_statement) }
+| RETURN annotated_expr=annotated_expr { Return(annotated_expr) }
 | control=control { Control(control) }
 | annotated_expr=annotated_expr { Expr(annotated_expr) }
 

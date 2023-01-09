@@ -52,6 +52,7 @@ rule read_token = parse
   | ";"                              { SEMICOLON }
   | "break"                          { BREAK }
   | "continue"                       { CONTINUE }
+  | "return"                         { RETURN }
   | "print"                          { PRINT }
   | "input"                          { INPUT }
   | "open"                           { OPEN }

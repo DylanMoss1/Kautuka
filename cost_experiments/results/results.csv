@@ -1,3 +1,19 @@
-1
-plus, 1, 2, 3, 4, 5
-minus 2, 3, 4, 5, 6
+Empty instruction,Unop: Not,Unop: Minus,Binop: Plus,Binop: Minus,Binop: Mult,Binop: Lt,Binop: Le,Binop: Gt,Binop: Ge,Binop: Eq,Binop: Ne,Binop: And,Binop: Or,Func call: User func (init),Func call: Print,Func call: Input,Func call: Open,Func call: Read,Func call: Write,Func call: Append,Expr: Var read,Var statement: Var non init,Var statement: Var init,Var statement: Var decl,Var statement: Var assign,Var statement: Pre inc,Var statement: Pre dec,Var statement: Post inc,Var statement: Post dec,For loop (instantiation),For each (instantiation),If statement (instantiation)
+21,22
+20,20
+21,19
+21,21
+22,21
+20,21
+20,20
+20,20
+20,21
+21,21
+21,20
+20,20
+20,19
+20,21
+20,19
+20,20
+21,21
+21,20

@@ -28,6 +28,8 @@ module Types_cost = struct
     | C_Func of func_type_cost
   [@@deriving of_sexp, sexp_of, compare]
 
+  exception Type_error
+
   let empty = C_Unit
 
   let string_of_param param =
@@ -50,6 +52,24 @@ module Types_cost = struct
     | C_File -> "file"
     | C_Func func_type_cost ->
       Fmt.str "func%s" (string_of_func_type_cost func_type_cost)
+
+
+  let verify_type_cost expected_type type_cost =
+    match expected_type, type_cost with
+    | T_Int, C_Int _ -> true
+    | T_String, C_String _ -> true
+    | T_Unit, C_Unit -> true
+    | T_Bool, C_Bool -> true
+    | _ -> false
+
+
+  let union type_cost1 type_cost2 =
+    match type_cost1, type_cost2 with
+    | C_Int cost1, C_Int cost2 -> C_Int (Cost.union cost1 cost2)
+    | C_String cost1, C_String cost2 -> C_String (Cost.union cost1 cost2)
+    | C_Unit, C_Unit -> C_Unit
+    | C_Bool, C_Bool -> C_Bool
+    | _ -> raise Type_error
 end
 
 module Expr_type_cost_annotation = Types_cost
@@ -58,7 +78,37 @@ module Cost_type_environment = Environment_ (Alpha) (Types_cost)
 module Types_cost_result = struct
   type t = Types_cost.t list
 
+  exception Invalid_arg_number
+
   let empty = []
+
+  let pop t =
+    match List.hd t, List.tl t with
+    | Some hd, Some tl -> hd, tl
+    | _ -> raise Invalid_arg_number
+
+
+  let pop_2 t =
+    match List.hd t, List.tl t with
+    | Some hd, Some tl ->
+      let hd2, tl = pop tl in
+      hd, hd2, tl
+    | _ -> raise Invalid_arg_number
+
+
+  let pop_n t n =
+    let rec pop_n_inner head_list tail n =
+      if n = 0
+      then head_list, tail
+      else (
+        let hd, tl = pop t in
+        pop_n_inner (List.append head_list [ hd ]) tl (n - 1))
+    in
+    pop_n_inner [] t n
+
+
+  let get t = t
+  let push x t = List.append t [ x ]
   let join t1 t2 = t1 @ t2
   let join_list = List.fold_left ~init:[] ~f:(fun acc x -> join acc x)
 end
@@ -82,20 +132,7 @@ module Cost_type_ast_mapping = struct
   exception Invalid_var_type
   exception Invalid_return_type
   exception Type_error
-
-  let extract_one_element = function
-    | [ x ] -> x
-    | _ -> raise Invalid_arg_number
-
-
-  let extract_two_elements xs =
-    if List.length xs = 2
-    then (
-      match List.nth xs 0, List.nth xs 1 with
-      | Some x1, Some x2 -> x1, x2
-      | _ -> raise Invalid_arg_number)
-    else raise Invalid_arg_number
-
+  exception No_return_statement
 
   let value env = function
     | Int i ->
@@ -154,16 +191,19 @@ module Cost_type_ast_mapping = struct
     match func_call with
     | User_func _ -> env, func_call, result
     | Print _ ->
-      (match extract_one_element result with
-      | C_String _ | C_Int _ -> env, func_call, [ C_Unit ]
+      let type_cost, result = Types_cost_result.pop result in
+      (match type_cost with
+      | C_String _ | C_Int _ -> env, func_call, result
       | _ -> raise Type_error)
     | Input ->
       ( env
       , func_call
-      , [ C_String (Cost.create_int_cost (Integer_bound.create (0, 100))) ] )
+      , C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
+        :: result )
     | Open _ ->
-      (match extract_one_element result with
-      | C_String _ -> env, func_call, [ C_File ]
+      let type_cost, result = Types_cost_result.pop result in
+      (match type_cost with
+      | C_String _ -> env, func_call, C_File :: result
       | _ -> raise Type_error)
     | Read var ->
       (match Cost_type_environment.get_value var.alpha env with
@@ -172,80 +212,82 @@ module Cost_type_ast_mapping = struct
         | C_File ->
           ( env
           , func_call
-          , [ C_String (Cost.create_int_cost (Integer_bound.create (0, 100))) ]
-          )
+          , C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
+            :: result )
         | _ -> raise Type_error)
       | None -> raise (Unbound_var var.name))
     | Write { file; _ } ->
       (match Cost_type_environment.get_value file.alpha env with
-      | Some type_cost ->
-        (match type_cost, extract_one_element result with
-        | C_File, C_String _ -> env, func_call, [ C_Unit ]
+      | Some var_type_cost ->
+        let type_cost, result = Types_cost_result.pop result in
+        (match var_type_cost, type_cost with
+        | C_File, C_String _ -> env, func_call, result
         | _ -> raise Type_error)
       | None -> raise (Unbound_var file.name))
     | Append { file; _ } ->
       (match Cost_type_environment.get_value file.alpha env with
-      | Some type_cost ->
-        (match type_cost, extract_one_element result with
-        | C_File, C_String _ -> env, func_call, [ C_Unit ]
+      | Some var_type_cost ->
+        let type_cost, result = Types_cost_result.pop result in
+        (match var_type_cost, type_cost with
+        | C_File, C_String _ -> env, func_call, result
         | _ -> raise Type_error)
       | None -> raise (Unbound_var file.name))
 
 
   let bin_op_int_to_bool arg_type1 arg_type2 =
     match arg_type1, arg_type2 with
-    | C_Int _, C_Int _ -> [ C_Bool ]
+    | C_Int _, C_Int _ -> C_Bool
     | _ -> raise Invalid_arg_type
 
 
   let bin_op_bool_to_bool arg_type1 arg_type2 =
     match arg_type1, arg_type2 with
-    | C_Bool, C_Bool -> [ C_Bool ]
+    | C_Bool, C_Bool -> C_Bool
     | _ -> raise Invalid_arg_type
 
 
   let expr env expr result =
     match expr with
     | Unop (unop, _) ->
-      let arg_type = extract_one_element result in
+      let arg_type, result = Types_cost_result.pop result in
       (match unop with
       | Not ->
         (match arg_type with
-        | C_Bool -> env, expr, [ C_Bool ]
+        | C_Bool -> env, expr, C_Bool :: result
         | _ -> raise Invalid_arg_type)
       | U_Minus ->
         (match arg_type with
-        | C_Int type_cost -> env, expr, [ C_Int (Cost.negate type_cost) ]
+        | C_Int type_cost -> env, expr, C_Int (Cost.negate type_cost) :: result
         | _ -> raise Invalid_arg_type))
     | Binop (_, binop, _) ->
-      let arg_type1, arg_type2 = extract_two_elements result in
+      let arg_type1, arg_type2, result = Types_cost_result.pop2 result in
       (match binop with
       | Plus ->
         (match arg_type1, arg_type2 with
         | C_Int type_cost1, C_Int type_cost2 ->
-          env, expr, [ C_Int (Cost.sum type_cost1 type_cost2) ]
+          env, expr, C_Int (Cost.sum type_cost1 type_cost2) :: result
         | C_String type_cost1, C_String type_cost2 ->
-          env, expr, [ C_String (Cost.sum type_cost1 type_cost2) ]
+          env, expr, C_String (Cost.sum type_cost1 type_cost2) :: result
         | _ -> raise Invalid_arg_type)
       | B_Minus ->
         (match arg_type2, arg_type2 with
         | C_Int type_cost1, C_Int type_cost2 ->
-          env, expr, [ C_Int (Cost.subtract type_cost1 type_cost2) ]
+          env, expr, C_Int (Cost.subtract type_cost1 type_cost2) :: result
         | _ -> raise Invalid_arg_type)
       | Mult ->
         (match arg_type2, arg_type2 with
         | C_Int type_cost1, C_Int type_cost2 ->
-          env, expr, [ C_Int (Cost.multiply type_cost1 type_cost2) ]
+          env, expr, C_Int (Cost.multiply type_cost1 type_cost2) :: result
         | _ -> raise Invalid_arg_type)
       | Lt | Le | Gt | Ge | Eq | Ne ->
-        env, expr, bin_op_int_to_bool arg_type1 arg_type2
-      | And | Or -> env, expr, bin_op_bool_to_bool arg_type1 arg_type2)
+        env, expr, bin_op_int_to_bool arg_type1 arg_type2 :: result
+      | And | Or -> env, expr, bin_op_bool_to_bool arg_type1 arg_type2 :: result)
     | Paren _ -> ignore_branch env expr result
     | Value _ -> ignore_branch env expr result
     | VarRead var ->
       let { name = _; alpha } = var in
       (match get_value alpha env with
-      | Some key -> env, expr, [ key ]
+      | Some key -> env, expr, key :: result
       | None -> raise (Unbound_var var.name))
     | Func_call _ -> ignore_branch env expr result
 
@@ -256,26 +298,23 @@ module Cost_type_ast_mapping = struct
 
   let var_statement env var_statement result =
     match var_statement with
-    | VarNonInit (_, _) -> ignore_branch env var_statement result
+    | VarNonInit (_, _) -> ignore_branch env var_statement empty_result
     | VarInit (var, _, _) ->
-      ( add_to_env var.alpha (extract_one_element result) env
-      , var_statement
-      , [ C_Unit ] )
+      let type_cost, result = Types_cost_result.pop result in
+      add_to_env var.alpha type_cost env, var_statement, result
     | VarDecl (var, _) ->
-      ( add_to_env var.alpha (extract_one_element result) env
-      , var_statement
-      , [ C_Unit ] )
+      let type_cost, result = Types_cost_result.pop result in
+      add_to_env var.alpha type_cost env, var_statement, result
     | VarAssign (var, _) ->
-      ( add_to_env var.alpha (extract_one_element result) env
-      , var_statement
-      , [ C_Unit ] )
+      let type_cost, result = Types_cost_result.pop result in
+      add_to_env var.alpha type_cost env, var_statement, result
     | Pre_inc var ->
       (match get_value var.alpha env with
       | Some value ->
         (match value with
         | C_Int cost ->
           let new_cost = C_Int (Cost.sum Cost.one cost) in
-          add_to_env var.alpha new_cost env, var_statement, [ new_cost ]
+          add_to_env var.alpha new_cost env, var_statement, result
         | _ -> raise Invalid_var_type)
       | None -> raise (Unbound_var var.name))
     | Post_inc var ->
@@ -285,17 +324,72 @@ module Cost_type_ast_mapping = struct
         | C_Int cost ->
           ( add_to_env var.alpha (C_Int (Cost.sum Cost.one cost)) env
           , var_statement
-          , [ C_Int cost ] )
+          , result )
         | _ -> raise Invalid_var_type)
       | None -> raise (Unbound_var var.name))
     | _ -> raise (Failure "REMOVE POST/PRE DEC")
 
 
-  let extract_cost = function
-    | C_Int cost -> cost
-    | C_String cost -> cost
-    | _ -> raise Type_error
+  let statement env statement result =
+    match statement with
+    | Expr _ ->
+      let _, result = Types_cost_result.pop result in
+      env, statement, result
+    | _ -> ignore_branch env statement result
 
+
+  (* let extract_int_cost = function
+    | C_Int cost -> cost
+    | _ -> raise Type_error *)
+
+  (* let for_loop ~start_env ~end_env ~for_loop ~result =
+    let { init; cond; iter; contents = _ } = for_loop in
+    let start_value = ( 
+    match init with
+    | VarInit (_, _, annotated_expr) -> extract_int_cost annotated_expr.annotations
+    | VarDecl (_, annotated_expr) -> extract_int_cost annotated_expr.annotations
+    | _ -> raise Type_error ) 
+  in 
+  let end_value = ( 
+    let { expr ; annotations=_ } = cond in 
+    match expr with 
+    | Binop  
+  )
+
+  let for_each ~start_env ~end_env ~for_each ~result = ()
+  let for_each ~start_env ~end_env ~for_each ~result = end_env, for_each, result
+  let for_loop ~start_env ~end_env ~for_loop ~result = end_env, for_loop, result *)
+
+  let rec verify_condition_type_costs = function
+    | condition_type_cost :: condition_type_costs ->
+      Types_cost.verify_type_cost T_Bool condition_type_cost
+      && verify_condition_type_costs condition_type_costs
+    | [] -> true
+
+
+  let if_record env if_record result =
+    let number_of_conditions =
+      1
+      + List.length if_record.else_if
+      +
+      match if_record.else_contents with
+      | Some _ -> 1
+      | None -> 0
+    in
+    let condition_type_costs, result =
+      Types_cost_result.pop_n result number_of_conditions
+    in
+    if verify_condition_type_costs condition_type_costs
+    then env if_record result
+    else raise Invalid_arg_type
+
+
+  (* let structure env structure result = 
+    match structure with 
+    | Block_struct -> ignore_branch env structure result  
+    | If _ -> ignore_branch env structure result  
+    | For_loop -> 
+    | For_each ->  *)
 
   let func env func result =
     let { name; params; body = _; return_type } = func in
@@ -309,13 +403,22 @@ module Cost_type_ast_mapping = struct
                  var.alpha, type_id)
                params
          ; return =
-             (match return_type with
-             | T_Int ->
-               C_Int (Cost.union_of_list (List.map ~f:extract_cost result))
-             | T_String ->
-               C_String (Cost.union_of_list (List.map ~f:extract_cost result))
-             | T_Unit -> C_Unit
-             | T_Bool -> C_Bool)
+             (let rec collect_return_types result =
+                match result with
+                | [ r ] ->
+                  if Types_cost.verify_type_cost return_type r
+                  then r
+                  else raise Invalid_return_type
+                | r :: rs ->
+                  if Types_cost.verify_type_cost return_type r
+                  then Types_cost.union r (collect_return_types rs)
+                  else raise Invalid_return_type
+                | [] ->
+                  (match return_type with
+                  | T_Unit -> C_Unit
+                  | _ -> raise No_return_statement)
+              in
+              collect_return_types result)
          })
       env
 end
@@ -485,3 +588,5 @@ module Cost_type_ast_mapping = struct
 end
 
 module Cost_type_pipeline = Ast_pipeline (Cost_type_ast_mapping) *) *) *)
+
+module Cost_type_pipeline = Ast_pipeline (Cost_type_ast_mapping)
