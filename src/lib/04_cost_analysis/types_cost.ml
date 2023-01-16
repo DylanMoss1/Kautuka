@@ -54,13 +54,13 @@ module Types_cost = struct
       Fmt.str "func%s" (string_of_func_type_cost func_type_cost)
 
 
-  let verify_type_cost expected_type type_cost =
+  let verified_type_cost expected_type type_cost =
     match expected_type, type_cost with
-    | T_Int, C_Int _ -> true
-    | T_String, C_String _ -> true
-    | T_Unit, C_Unit -> true
-    | T_Bool, C_Bool -> true
-    | _ -> false
+    | T_Int, C_Int _ -> type_cost
+    | T_String, C_String _ -> type_cost
+    | T_Unit, C_Unit -> type_cost
+    | T_Bool, C_Bool -> type_cost
+    | _ -> raise Type_error
 
 
   let union type_cost1 type_cost2 =
@@ -76,41 +76,126 @@ module Expr_type_cost_annotation = Types_cost
 module Cost_type_environment = Environment_ (Alpha) (Types_cost)
 
 module Types_cost_result = struct
-  type t = Types_cost.t list
+  type t =
+    { expr_type_cost : Types_cost.t list
+    ; return_type_cost : Types_cost.t list
+    }
 
   exception Invalid_arg_number
+  exception Type_error
 
-  let empty = []
+  let empty = { expr_type_cost = []; return_type_cost = [] }
 
-  let pop t =
-    match List.hd t, List.tl t with
-    | Some hd, Some tl -> hd, tl
+  let extract xs =
+    match xs with
+    | [ x ] -> x
     | _ -> raise Invalid_arg_number
 
 
-  let pop_2 t =
-    match List.hd t, List.tl t with
-    | Some hd, Some tl ->
-      let hd2, tl = pop tl in
-      hd, hd2, tl
+  let extract_2 xs =
+    match xs with
+    | [ x1; x2 ] -> x1, x2
     | _ -> raise Invalid_arg_number
 
 
-  let pop_n t n =
-    let rec pop_n_inner head_list tail n =
-      if n = 0
-      then head_list, tail
-      else (
-        let hd, tl = pop t in
-        pop_n_inner (List.append head_list [ hd ]) tl (n - 1))
+  let rec extract_n xs n =
+    match xs, n with
+    | [], 0 -> []
+    | [], _ | _ :: _, 0 -> raise Invalid_arg_number
+    | x :: xs, n -> x :: extract_n xs (n - 1)
+
+
+  let extract_expr_type_cost t = extract t.expr_type_cost
+  let extract_2_expr_type_cost t = extract_2 t.expr_type_cost
+  let extract_n_expr_type_cost t = extract_n t.expr_type_cost
+  let push_type_cost x t = { t with expr_type_cost = t.expr_type_cost @ [ x ] }
+
+  let push_return_cost x t =
+    { t with return_type_cost = t.return_type_cost @ [ x ] }
+
+
+  (* let create ~new_expr_type_cost ~new_return_type_cost =
+    let t =
+      match new_expr_type_cost with
+      | Some new_expr_type_cost ->
+        { expr_type_cost = [ new_expr_type_cost ]; return_type_cost = [] }
+      | None -> { expr_type_cost = []; return_type_cost = [] }
     in
-    pop_n_inner [] t n
+    match new_return_type_cost with
+    | Some new_return_type_cost ->
+      { t with
+        return_type_cost = t.return_type_cost @ [ new_return_type_cost ]
+      }
+    | None -> t *)
+
+  let create expr_type_cost =
+    { expr_type_cost = [ expr_type_cost ]; return_type_cost = [] }
 
 
-  let get t = t
-  let push x t = List.append t [ x ]
-  let join t1 t2 = t1 @ t2
-  let join_list = List.fold_left ~init:[] ~f:(fun acc x -> join acc x)
+  let create_with_return expr_type_cost return_type_cost =
+    match expr_type_cost with
+    | Some expr_type_cost ->
+      { expr_type_cost = [ expr_type_cost ]; return_type_cost }
+    | None -> { expr_type_cost = []; return_type_cost }
+
+
+  let add expr_type_cost t =
+    { t with expr_type_cost = t.expr_type_cost @ [ expr_type_cost ] }
+
+
+  (* let remove_ *)
+
+  (* let add ~new_expr_type_cost ~new_return_type_cost t =
+    let t =
+      match new_expr_type_cost with
+      | Some new_expr_type_cost ->
+        { t with expr_type_cost = t.expr_type_cost @ [ new_expr_type_cost ] }
+      | None -> t
+    in
+    match new_return_type_cost with
+    | Some new_return_type_cost ->
+      { t with
+        return_type_cost = t.return_type_cost @ [ new_return_type_cost ]
+      }
+    | None -> t
+
+
+  let get_return_type_cost t expected_type =
+    match t.return_type_cost, expected_type with
+    | [], T_Unit -> Types_cost.C_Unit
+    | return_type_cost :: return_type_cost_list, _ ->
+      List.fold_left
+        ~init:(Types_cost.verified_type_cost expected_type return_type_cost)
+        ~f:(fun acc type_cost ->
+          Types_cost.union
+            acc
+            (Types_cost.verified_type_cost expected_type type_cost))
+        return_type_cost_list
+    | [], _ -> raise Type_error *)
+
+  let get_return_type_cost return_type_cost expected_type =
+    match return_type_cost, expected_type with
+    | [], T_Unit -> Types_cost.C_Unit
+    | return_type_cost :: return_type_cost_list, _ ->
+      List.fold_left
+        ~init:(Types_cost.verified_type_cost expected_type return_type_cost)
+        ~f:(fun acc type_cost ->
+          Types_cost.union
+            acc
+            (Types_cost.verified_type_cost expected_type type_cost))
+        return_type_cost_list
+    | [], _ -> raise Type_error
+
+
+  let get_expr_type_cost t = t.expr_type_cost
+
+  let join t1 t2 =
+    { expr_type_cost = t1.expr_type_cost @ t2.expr_type_cost
+    ; return_type_cost = t1.return_type_cost @ t2.return_type_cost
+    }
+
+
+  let join_list = List.fold_left ~init:empty ~f:(fun acc x -> join acc x)
 end
 
 module Cost_type_ast =
@@ -136,102 +221,121 @@ module Cost_type_ast_mapping = struct
 
   let value env = function
     | Int i ->
-      env, Int i, [ C_Int (Cost.create_int_cost (Integer_bound.create (i, i))) ]
-    | Bool b -> env, Bool b, [ C_Bool ]
+      env, Int i, Types_cost_result.create (C_Int (Cost.create_int_cost i))
+    | Bool b -> env, Bool b, Types_cost_result.create C_Bool
     | String s ->
-      let len = String.length s in
       ( env
       , String s
-      , [ C_String (Cost.create_int_cost (Integer_bound.create (len, len))) ] )
+      , Types_cost_result.create
+          (C_String (Cost.create_int_cost (String.length s))) )
 
 
-  let rec match_alpha_to_type params args =
+  let rec create_alpha_to_cost_mapping params args =
     match params, args with
     | (alpha, T_Int) :: params, C_Int cost :: args ->
-      (alpha, cost) :: match_alpha_to_type params args
+      (alpha, cost) :: create_alpha_to_cost_mapping params args
     | (alpha, T_String) :: params, C_String cost :: args ->
-      (alpha, cost) :: match_alpha_to_type params args
-    | (_, T_Bool) :: params, C_Bool :: args -> match_alpha_to_type params args
-    | (_, T_Unit) :: params, C_Unit :: args -> match_alpha_to_type params args
+      (alpha, cost) :: create_alpha_to_cost_mapping params args
+    | (_, T_Bool) :: params, C_Bool :: args ->
+      create_alpha_to_cost_mapping params args
+    | (_, T_Unit) :: params, C_Unit :: args ->
+      create_alpha_to_cost_mapping params args
     | [], [] -> []
     | _, [] | [], _ -> raise Invalid_arg_number
     | _ -> raise Invalid_arg_type
 
 
-  let substitute_params_in_cost params param_types cost =
-    let map = match_alpha_to_type params param_types in
-    Cost.substitute map cost
+  let substitute_params_in_cost params args cost =
+    let alpha_to_cost_mapping = create_alpha_to_cost_mapping params args in
+    Cost.substitute alpha_to_cost_mapping cost
 
 
-  let user_func env (user_func : (old_var_annot, 'a) user_func) result =
-    let { name; args = _ } = user_func in
-    let func_type_cost = get_value name.alpha env in
-    match func_type_cost with
+  let get_func_type_cost env func_name =
+    match get_value func_name.alpha env with
     | Some func_type_cost ->
       (match func_type_cost with
-      | C_Func func_type_cost ->
-        let { params; return } = func_type_cost in
-        (match return with
-        | C_Int cost ->
-          ( env
-          , user_func
-          , [ C_Int (substitute_params_in_cost params result cost) ] )
-        | C_String cost ->
-          ( env
-          , user_func
-          , [ C_String (substitute_params_in_cost params result cost) ] )
-        | C_Unit -> env, user_func, [ C_Unit ]
-        | C_Bool -> env, user_func, [ C_Bool ]
-        | _ -> raise Invalid_return_type)
-      | _ -> raise Invalid_var_type)
-    | _ -> raise (Unbound_var name.name)
+      | C_Func func_type_cost -> func_type_cost
+      | _ -> raise Invalid_return_type)
+    | _ -> raise (Unbound_var func_name.name)
+
+
+  let user_func env user_func result =
+    let { name; args = _ } = user_func in
+    let { params; return } = get_func_type_cost env name in
+    match return with
+    | C_Int cost ->
+      ( env
+      , user_func
+      , Types_cost_result.add
+          (C_Int
+             (substitute_params_in_cost
+                params
+                (Types_cost_result.get_expr_type_cost result)
+                cost))
+          result )
+    | C_String cost ->
+      ( env
+      , user_func
+      , Types_cost_result.add
+          (C_String
+             (substitute_params_in_cost
+                params
+                (Types_cost_result.get_expr_type_cost result)
+                cost))
+          result )
+    | C_Unit -> env, user_func, Types_cost_result.add C_Unit result
+    | C_Bool -> env, user_func, Types_cost_result.add C_Bool result
+    | _ -> raise Invalid_return_type
+
+
+  let new_branch env ast (result : Types_cost_result.t) expr_type_cost =
+    ( env
+    , ast
+    , Types_cost_result.create_with_return
+        expr_type_cost
+        result.return_type_cost )
+
+
+  let get_type_cost var env =
+    match Cost_type_environment.get_value var.alpha env with
+    | Some type_cost -> type_cost
+    | _ -> raise (Unbound_var var.name)
 
 
   let func_call env func_call result =
     match func_call with
     | User_func _ -> env, func_call, result
     | Print _ ->
-      let type_cost, result = Types_cost_result.pop result in
-      (match type_cost with
-      | C_String _ | C_Int _ -> env, func_call, result
+      (match Types_cost_result.extract_expr_type_cost result with
+      | C_String _ | C_Int _ -> new_branch env func_call result None
       | _ -> raise Type_error)
     | Input ->
-      ( env
-      , func_call
-      , C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
-        :: result )
+      new_branch env func_call result (Some (C_String Cost.default_input_bound))
     | Open _ ->
-      let type_cost, result = Types_cost_result.pop result in
-      (match type_cost with
-      | C_String _ -> env, func_call, C_File :: result
+      (match Types_cost_result.extract result.expr_type_cost with
+      | C_String _ -> new_branch env func_call result (Some C_File)
       | _ -> raise Type_error)
     | Read var ->
-      (match Cost_type_environment.get_value var.alpha env with
-      | Some type_cost ->
-        (match type_cost with
-        | C_File ->
-          ( env
-          , func_call
-          , C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
-            :: result )
-        | _ -> raise Type_error)
-      | None -> raise (Unbound_var var.name))
+      (match get_type_cost var env with
+      | C_File ->
+        new_branch
+          env
+          func_call
+          result
+          (Some (C_String Cost.default_input_bound))
+      | _ -> raise Type_error)
     | Write { file; _ } ->
-      (match Cost_type_environment.get_value file.alpha env with
-      | Some var_type_cost ->
-        let type_cost, result = Types_cost_result.pop result in
-        (match var_type_cost, type_cost with
-        | C_File, C_String _ -> env, func_call, result
-        | _ -> raise Type_error)
-      | None -> raise (Unbound_var file.name))
+      (match
+         get_type_cost file env, Types_cost_result.extract_expr_type_cost result
+       with
+      | C_File, C_String _ -> new_branch env func_call result None
+      | _ -> raise Type_error)
     | Append { file; _ } ->
-      (match Cost_type_environment.get_value file.alpha env with
-      | Some var_type_cost ->
-        let type_cost, result = Types_cost_result.pop result in
-        (match var_type_cost, type_cost with
-        | C_File, C_String _ -> env, func_call, result
-        | _ -> raise Type_error)
-      | None -> raise (Unbound_var file.name))
+      (match
+         get_type_cost file env, Types_cost_result.extract_expr_type_cost result
+       with
+      | C_File, C_String _ -> new_branch env func_call result None
+      | _ -> raise Type_error)
 
 
   let bin_op_int_to_bool arg_type1 arg_type2 =
@@ -246,125 +350,146 @@ module Cost_type_ast_mapping = struct
     | _ -> raise Invalid_arg_type
 
 
-  let expr env expr result =
+  let expr env expr (result : Types_cost_result.t) =
     match expr with
     | Unop (unop, _) ->
-      let arg_type, result = Types_cost_result.pop result in
-      (match unop with
-      | Not ->
-        (match arg_type with
-        | C_Bool -> env, expr, C_Bool :: result
-        | _ -> raise Invalid_arg_type)
-      | U_Minus ->
-        (match arg_type with
-        | C_Int type_cost -> env, expr, C_Int (Cost.negate type_cost) :: result
-        | _ -> raise Invalid_arg_type))
+      ( env
+      , expr
+      , let expr_type_cost = Types_cost_result.extract result.expr_type_cost in
+        (match unop with
+        | Not ->
+          (match expr_type_cost with
+          | C_Bool -> Types_cost_result.add C_Bool result
+          | _ -> raise Invalid_arg_type)
+        | U_Minus ->
+          (match expr_type_cost with
+          | C_Int cost ->
+            Types_cost_result.add (C_Int (Cost.negate cost)) result
+          | _ -> raise Invalid_arg_type)) )
     | Binop (_, binop, _) ->
-      let arg_type1, arg_type2, result = Types_cost_result.pop2 result in
-      (match binop with
-      | Plus ->
-        (match arg_type1, arg_type2 with
-        | C_Int type_cost1, C_Int type_cost2 ->
-          env, expr, C_Int (Cost.sum type_cost1 type_cost2) :: result
-        | C_String type_cost1, C_String type_cost2 ->
-          env, expr, C_String (Cost.sum type_cost1 type_cost2) :: result
-        | _ -> raise Invalid_arg_type)
-      | B_Minus ->
-        (match arg_type2, arg_type2 with
-        | C_Int type_cost1, C_Int type_cost2 ->
-          env, expr, C_Int (Cost.subtract type_cost1 type_cost2) :: result
-        | _ -> raise Invalid_arg_type)
-      | Mult ->
-        (match arg_type2, arg_type2 with
-        | C_Int type_cost1, C_Int type_cost2 ->
-          env, expr, C_Int (Cost.multiply type_cost1 type_cost2) :: result
-        | _ -> raise Invalid_arg_type)
-      | Lt | Le | Gt | Ge | Eq | Ne ->
-        env, expr, bin_op_int_to_bool arg_type1 arg_type2 :: result
-      | And | Or -> env, expr, bin_op_bool_to_bool arg_type1 arg_type2 :: result)
-    | Paren _ -> ignore_branch env expr result
-    | Value _ -> ignore_branch env expr result
-    | VarRead var ->
-      let { name = _; alpha } = var in
-      (match get_value alpha env with
-      | Some key -> env, expr, key :: result
-      | None -> raise (Unbound_var var.name))
-    | Func_call _ -> ignore_branch env expr result
+      ( env
+      , expr
+      , Types_cost_result.push_type_cost
+          (let expr1_type_cost, expr2_type_cost =
+             Types_cost_result.extract_2 result.expr_type_cost
+           in
+           match binop with
+           | Plus ->
+             (match expr1_type_cost, expr2_type_cost with
+             | C_Int cost_1, C_Int cost_2 -> C_Int (Cost.sum cost_1 cost_2)
+             | _ -> raise Type_error)
+           | B_Minus ->
+             (match expr1_type_cost, expr2_type_cost with
+             | C_Int cost_1, C_Int cost_2 -> C_Int (Cost.subtract cost_1 cost_2)
+             | _ -> raise Type_error)
+           | Mult ->
+             (match expr1_type_cost, expr2_type_cost with
+             | C_Int cost_1, C_Int cost_2 -> C_Int (Cost.multiply cost_1 cost_2)
+             | _ -> raise Type_error)
+           | Lt | Le | Gt | Ge | Eq | Ne ->
+             bin_op_int_to_bool expr1_type_cost expr2_type_cost
+           | And | Or -> bin_op_bool_to_bool expr1_type_cost expr2_type_cost)
+          result )
+    | VarRead var -> env, expr, get_type_cost var env
+    | _ -> ignore_branch env expr result
 
 
-  let annotated_expr ~env ~new_expr ~old_annotations:_ ~result =
-    env, { expr = new_expr; annotations = result }, result
+  let annotated_expr
+      ~env
+      ~new_expr
+      ~old_annotations:_
+      ~(result : Types_cost_result.t)
+    =
+    ( env
+    , { expr = new_expr; annotations = result }
+    , Types_cost_result.create_with_return None result.return_type_cost )
 
 
-  let var_statement env var_statement result =
+  let var_statement env var_statement (result : Types_cost_result.t) =
     match var_statement with
     | VarNonInit (_, _) -> ignore_branch env var_statement empty_result
-    | VarInit (var, _, _) ->
-      let type_cost, result = Types_cost_result.pop result in
-      add_to_env var.alpha type_cost env, var_statement, result
-    | VarDecl (var, _) ->
-      let type_cost, result = Types_cost_result.pop result in
-      add_to_env var.alpha type_cost env, var_statement, result
-    | VarAssign (var, _) ->
-      let type_cost, result = Types_cost_result.pop result in
-      add_to_env var.alpha type_cost env, var_statement, result
+    | VarInit (var, _, _) | VarDecl (var, _) | VarAssign (var, _) ->
+      let expr_type_cost = Types_cost_result.extract result.expr_type_cost in
+      ( add_to_env var.alpha expr_type_cost env
+      , var_statement
+      , Types_cost_result.create_with_return None result.return_type_cost )
     | Pre_inc var ->
-      (match get_value var.alpha env with
-      | Some value ->
-        (match value with
-        | C_Int cost ->
-          let new_cost = C_Int (Cost.sum Cost.one cost) in
-          add_to_env var.alpha new_cost env, var_statement, result
-        | _ -> raise Invalid_var_type)
-      | None -> raise (Unbound_var var.name))
+      (match get_type_cost var env with
+      | C_Int cost ->
+        let new_cost = C_Int (Cost.sum Cost.one cost) in
+        ( add_to_env var.alpha new_cost env
+        , var_statement
+        , Types_cost_result.create_with_return
+            (Some new_cost)
+            result.return_type_cost )
+      | _ -> raise Invalid_var_type)
     | Post_inc var ->
-      (match get_value var.alpha env with
-      | Some value ->
-        (match value with
-        | C_Int cost ->
-          ( add_to_env var.alpha (C_Int (Cost.sum Cost.one cost)) env
-          , var_statement
-          , result )
-        | _ -> raise Invalid_var_type)
-      | None -> raise (Unbound_var var.name))
+      (match get_type_cost var env with
+      | C_Int cost ->
+        let new_cost = C_Int (Cost.sum Cost.one cost) in
+        ( add_to_env var.alpha new_cost env
+        , var_statement
+        , Types_cost_result.create_with_return
+            (Some (C_Int cost))
+            result.return_type_cost )
+      | _ -> raise Invalid_var_type)
     | _ -> raise (Failure "REMOVE POST/PRE DEC")
 
 
-  let statement env statement result =
+  let statement env statement (result : Types_cost_result.t) =
     match statement with
     | Expr _ ->
-      let _, result = Types_cost_result.pop result in
-      env, statement, result
+      ( env
+      , statement
+      , Types_cost_result.create_with_return None result.return_type_cost )
+    | Return _ ->
+      let type_cost = Types_cost_result.extract result.expr_type_cost in
+      ( env
+      , statement
+      , Types_cost_result.create_with_return
+          None
+          (type_cost :: result.return_type_cost) )
     | _ -> ignore_branch env statement result
 
 
-  (* let extract_int_cost = function
-    | C_Int cost -> cost
-    | _ -> raise Type_error *)
-
-  (* let for_loop ~start_env ~end_env ~for_loop ~result =
+  let update_for_loop_env env (for_loop : ('a, old_var_annot, 'c) for_loop) =
     let { init; cond; iter; contents = _ } = for_loop in
-    let start_value = ( 
-    match init with
-    | VarInit (_, _, annotated_expr) -> extract_int_cost annotated_expr.annotations
-    | VarDecl (_, annotated_expr) -> extract_int_cost annotated_expr.annotations
-    | _ -> raise Type_error ) 
-  in 
-  let end_value = ( 
-    let { expr ; annotations=_ } = cond in 
-    match expr with 
-    | Binop  
-  )
+    let init_var, init_type_cost =
+      match init with
+      | VarInit (var, _, annotated_expr) -> var, annotated_expr.annotations
+      | VarDecl (var, annotated_expr) -> var, annotated_expr.annotations
+      | _ -> raise Type_error
+    in
+    let cond_type_cost = cond.annotations in
+    let _ =
+      match iter with
+      | Pre_inc var ->
+        if Alpha.compare init_var.alpha var.alpha = 0
+        then true
+        else raise Type_error
+      | Post_inc var ->
+        if Alpha.compare init_var.alpha var.alpha = 0
+        then false
+        else raise Type_error
+      | _ -> raise Type_error
+    in
+    match init_type_cost, cond_type_cost with
+    | C_Int init_cost, C_Int cond_cost ->
+      Cost_type_environment.add_new_item
+        init_var.alpha
+        (C_Int
+           (Cost.create_lower_upper_bounded_cost
+              ~lower:init_cost
+              ~upper:(Cost.subtract cond_cost Cost.one)))
+        env
+    | _ -> raise Type_error
 
-  let for_each ~start_env ~end_env ~for_each ~result = ()
-  let for_each ~start_env ~end_env ~for_each ~result = end_env, for_each, result
-  let for_loop ~start_env ~end_env ~for_loop ~result = end_env, for_loop, result *)
 
-  let rec verify_condition_type_costs = function
-    | condition_type_cost :: condition_type_costs ->
-      Types_cost.verify_type_cost T_Bool condition_type_cost
-      && verify_condition_type_costs condition_type_costs
-    | [] -> true
+  let update_for_each_env env for_each =
+    match get_type_cost for_each.iterator env with
+    | C_String cost ->
+      Cost_type_environment.add_new_item for_each.item.alpha (C_String cost) env
+    | _ -> raise Type_error
 
 
   let if_record env if_record result =
@@ -376,22 +501,19 @@ module Cost_type_ast_mapping = struct
       | Some _ -> 1
       | None -> 0
     in
-    let condition_type_costs, result =
-      Types_cost_result.pop_n result number_of_conditions
-    in
-    if verify_condition_type_costs condition_type_costs
-    then env if_record result
-    else raise Invalid_arg_type
+    let _ = Types_cost_result.extract_n result number_of_conditions in
+    env, if_record, Types_cost_result.empty
 
 
-  (* let structure env structure result = 
-    match structure with 
-    | Block_struct -> ignore_branch env structure result  
-    | If _ -> ignore_branch env structure result  
-    | For_loop -> 
-    | For_each ->  *)
+  let get_new_env start_env end_env iteration_bound =
+    Cost.sum
+      (Cost.multiply
+         (Cost.subtract end_env start_env)
+         (Cost.create_int_cost iteration_bound))
+      start_env
 
-  let func env func result =
+
+  let func env func (result : Types_cost_result.t) =
     let { name; params; body = _; return_type } = func in
     add_to_env
       name.alpha
@@ -403,190 +525,9 @@ module Cost_type_ast_mapping = struct
                  var.alpha, type_id)
                params
          ; return =
-             (let rec collect_return_types result =
-                match result with
-                | [ r ] ->
-                  if Types_cost.verify_type_cost return_type r
-                  then r
-                  else raise Invalid_return_type
-                | r :: rs ->
-                  if Types_cost.verify_type_cost return_type r
-                  then Types_cost.union r (collect_return_types rs)
-                  else raise Invalid_return_type
-                | [] ->
-                  (match return_type with
-                  | T_Unit -> C_Unit
-                  | _ -> raise No_return_statement)
-              in
-              collect_return_types result)
+             Types_cost_result.get_return_type_cost
+               result.return_type_cost
+               return_type
          })
       env
 end
-
-(* let func env func result =
-    let { name; params; body; return_type } = func in
-    add_to_env
-      name.alpha
-      (Types_cost.C_Func
-         { args =
-             List.map
-               ~f:(fun param ->
-                 let var, type_id = param in
-                 var.alpha, type_id)
-               params
-         ; return = Types_cost.C_Unit 
-         })
-      env *)
-
-(* let user_func env user_func result =  *)
-
-(*
-module Cost_type_ast =
-  Annotated_ast (Block_side_effect_annotation) (Cost_type_var_annotation)
-    (Import_annotation)
-
-
-
-  let rec type_cost_of_user_func _ _ = C_Unit
-
-  and type_cost_of_func_call env = function
-    | User_func user_func -> type_cost_of_user_func env user_func
-    | Print expr ->
-      (match type_cost_of_expr env expr with
-      | C_String _ | C_Int _ -> C_Unit
-      | _ -> raise Type_error)
-    | Input ->
-      C_String (Cost.create_int_cost (Integer_bound.create (0, 100)))
-      (* CHANGE INPUT *)
-    | Open expr ->
-      (match type_cost_of_expr env expr with
-      | C_String _ -> C_File
-      | _ -> raise Type_error)
-    | Read var ->
-      (match Cost_type_environment.get_value var env with
-      | Some type_cost ->
-        (match type_cost with
-        | C_File -> C_String
-        | _ -> raise Type_error)
-      | None -> raise (Unbound_var var.name))
-    | Write { file; contents } ->
-      (match type_cost_of_expr env file, type_cost_of_expr env contents with
-      | C_File, C_String _ -> C_Unit
-      | _ -> raise Type_error)
-    | Append { file; contents } ->
-      (match type_cost_of_expr env file, type_cost_of_expr env contents with
-      | C_File, C_String _ -> C_Unit
-      | _ -> raise Type_error)
-
-
-  and type_cost_of_expr env = function
-    | Unop (unop, expr) -> type_cost_of_unop (type_cost_of_expr env expr) unop
-    | Binop (expr1, binop, expr2) ->
-      type_cost_of_binop
-        (type_cost_of_expr env expr1)
-        (type_cost_of_expr env expr2)
-        binop
-    | Paren expr -> type_cost_of_expr env expr
-    | Value value -> type_cost_of_value value
-    | VarRead var ->
-      (match Cost_type_environment.get_value var env with
-      | Some type_cost -> type_cost
-      | None -> raise (Unbound_var var.name))
-    | Func_call func_call -> type_cost_of_func_call env func_call
-end
-
-(* 
-
-
-module Cost_type = struct
-  type t = type_id * Cost.t [@@deriving of_sexp, sexp_of, compare]
-
-  let string_of_t (type_id, bound_term) =
-    Fmt.str "%s%s" (string_of_type_id type_id) (Cost.string_of_t bound_term)
-
-
-  let create_int_cost type_id int_bound =
-    type_id, Cost.create (Cost_term.create_int_t int_bound)
-end
-
-
-
-
-
-
-module Bounded_type_environment = Environment_ (Alpha) (Cost_type)
-
-type cost_type_var =
-  { name : string
-  ; alpha : Alpha.t
-  ; cost_type : Cost_type.t
-  }
-[@@deriving compare, sexp_of, of_sexp]
-
-module Cost_type_var_annotation = struct
-  type t = cost_type_var [@@deriving compare, sexp_of, of_sexp]
-
-  let string_of_t t = t.name
-end
-
-module Cost_type_environment = Environment_ (Alpha) (Cost_type)
-module Cost_type_set = Make_extended_set (Cost_type)
-
-module Cost_type_ast =
-  Annotated_ast (Block_side_effect_annotation) (Cost_type_var_annotation)
-    (Import_annotation)
-
-module Cost_type_ast_mapping = struct
-  include
-    Default_ast_mapping (Side_effect_ast) (Cost_type_ast)
-      (Cost_type_environment)
-      (Cost_type_set)
-
-  let add_result = Cost_type_set.add
-  let new_cost_type cost_type = add_result empty_result cost_type
-
-  let value env value =
-    match value with
-    | Int i ->
-      env, Int i, new_cost_type (Cost_type.create_int_cost T_Int (i, i))
-    | Bool _ -> ignore_leaf env value
-    | String s ->
-      let len = String.length s in
-      ( env
-      , String s
-      , new_cost_type (Cost_type.create_int_cost T_String (len, len)) )
-
-  
-  let expr env expr result = match expr with 
-    | Unop (unop, expr) -> match unop with 
-    | 
-
-
-
-
-      | Binop(expr, binop, expr) -> 
-        | Paren(expr) -> 
-          | Value(value) -> 
-            | VarRead(var) -> env, VarRead({
-              name = var.name ; alpha = var.alpha ; cost_type = get_value var.alpha
-            }), empty_result 
-
-            (* 
-    let var env var ~var_effect =
-      | Init -> 
-      | Read -> env, {
-        name = var.name ; alpha = var.alpha ; cost_type = get_value var.alpha
-      }, empty_result 
-      | Write -> 
-
-
-
-      match var_effect with
-      | Init -> ignore_leaf env var
-      | Read -> env, var, new_effect (Read, Var_mut var.alpha)
-      | Write -> env, var, new_effect (Write, Var_mut var.alpha)
-end
-
-module Cost_type_pipeline = Ast_pipeline (Cost_type_ast_mapping) *) *) *)
-
-module Cost_type_pipeline = Ast_pipeline (Cost_type_ast_mapping)

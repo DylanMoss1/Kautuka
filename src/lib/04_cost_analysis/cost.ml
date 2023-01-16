@@ -70,6 +70,16 @@ module Integer_bound = struct
     let l1, u1 = t1 in
     let l2, u2 = t2 in
     Int.min l1 l2, Int.max u1 u2
+
+
+  let zero_lower t =
+    let _, u = t in
+    0, u
+
+
+  let zero_upper t =
+    let l, _ = t in
+    l, 0
 end
 
 module Variable_bound = struct
@@ -144,9 +154,14 @@ module Cost = struct
 
 
   let empty = []
-  let create_int_cost int_bound = [ int_bound, Variable_bound.empty ]
-  let zero = create_int_cost Integer_bound.zero
-  let one = create_int_cost Integer_bound.one
+  let create_int_bound_cost int_bound = [ int_bound, Variable_bound.empty ]
+  let create_int_cost i = [ Integer_bound.create (i, i), Variable_bound.empty ]
+  let zero = create_int_bound_cost Integer_bound.zero
+  let one = create_int_bound_cost Integer_bound.one
+
+  let default_input_bound =
+    create_int_bound_cost (Integer_bound.create (0, 100))
+
 
   let sum_reduce =
     List.fold_left ~init:[] ~f:(fun acc cost_term ->
@@ -191,7 +206,7 @@ module Cost = struct
   let substitute_cost_term map (cost_term : Integer_bound.t * Variable_bound.t) =
     let int_bound, var_bound = cost_term in
     List.fold_left
-      ~init:(create_int_cost int_bound)
+      ~init:(create_int_bound_cost int_bound)
       ~f:(fun acc var_term ->
         multiply
           acc
@@ -224,4 +239,19 @@ module Cost = struct
 
   let union t1 t2 = union_reduce (t1 @ t2)
   let union_of_list = List.fold_left ~init:[] ~f:union
+
+  let create_lower_upper_bounded_cost ~(lower : t) ~(upper : t) : t =
+    let zeroed_lower =
+      List.map
+        ~f:(fun (int_bound, var_bound) ->
+          Integer_bound.zero_upper int_bound, var_bound)
+        lower
+    in
+    let zeroed_upper =
+      List.map
+        ~f:(fun (int_bound, var_bound) ->
+          Integer_bound.zero_lower int_bound, var_bound)
+          upper
+    in
+    sum zeroed_lower zeroed_upper
 end

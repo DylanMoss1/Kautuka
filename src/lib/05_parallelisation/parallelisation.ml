@@ -1,4 +1,4 @@
-let rec collect_blocks_into_thread block_list collected_blocks remaining_blocks passed_effects = 
+(* let rec collect_blocks_into_thread block_list collected_blocks remaining_blocks passed_effects = 
   match block_list with 
   | block :: block_list -> (
     let new_passed_effects = Effect.union effect passed_effects in 
@@ -18,7 +18,7 @@ let collect_blocks_into_thread_list block_list =
       let collected_blocks, remaining_blocks = collect_blocks_into_thread block_list [] Effect.empty []
       in collect_blocks_into_thread_list_inner remaining_blocks (List.append thread_list [collected_blocks])         
   ) in collect_blocks_into_thread_list_inner block_list [] 
-
+ *)
 
 
 (* open! Core
