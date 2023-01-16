@@ -251,7 +251,7 @@ module Cost = struct
       List.map
         ~f:(fun (int_bound, var_bound) ->
           Integer_bound.zero_lower int_bound, var_bound)
-          upper
+        upper
     in
     sum zeroed_lower zeroed_upper
 end

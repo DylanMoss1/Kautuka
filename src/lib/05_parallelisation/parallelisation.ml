@@ -20,7 +20,6 @@ let collect_blocks_into_thread_list block_list =
   ) in collect_blocks_into_thread_list_inner block_list [] 
  *)
 
-
 (* open! Core
 open Ast.Ast_types
 
