@@ -1,4 +1,4 @@
-open! Core
+(* open! Core
 open Util.Environment
 open Ast.Ast_types
 open Ast.Annotated_ast
@@ -62,6 +62,57 @@ module Cost_ast_mapping = struct
     Default_ast_mapping (Cost_type_ast) (Cost_ast) (Cost_multiplier_environment)
       (Runtime_cost)
 
+  let user_func env user_func result = 
+    let { name; args = _ } = user_func in
+    let {  }
+
+  let expr env expr result = match expr with 
+  | Unop (unop, annotated_expr) -> ( 
+    match unop with 
+    | Not -> 
+    | U_Minus -> 
+  )
+  | Binop (annotated_expr1, binop, annotated_expr2) -> ( 
+    match binop with 
+    | Plus ->  
+    | B_Minus ->  
+    | Mult ->  
+    | Lt ->  
+    | Le ->  
+    | Gt ->  
+    | Ge ->  
+    | Eq ->  
+    | Ne ->  
+    | And ->  
+    | Or -> 
+  )
+  | VarRead -> 
+  | _ ->
+
+  let var_statement env var_statement result = 
+    match var_statement with 
+    | VarNonInit(_, _) -> 
+    | VarInit (_,_,_) -> 
+    | VarDecl (_,_) -> 
+    | VarAssign (_,_) -> 
+    | Pre_inc _ -> 
+    | Post_inc -> 
+
+  let for_loop ~start_env ~end_env ~for_loop ~result = 
+
+  let for_each ~start_env ~end_env ~for_each ~result = 
+
+  let update_for_loop_env env for_loop result = 
+
+  let update_for_each_env env for_each result = 
+
+  let if_record env if_record result = 
+
+  let func env func result = 
+
+
+
+
   let block ~env ~new_contents ~(old_annotations : old_block_annot) ~result =
     ( env
     , { contents = new_contents
@@ -74,4 +125,4 @@ module Cost_ast_mapping = struct
     , result )
 end
 
-module Cost_ast_pipeline = Ast_pipeline (Cost_ast_mapping)
+module Cost_ast_pipeline = Ast_pipeline (Cost_ast_mapping) *)

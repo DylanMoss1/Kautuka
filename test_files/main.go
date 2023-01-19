@@ -1,18 +1,30 @@
-package main 
+package main
 
-var x = 5 
+import (
+	"sync"
+)
 
-func f2() { 
-	f1()
-}
+func main() {
 
-func f1() { 
-	x = x + 5
-}
+	var wg sync.WaitGroup
 
-func main() { 
-	for i := 0; i < 10; i++  {
-		f2() 
-		println(x)
+	wg.Add(1)
+	go func() {
+		{
+			print(1)
+			print(2)
+		}
+		{
+			print(3)
+			print(4)
+		}
+
+		wg.Done()
+	}()
+	wg.Wait()
+
+	{
+		print(5)
+		print(6)
 	}
 }

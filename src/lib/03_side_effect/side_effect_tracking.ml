@@ -39,9 +39,44 @@ module Side_effect = struct
   let string_of_t = function
     | Read, effect_type -> "Read_" ^ string_of_side_effect_channel effect_type
     | Write, effect_type -> "Write_" ^ string_of_side_effect_channel effect_type
+
+
+  let disjoint t1 t2 =
+    let t1_operation, t1_channel = t1 in
+    let t2_operation, t2_channel = t2 in
+    match t1_operation, t2_operation with
+    | Read, Read -> true
+    | _, _ ->
+      (match t1_channel, t2_channel with
+      | Console, Console -> false
+      | File, File -> false
+      | Var_mut alpha1, Var_mut alpha2 -> Alpha.compare alpha1 alpha2 <> 0
+      | _ -> true)
 end
 
-module Side_effect_set = Make_extended_set (Side_effect)
+let all_pairs xs ys =
+  List.fold_left
+    ~init:[]
+    ~f:(fun acc_x x ->
+      acc_x @ List.fold_left ~init:[] ~f:(fun acc_y y -> (x, y) :: acc_y) ys)
+    xs
+
+
+module Side_effect_set = struct
+  include Make_extended_set (Side_effect)
+
+  let disjoint t1 t2 =
+    List.fold_left
+      ~init:true
+      ~f:(fun acc t1_effect ->
+        acc
+        && List.fold_left
+             ~init:true
+             ~f:(fun acc t2_effect ->
+               acc && Side_effect.disjoint t1_effect t2_effect)
+             (elements t2))
+      (elements t1)
+end
 
 type block_side_effect =
   { block_type : block_type
@@ -50,13 +85,6 @@ type block_side_effect =
 
 module Block_side_effect_annotation = struct
   type t = block_side_effect
-
-  let string_of_block_type = function
-    | Default -> "Default"
-    | Ignore -> "Ignore"
-    | Force_par -> "Force_par"
-    | Force_seq -> "Force_seq"
-
 
   let string_of_t t =
     Fmt.str

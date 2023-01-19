@@ -113,21 +113,6 @@ module Types_cost_result = struct
   let push_return_cost x t =
     { t with return_type_cost = t.return_type_cost @ [ x ] }
 
-
-  (* let create ~new_expr_type_cost ~new_return_type_cost =
-    let t =
-      match new_expr_type_cost with
-      | Some new_expr_type_cost ->
-        { expr_type_cost = [ new_expr_type_cost ]; return_type_cost = [] }
-      | None -> { expr_type_cost = []; return_type_cost = [] }
-    in
-    match new_return_type_cost with
-    | Some new_return_type_cost ->
-      { t with
-        return_type_cost = t.return_type_cost @ [ new_return_type_cost ]
-      }
-    | None -> t *)
-
   let create expr_type_cost =
     { expr_type_cost = [ expr_type_cost ]; return_type_cost = [] }
 
@@ -141,37 +126,6 @@ module Types_cost_result = struct
 
   let add expr_type_cost t =
     { t with expr_type_cost = t.expr_type_cost @ [ expr_type_cost ] }
-
-
-  (* let remove_ *)
-
-  (* let add ~new_expr_type_cost ~new_return_type_cost t =
-    let t =
-      match new_expr_type_cost with
-      | Some new_expr_type_cost ->
-        { t with expr_type_cost = t.expr_type_cost @ [ new_expr_type_cost ] }
-      | None -> t
-    in
-    match new_return_type_cost with
-    | Some new_return_type_cost ->
-      { t with
-        return_type_cost = t.return_type_cost @ [ new_return_type_cost ]
-      }
-    | None -> t
-
-
-  let get_return_type_cost t expected_type =
-    match t.return_type_cost, expected_type with
-    | [], T_Unit -> Types_cost.C_Unit
-    | return_type_cost :: return_type_cost_list, _ ->
-      List.fold_left
-        ~init:(Types_cost.verified_type_cost expected_type return_type_cost)
-        ~f:(fun acc type_cost ->
-          Types_cost.union
-            acc
-            (Types_cost.verified_type_cost expected_type type_cost))
-        return_type_cost_list
-    | [], _ -> raise Type_error *)
 
   let get_return_type_cost return_type_cost expected_type =
     match return_type_cost, expected_type with

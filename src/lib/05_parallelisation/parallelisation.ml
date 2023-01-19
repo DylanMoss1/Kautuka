@@ -1,41 +1,70 @@
-(* let rec collect_blocks_into_thread block_list collected_blocks remaining_blocks passed_effects = 
-  match block_list with 
-  | block :: block_list -> (
-    let new_passed_effects = Effect.union effect passed_effects in 
-    if Effect.disjoint block.effects passed_effects then 
-      collect_blocks_into_thread block_list (List.append collected_blocks [block]) remaining_blocks  new_passed_effects
-    else 
-      collect_blocks_into_thread block_list collected_blocks (List.append remaining_blocks [block])  new_passed_effects
-  )
-  | [] -> collected_blocks, remaining_blocks 
-
-let collect_blocks_into_thread_list block_list = 
-  ( 
-    let rec collect_blocks_into_thread_list_inner block_list thread_list = 
-      if List.length block_list = 0 then 
-        thread_list 
-    else
-      let collected_blocks, remaining_blocks = collect_blocks_into_thread block_list [] Effect.empty []
-      in collect_blocks_into_thread_list_inner remaining_blocks (List.append thread_list [collected_blocks])         
-  ) in collect_blocks_into_thread_list_inner block_list [] 
- *)
-
-(* open! Core
+open! Core
 open Ast.Ast_types
 
-let rec parallelise_expr = function
-  | Unop (unop, expr) -> Unop (unop, parallelise_expr expr)
-  | Binop (expr1, binop, expr2) ->
-    Binop (parallelise_expr expr1, binop, parallelise_expr expr2)
-  | Paren expr -> Paren (parallelise_expr expr)
-  | Value value -> Value value
-  | Var var -> Var var
+(* open Cost_analysis.Cost_tracking *)
+open Side_effect.Side_effect_tracking
+open Parsing.Parser_types
+
+let rec disjoint_block_collection_single_pass
+    block_list
+    collected_effects
+    collected_blocks
+    passed_blocks
+  =
+  match block_list with
+  | block :: block_list ->
+    let new_collected_effects =
+      Side_effect_set.union block.annotations.side_effects collected_effects
+    in
+    let partial_apply_collect_blocks =
+      disjoint_block_collection_single_pass block_list new_collected_effects
+    in
+    if Side_effect_set.disjoint block.annotations.side_effects collected_effects
+    then partial_apply_collect_blocks (block :: collected_blocks) passed_blocks
+    else partial_apply_collect_blocks collected_blocks (block :: passed_blocks)
+  | [] -> List.rev collected_blocks, List.rev passed_blocks
 
 
-let parallelise_statement = function
-  | Expr expr -> Expr (parallelise_expr expr)
-  | Var var -> Var var
-  | Func_call func_call -> Func_call func_call
+let disjoint_block_collection block_list =
+  let rec disjoint_block_collection_inner block_list thread_list =
+    if List.length block_list = 0
+    then thread_list
+    else (
+      let collected_blocks, remaining_blocks =
+        disjoint_block_collection_single_pass
+          block_list
+          Side_effect_set.empty
+          []
+          []
+      in
+      disjoint_block_collection_inner
+        remaining_blocks
+        (List.append thread_list [ collected_blocks ]))
+  in
+  disjoint_block_collection_inner block_list []
+
+
+let parallelise_disjoint_blocks block_list =
+  let disjoint_blocks_list = disjoint_block_collection block_list in
+  List.map
+    ~f:(fun disjoint_blocks ->
+      Structure
+        (Block_struct
+           { contents =
+               List.map
+                 ~f:(fun block -> Structure (Block_struct block))
+                 disjoint_blocks
+           ; annotations =
+               { block_type = Parallel
+               ; side_effects =
+                   List.fold_left
+                     ~init:Side_effect_set.empty
+                     ~f:(fun acc block ->
+                       Side_effect_set.union acc block.annotations.side_effects)
+                     disjoint_blocks
+               }
+           }))
+    disjoint_blocks_list
 
 
 let rec parallelise_for_loop for_loop =
@@ -67,35 +96,45 @@ and parallelise_if_record if_record =
 
 
 and parallelise_structure = function
-  | Func func -> Func (parallelise_func func)
-  | Block block -> Block (parallelise_block block)
+  | Block_struct block -> Block_struct (parallelise_block block)
   | If if_record -> If (parallelise_if_record if_record)
-  | While while_loop -> While (parallelise_condition_template while_loop)
   | For_loop for_loop -> For_loop (parallelise_for_loop for_loop)
   | For_each for_each -> For_each (parallelise_for_each for_each)
 
 
 and parallelise_command = function
   | Structure structure -> Structure (parallelise_structure structure)
-  | Statement statement -> Statement (parallelise_statement statement)
+  | Statement statement -> Statement statement
 
 
-and parallelise_block_record block_record =
-  { contents = List.map ~f:parallelise_command block_record.contents
-  ; annotations = block_record.annotations
-  }
+and join_block_list_to_acc acc block_list =
+  match block_list with
+  | [] -> acc
+  | [ block ] -> acc @ [ Structure (Block_struct block) ]
+  | _ -> acc @ parallelise_disjoint_blocks block_list
 
 
-and parallelise_block = function
-  | Default_block block_record ->
-    (match block_record.annotations.is_parallel with
-    | Some true ->
-      Go_block (List.map ~f:parallelise_command block_record.contents)
-    | Some false -> Default_block (parallelise_block_record block_record)
-    | None -> Default_block (parallelise_block_record block_record))
-  | For_block block_record -> For_block block_record
-  | Ignore contents -> Ignore contents
-  | Go_block contents -> Go_block contents
+and parallelise_block block =
+  let { contents; annotations } = block in
+  let inner_parallelised_contents = List.map ~f:parallelise_command contents in
+  let parallelised_contents =
+    let rec parallelise_contents command_list block_acc command_acc =
+      match command_list with
+      | command :: command_list ->
+        (match command with
+        | Structure (Block_struct block) ->
+          parallelise_contents command_list (block_acc @ [ block ]) command_acc
+        | _ ->
+          parallelise_contents
+            command_list
+            []
+            (join_block_list_to_acc command_acc block_acc)
+          @ [ command ])
+      | [] -> join_block_list_to_acc command_acc block_acc
+    in
+    parallelise_contents inner_parallelised_contents [] []
+  in
+  { contents = parallelised_contents; annotations }
 
 
 and parallelise_func func =
@@ -111,4 +150,4 @@ let parallelise_program program =
   ; imports = program.imports
   ; global_vars = program.global_vars
   ; funcs = List.map ~f:parallelise_func program.funcs
-  } *)
+  }

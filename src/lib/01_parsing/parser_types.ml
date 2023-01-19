@@ -6,6 +6,15 @@ type block_type =
   | Ignore
   | Force_par
   | Force_seq
+  | Parallel
+
+let string_of_block_type = function
+  | Default -> "Default"
+  | Ignore -> "Ignore"
+  | Force_par -> "Force_par"
+  | Force_seq -> "Force_seq"
+  | Parallel -> "Parallel"
+
 
 module Import_empty_annotation = struct
   type t = unit
@@ -17,14 +26,7 @@ end
 module Block_type_annotation = struct
   type t = block_type
 
-  let string_of_t t =
-    match t with
-    | Default -> "Default"
-    | Ignore -> "Ignore"
-    | Force_par -> "Force_par"
-    | Force_seq -> "Force_seq"
-
-
+  let string_of_t = string_of_block_type
   let create block_type = block_type
 end
 
