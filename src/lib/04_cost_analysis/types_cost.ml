@@ -113,6 +113,7 @@ module Types_cost_result = struct
   let push_return_cost x t =
     { t with return_type_cost = t.return_type_cost @ [ x ] }
 
+
   let create expr_type_cost =
     { expr_type_cost = [ expr_type_cost ]; return_type_cost = [] }
 
@@ -126,6 +127,7 @@ module Types_cost_result = struct
 
   let add expr_type_cost t =
     { t with expr_type_cost = t.expr_type_cost @ [ expr_type_cost ] }
+
 
   let get_return_type_cost return_type_cost expected_type =
     match return_type_cost, expected_type with
