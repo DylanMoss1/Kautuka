@@ -59,8 +59,9 @@ struct
   let create_expr_annot (expr_annot : Expr_annotation.t) : expr_annot =
     expr_annot
 
-  let string_of_block_annot = Block_annotation.string_of_t 
-  let string_of_var_annot = Var_annotation.string_of_t 
-  let string_of_import_annot = Import_annotation.string_of_t 
-  let string_of_expr_annot = Expr_annotation.string_of_t 
+
+  let string_of_block_annot = Block_annotation.string_of_t
+  let string_of_var_annot = Var_annotation.string_of_t
+  let string_of_import_annot = Import_annotation.string_of_t
+  let string_of_expr_annot = Expr_annotation.string_of_t
 end
