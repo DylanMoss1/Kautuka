@@ -93,7 +93,7 @@ type ('block, 'var, 'expr) for_loop =
 
 and ('block, 'var, 'expr) for_each =
   { item : 'var var
-  ; iterator : 'var var
+  ; iterator : ('var, 'expr) annotated_expr
   ; contents : ('block, 'var, 'expr) block
   }
 

@@ -6,14 +6,12 @@ type block_type =
   | Ignore
   | Force_par
   | Force_seq
-  | Parallel
 
 let string_of_block_type = function
   | Default -> "Default"
   | Ignore -> "Ignore"
   | Force_par -> "Force_par"
   | Force_seq -> "Force_seq"
-  | Parallel -> "Parallel"
 
 
 module Import_empty_annotation = struct

@@ -161,7 +161,7 @@ and string_of_for_each ~string_of_block_annot ~string_of_var_annot for_each =
   Fmt.str
     "for %s := %s {\n%s\n}"
     (string_of_var ~string_of_var_annot for_each.item)
-    (string_of_var ~string_of_var_annot for_each.iterator)
+    (string_of_annotated_expr ~string_of_var_annot for_each.iterator)
     (string_of_block
        ~string_of_block_annot
        ~string_of_var_annot

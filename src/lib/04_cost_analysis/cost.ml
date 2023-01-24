@@ -178,7 +178,6 @@ module Cost = struct
 
   let subtract t1 t2 = sum t1 (negate t2)
   let add_cost_term cost_term t = sum_reduce (cost_term :: t)
-  (* let join = sum *)
 
   let multiply_cost_terms
       (cost_term1 : Integer_bound.t * Variable_bound.t)
@@ -254,6 +253,4 @@ module Cost = struct
         upper
     in
     sum zeroed_lower zeroed_upper
-
-    
 end

@@ -179,7 +179,7 @@ structure:
 | FOR init=var_statement SEMICOLON cond=annotated_expr SEMICOLON iter=var_statement contents=block {
     block_wrapper (Structure(For_loop( { init = init; cond = cond; iter = iter; contents = contents } )))
 } 
-| FOR item=var DECL RANGE iterator=var contents=block {
+| FOR item=var DECL RANGE iterator=annotated_expr contents=block {
     block_wrapper (Structure(For_each( { item = item; iterator = iterator; contents = contents } )))
 }
 

@@ -13,3 +13,4 @@
 - Add lists, append, split and full file functionality 
 - Remove pre/post dec
 - Add a way to return things from functions 
+- Remove () from Alpha.create 
