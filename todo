@@ -1,6 +1,4 @@
-- Handle thrown errors (from variable_id)
 - Ensure integers are positive? 
 - Make write_template.file not a var
 - Input(max_size), Read(var, max_size)
 - Add lists, append, split and full file functionality 
-- Add a way to return things from functions 

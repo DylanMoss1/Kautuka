@@ -1,5 +1,5 @@
 (library
- (name side_effect)
+ (name side_effect_system)
  (libraries core fmt ast parsing preperation util)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))

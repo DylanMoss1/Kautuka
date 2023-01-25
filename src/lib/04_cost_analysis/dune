@@ -1,6 +1,6 @@
 (library
  (name cost_analysis)
- (libraries core fmt ast preperation util side_effect)
+ (libraries core fmt ast preperation util side_effect_system)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))
  (lint

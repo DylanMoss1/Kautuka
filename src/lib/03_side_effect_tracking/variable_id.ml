@@ -22,7 +22,7 @@ end
 module Alpha_var_context = Make_context (String_item) (Alpha)
 
 module Alpha_var_ast =
-  Make_annotated_ast (Block_Annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_Annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_empty_annotation)
 

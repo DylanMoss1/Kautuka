@@ -88,7 +88,7 @@ value:
 | string_val=STRING { String(string_val) }
 
 var: 
-| name=ID { { name } }
+| name=ID { Parsed_ast.create_var_annot { name } }
 
 var_statement:
 | var_statement=global_var { var_statement }

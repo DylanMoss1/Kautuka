@@ -38,7 +38,7 @@ module Import_annotation = struct
 end
 
 module Import_ast =
-  Make_annotated_ast (Block_Annotation) (Var_name_annotation)
+  Annotated_ast (Block_Annotation) (Var_name_annotation)
     (Import_annotation)
     (Expr_empty_annotation)
 

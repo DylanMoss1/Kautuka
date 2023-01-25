@@ -1,22 +1,15 @@
 open! Core
 open Ast.Ast_types
-open Side_effect.Variable_id
-open Side_effect.Side_effect_tracking
+open Side_effect_system.Variable_id
+open Side_effect_system.Side_effect_tracking
 open Preperation.Import
 open Cost_analysis.Types_cost
 open Ast.Annotated_ast
-open Parsing
 open Cost_analysis.Cost
 
-(* 
-   
-WE WANT TO REMOVE BLOCK_TYPE FROM THIS AT SOME POINT 
-
-*)
 module Block_parallelised_annotation = struct
   type t =
-    { block_type : Parser_types.block_type
-    ; side_effects : Side_effect_set.t
+    { side_effects : Side_effect_set.t
     ; cost_term : Cost.t
     ; parallelise_contents : int option
     }
@@ -28,15 +21,14 @@ module Block_parallelised_annotation = struct
 
   let string_of_t t =
     Fmt.str
-      "[%s, %s, %s, %s]"
-      (Parser_types.string_of_block_type t.block_type)
+      "[%s, %s, %s]"
       (Side_effect_set.string_of_t t.side_effects)
       (Cost.string_of_t t.cost_term)
       (string_of_parallelise_contents t.parallelise_contents)
 end
 
 module Parallelisation_ast =
-  Make_annotated_ast (Block_parallelised_annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_parallelised_annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
@@ -94,8 +86,7 @@ let parallelise_disjoint_blocks
                  ~f:(fun block -> Structure (Block_struct block))
                  disjoint_blocks
            ; annotations =
-               { block_type = Default
-               ; side_effects =
+               { side_effects =
                    List.fold_left
                      ~init:Side_effect_set.empty
                      ~f:(fun acc block ->

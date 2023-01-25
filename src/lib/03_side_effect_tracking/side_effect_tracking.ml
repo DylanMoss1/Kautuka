@@ -8,51 +8,7 @@ open Ast.Ast_pipeline
 open Parsing.Parser_types
 open Preperation.Import
 open Variable_id
-
-type 'a var_type =
-  | Func_var of 'a var
-  | Value_var of 'a var
-
-type side_effect_operation =
-  | Read
-  | Write
-[@@deriving of_sexp, sexp_of, compare]
-
-type side_effect_channel =
-  | Console
-  | File
-  | Var_mut of Alpha.t
-[@@deriving of_sexp, sexp_of, compare]
-
-type side_effect = side_effect_operation * side_effect_channel
-[@@deriving of_sexp, sexp_of, compare]
-
-module Side_effect = struct
-  type t = side_effect [@@deriving of_sexp, sexp_of, compare]
-
-  let string_of_side_effect_channel = function
-    | Console -> "console"
-    | File -> "file"
-    | Var_mut uuid -> "var-mut:" ^ Alpha.string_of_t uuid
-
-
-  let string_of_t = function
-    | Read, effect_type -> "Read_" ^ string_of_side_effect_channel effect_type
-    | Write, effect_type -> "Write_" ^ string_of_side_effect_channel effect_type
-
-
-  let disjoint t1 t2 =
-    let t1_operation, t1_channel = t1 in
-    let t2_operation, t2_channel = t2 in
-    match t1_operation, t2_operation with
-    | Read, Read -> true
-    | _, _ ->
-      (match t1_channel, t2_channel with
-      | Console, Console -> false
-      | File, File -> false
-      | Var_mut alpha1, Var_mut alpha2 -> Alpha.compare alpha1 alpha2 <> 0
-      | _ -> true)
-end
+open Side_effect
 
 let all_pairs xs ys =
   List.fold_left
@@ -73,7 +29,7 @@ module Side_effect_set = struct
         && List.fold_left
              ~init:true
              ~f:(fun acc t2_effect ->
-               acc && Side_effect.disjoint t1_effect t2_effect)
+               acc && Side_effect.is_disjoint t1_effect t2_effect)
              (elements t2))
       (elements t1)
 end
@@ -96,7 +52,7 @@ end
 module Func_side_effect_context = Make_context (Alpha) (Side_effect_set)
 
 module Side_effect_ast =
-  Make_annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_empty_annotation)
 
@@ -114,8 +70,10 @@ module Side_effect_ast_mapping = struct
   let var env var ~var_effect =
     match var_effect with
     | Init -> ignore_leaf env var
-    | Read -> env, var, new_effect (Read, Var_mut var.alpha)
-    | Write -> env, var, new_effect (Write, Var_mut var.alpha)
+    | Read ->
+      env, var, new_effect (Side_effect.create (Read, Var_mut var.alpha))
+    | Write ->
+      env, var, new_effect (Side_effect.create (Write, Var_mut var.alpha))
 
 
   let func_call env func_call result =
@@ -128,14 +86,21 @@ module Side_effect_ast_mapping = struct
           (match get_value user_func.name.alpha env with
           | Some effect_set -> effect_set
           | None -> raise (Func_called_before_defined user_func.name.name)) )
-    | Print expr -> env, Print expr, add_result result (Write, Console)
-    | Input -> env, Input, add_result result (Write, Console)
+    | Print expr ->
+      env, Print expr, add_result result (Side_effect.create (Write, Console))
+    | Input ->
+      env, Input, add_result result (Side_effect.create (Write, Console))
     | Open expr -> env, Open expr, result
-    | Read var -> env, Read var, add_result result (Read, File)
+    | Read var ->
+      env, Read var, add_result result (Side_effect.create (Read, File))
     | Write write_template ->
-      env, Write write_template, add_result result (Write, File)
+      ( env
+      , Write write_template
+      , add_result result (Side_effect.create (Write, File)) )
     | Append write_template ->
-      env, Append write_template, add_result result (Write, File)
+      ( env
+      , Append write_template
+      , add_result result (Side_effect.create (Write, File)) )
 
 
   let block ~env ~new_contents ~old_annotations ~result =

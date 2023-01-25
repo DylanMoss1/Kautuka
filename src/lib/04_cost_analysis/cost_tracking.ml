@@ -6,8 +6,8 @@ open Ast.Ast_pipeline
 open Parsing
 open Preperation.Import
 open Ast.Ast_to_string
-open Side_effect.Variable_id
-open Side_effect.Side_effect_tracking
+open Side_effect_system.Variable_id
+open Side_effect_system.Side_effect_tracking
 open Types_cost
 open Cost
 open Util
@@ -93,7 +93,7 @@ module Block_cost_annotation = struct
 end
 
 module Cost_ast =
-  Make_annotated_ast (Block_cost_annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_cost_annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
