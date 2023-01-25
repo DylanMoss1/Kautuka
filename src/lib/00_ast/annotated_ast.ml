@@ -3,13 +3,13 @@ open Ast_types
 open Ast_to_string
 open! Core
 
-module type Type_annotation = sig
+module type Annotation = sig
   type t
 
   val string_of_t : t -> string
 end
 
-module type Type_annotated_ast = sig
+module type Annotated_ast = sig
   type block_annot
   type var_annot
   type import_annot
@@ -20,11 +20,11 @@ module type Type_annotated_ast = sig
   val create : (block_annot, var_annot, import_annot, expr_annot) program -> t
 end
 
-module Annotated_ast
-    (Block_annotation : Type_annotation)
-    (Var_annotation : Type_annotation)
-    (Import_annotation : Type_annotation)
-    (Expr_annotation : Type_annotation) =
+module Make_annotated_ast
+    (Block_annotation : Annotation)
+    (Var_annotation : Annotation)
+    (Import_annotation : Annotation)
+    (Expr_annotation : Annotation) =
 struct
   type block_annot = Block_annotation.t
   type var_annot = Var_annotation.t

@@ -1,5 +1,5 @@
 open! Core
-open Util.Environment
+open Util.Context
 open Ast.Ast_types
 open Ast.Annotated_ast
 open Ast.Ast_pipeline
@@ -73,7 +73,7 @@ module Runtime_func_cost = struct
       (Cost.string_of_t t.runtime_cost)
 end
 
-module Runtime_cost_environment = Environment_ (Alpha) (Runtime_func_cost)
+module Runtime_cost_context = Make_context (Alpha) (Runtime_func_cost)
 
 type block_cost =
   { block_type : Parser_types.block_type
@@ -93,13 +93,13 @@ module Block_cost_annotation = struct
 end
 
 module Cost_ast =
-  Annotated_ast (Block_cost_annotation) (Alpha_var_annotation)
+  Make_annotated_ast (Block_cost_annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
 module Cost_ast_mapping = struct
   include
-    Default_ast_mapping (Cost_type_ast) (Cost_ast) (Runtime_cost_environment)
+    Default_ast_mapping (Cost_type_ast) (Cost_ast) (Runtime_cost_context)
       (Runtime_cost)
 
   exception Type_error
@@ -107,7 +107,7 @@ module Cost_ast_mapping = struct
   let user_func env user_func result =
     let { name; args } = user_func in
     let ({ params; runtime_cost } : Runtime_func_cost.t) =
-      match Runtime_cost_environment.get_value name.alpha env with
+      match Runtime_cost_context.get_value name.alpha env with
       | Some runtime_cost -> runtime_cost
       | None -> raise Type_error
     in
@@ -151,24 +151,20 @@ module Cost_ast_mapping = struct
           | Ne -> Runtime_cost.cost_of_ne
           | And -> Runtime_cost.cost_of_and
           | Or -> Runtime_cost.cost_of_or)
-        | VarRead _ -> Runtime_cost.cost_of_var_read
+        | Var_read _ -> Runtime_cost.cost_of_var_read
         | _ -> empty_result) )
 
 
   let var_statement env var_statement result =
     match var_statement with
-    | VarNonInit (_, _) ->
+    | Var_non_init (_, _) ->
       env, var_statement, join_results result Runtime_cost.cost_of_var_non_init
-    | VarInit (_, _, _) ->
+    | Var_init (_, _, _) ->
       env, var_statement, join_results result Runtime_cost.cost_of_var_init
-    | VarDecl (_, _) ->
+    | Var_decl (_, _) ->
       env, var_statement, join_results result Runtime_cost.cost_of_var_decl
-    | VarAssign (_, _) ->
+    | Var_assign (_, _) ->
       env, var_statement, join_results result Runtime_cost.cost_of_var_assign
-    | Pre_inc _ ->
-      env, var_statement, join_results result Runtime_cost.cost_of_post_inc
-    | Pre_dec _ ->
-      env, var_statement, join_results result Runtime_cost.cost_of_post_dec
     | Post_inc _ ->
       env, var_statement, join_results result Runtime_cost.cost_of_post_inc
     | Post_dec _ ->
@@ -179,18 +175,18 @@ module Cost_ast_mapping = struct
     let { init; cond; iter; contents = _ } = for_loop in
     let init_var, init_type_cost =
       match init with
-      | VarInit (var, _, annotated_expr) -> var, annotated_expr.annotations
-      | VarDecl (var, annotated_expr) -> var, annotated_expr.annotations
+      | Var_init (var, _, annotated_expr) -> var, annotated_expr.annotations
+      | Var_decl (var, annotated_expr) -> var, annotated_expr.annotations
       | _ -> raise Type_error
     in
     let cond_type_cost = cond.annotations in
-    let _ =
+    let is_inc =
       match iter with
-      | Pre_inc var ->
+      | Post_inc var ->
         if Alpha.compare init_var.alpha var.alpha = 0
         then true
         else raise Type_error
-      | Post_inc var ->
+      | Post_dec var ->
         if Alpha.compare init_var.alpha var.alpha = 0
         then false
         else raise Type_error
@@ -200,11 +196,17 @@ module Cost_ast_mapping = struct
     | Type_cost.C_Int init_cost, Type_cost.C_Int cond_cost ->
       ( end_env
       , for_loop
-      , Runtime_cost.multiply
-          (Runtime_cost.subtract
-             (Runtime_cost.subtract cond_cost Runtime_cost.one)
-             init_cost)
-          result )
+      , if is_inc
+        then
+          Runtime_cost.multiply
+            (Runtime_cost.subtract
+               (Runtime_cost.subtract cond_cost Runtime_cost.one)
+               init_cost)
+            result
+        else
+          Runtime_cost.multiply
+            (Runtime_cost.subtract (Cost.sum Cost.one init_cost) cond_cost)
+            result )
     | _ -> raise Type_error
 
 

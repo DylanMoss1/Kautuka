@@ -91,7 +91,7 @@ and string_of_expr ~string_of_var_annot = function
   | Paren expr ->
     Fmt.str "(%s)" (string_of_annotated_expr ~string_of_var_annot expr)
   | Value value -> string_of_value value
-  | VarRead var -> string_of_var ~string_of_var_annot var
+  | Var_read var -> string_of_var ~string_of_var_annot var
   | Func_call func_call -> string_of_func_call ~string_of_var_annot func_call
 
 
@@ -101,29 +101,27 @@ and string_of_annotated_expr ~string_of_var_annot annotated_expr =
 
 
 let string_of_var_statement ~string_of_var_annot = function
-  | VarNonInit (var, type_id) ->
+  | Var_non_init (var, type_id) ->
     Fmt.str
       "var %s %s"
       (string_of_var ~string_of_var_annot var)
       (string_of_type_id type_id)
-  | VarInit (var, type_id, expr) ->
+  | Var_init (var, type_id, expr) ->
     Fmt.str
       "var %s %s = %s"
       (string_of_var ~string_of_var_annot var)
       (string_of_type_id type_id)
       (string_of_annotated_expr ~string_of_var_annot expr)
-  | VarDecl (var, expr) ->
+  | Var_decl (var, expr) ->
     Fmt.str
       "%s := %s"
       (string_of_var ~string_of_var_annot var)
       (string_of_annotated_expr ~string_of_var_annot expr)
-  | VarAssign (var, expr) ->
+  | Var_assign (var, expr) ->
     Fmt.str
       "%s = %s"
       (string_of_var ~string_of_var_annot var)
       (string_of_annotated_expr ~string_of_var_annot expr)
-  | Pre_inc var -> Fmt.str "++%s" (string_of_var ~string_of_var_annot var)
-  | Pre_dec var -> Fmt.str "--%s" (string_of_var ~string_of_var_annot var)
   | Post_inc var -> Fmt.str "%s++" (string_of_var ~string_of_var_annot var)
   | Post_dec var -> Fmt.str "%s--" (string_of_var ~string_of_var_annot var)
 

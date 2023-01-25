@@ -21,7 +21,7 @@ module Import_empty_annotation = struct
   let create = ()
 end
 
-module Block_type_annotation = struct
+module Block_Annotation = struct
   type t = block_type
 
   let string_of_t = string_of_block_type
@@ -43,6 +43,6 @@ module Expr_empty_annotation = struct
 end
 
 module Parsed_ast =
-  Annotated_ast (Block_type_annotation) (Var_name_annotation)
+  Make_annotated_ast (Block_Annotation) (Var_name_annotation)
     (Import_empty_annotation)
     (Expr_empty_annotation)

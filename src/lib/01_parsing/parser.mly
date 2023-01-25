@@ -92,17 +92,15 @@ var:
 
 var_statement:
 | var_statement=global_var { var_statement }
-| var=var DECL annotated_expr=annotated_expr { VarDecl(var, annotated_expr) }
-| var=var EQUALS annotated_expr=annotated_expr { VarAssign(var, annotated_expr) }
+| var=var DECL annotated_expr=annotated_expr { Var_decl(var, annotated_expr) }
+| var=var EQUALS annotated_expr=annotated_expr { Var_assign(var, annotated_expr) }
 | var_mod=var_mod { var_mod }
 
 global_var:
-| VAR var=var type_id=type_id { VarNonInit(var, type_id) }
-| VAR var=var type_id=type_id EQUALS annotated_expr=annotated_expr { VarInit(var, type_id, annotated_expr) }
+| VAR var=var type_id=type_id { Var_non_init(var, type_id) }
+| VAR var=var type_id=type_id EQUALS annotated_expr=annotated_expr { Var_init(var, type_id, annotated_expr) }
 
-var_mod: 
-| INCREMENT var=var { Pre_inc(var) }
-| DECREMENT var=var { Pre_dec(var) }
+var_mod:
 | var=var INCREMENT { Post_inc(var) }
 | var=var DECREMENT { Post_dec(var) }
 
@@ -131,7 +129,7 @@ expr:
 | annotated_expr1=annotated_expr binop=binop annotated_expr2=annotated_expr { Binop(annotated_expr1, binop, annotated_expr2) }
 | LPAREN annotated_expr=annotated_expr RPAREN { Paren(annotated_expr) } 
 | value=value { Value(value) }
-| var=var { VarRead(var) }
+| var=var { Var_read(var) }
 | func_call=func_call { Func_call(func_call) }
 
 annotated_expr: 

@@ -56,7 +56,7 @@ and ('var, 'expr) expr =
   | Binop of ('var, 'expr) annotated_expr * binop * ('var, 'expr) annotated_expr
   | Paren of ('var, 'expr) annotated_expr
   | Value of value
-  | VarRead of 'var var
+  | Var_read of 'var var
   | Func_call of ('var, 'expr) func_call
 
 and ('var, 'expr) annotated_expr =
@@ -65,12 +65,10 @@ and ('var, 'expr) annotated_expr =
   }
 
 type ('var, 'expr) var_statement =
-  | VarNonInit of 'var var * type_id
-  | VarInit of 'var var * type_id * ('var, 'expr) annotated_expr
-  | VarDecl of 'var var * ('var, 'expr) annotated_expr
-  | VarAssign of 'var var * ('var, 'expr) annotated_expr
-  | Pre_inc of 'var var
-  | Pre_dec of 'var var
+  | Var_non_init of 'var var * type_id
+  | Var_init of 'var var * type_id * ('var, 'expr) annotated_expr
+  | Var_decl of 'var var * ('var, 'expr) annotated_expr
+  | Var_assign of 'var var * ('var, 'expr) annotated_expr
   | Post_inc of 'var var
   | Post_dec of 'var var
 

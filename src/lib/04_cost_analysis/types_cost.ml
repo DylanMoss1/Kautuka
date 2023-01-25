@@ -1,5 +1,5 @@
 open! Core
-open Util.Environment
+open Util.Context
 open Ast.Ast_types
 open Ast.Annotated_ast
 open Ast.Ast_pipeline
@@ -87,8 +87,7 @@ module Type_cost = struct
     | _ -> raise Type_error
 end
 
-module Expr_type_cost_annotation = Type_cost
-module Type_cost_environment = Environment_ (Alpha) (Type_cost)
+module Type_cost_context = Make_context (Alpha) (Type_cost)
 
 module Type_cost_result = struct
   type t =
@@ -170,18 +169,17 @@ module Type_cost_result = struct
   let union_list = join_list
 end
 
+module Expr_type_cost_annotation = Type_cost
+
 module Cost_type_ast =
-  Annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
+  Make_annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
-module Cost_type_ast_mapping = struct
+module Cost_Ast_mapping = struct
   include
-    Default_ast_mapping (Side_effect_ast) (Cost_type_ast)
-      (Type_cost_environment)
+    Default_ast_mapping (Side_effect_ast) (Cost_type_ast) (Type_cost_context)
       (Type_cost_result)
-
-  open Type_cost
 
   exception Invalid_arg_number
   exception Invalid_arg_type
@@ -203,11 +201,13 @@ module Cost_type_ast_mapping = struct
 
 
   let substitute_params_into_type_cost params args cost =
-    let alpha_to_cost_mapping = create_alpha_to_cost_mapping params args in
+    let alpha_to_cost_mapping =
+      Type_cost.create_alpha_to_cost_mapping params args
+    in
     Cost.substitute alpha_to_cost_mapping cost
 
 
-  let get_func_type_cost env func_name =
+  let get_func_type_cost env func_name : Type_cost.func_type_cost =
     match get_value func_name.alpha env with
     | Some func_type_cost ->
       (match func_type_cost with
@@ -218,30 +218,30 @@ module Cost_type_ast_mapping = struct
 
   let user_func env user_func result =
     let { name; args = _ } = user_func in
-    let { params; return } = get_func_type_cost env name in
-    match return with
-    | C_Int cost ->
+    let func_type_cost = get_func_type_cost env name in
+    match func_type_cost.return with
+    | Type_cost.C_Int cost ->
       ( env
       , user_func
       , Type_cost_result.add
           (C_Int
              (substitute_params_into_type_cost
-                params
+                func_type_cost.params
                 (Type_cost_result.get_expr_type_cost result)
                 cost))
           result )
-    | C_String cost ->
+    | Type_cost.C_String cost ->
       ( env
       , user_func
       , Type_cost_result.add
           (C_String
              (substitute_params_into_type_cost
-                params
+                func_type_cost.params
                 (Type_cost_result.get_expr_type_cost result)
                 cost))
           result )
-    | C_Unit -> env, user_func, Type_cost_result.add C_Unit result
-    | C_Bool -> env, user_func, Type_cost_result.add C_Bool result
+    | Type_cost.C_Unit -> env, user_func, Type_cost_result.add C_Unit result
+    | Type_cost.C_Bool -> env, user_func, Type_cost_result.add C_Bool result
     | _ -> raise Invalid_return_type
 
 
@@ -253,7 +253,7 @@ module Cost_type_ast_mapping = struct
 
 
   let get_type_cost var env =
-    match Type_cost_environment.get_value var.alpha env with
+    match Type_cost_context.get_value var.alpha env with
     | Some type_cost -> type_cost
     | _ -> raise (Unbound_var var.name)
 
@@ -296,13 +296,13 @@ module Cost_type_ast_mapping = struct
 
   let bin_op_int_to_bool arg_type1 arg_type2 =
     match arg_type1, arg_type2 with
-    | C_Int _, C_Int _ -> C_Bool
+    | Type_cost.C_Int _, Type_cost.C_Int _ -> Type_cost.C_Bool
     | _ -> raise Invalid_arg_type
 
 
   let bin_op_bool_to_bool arg_type1 arg_type2 =
     match arg_type1, arg_type2 with
-    | C_Bool, C_Bool -> C_Bool
+    | Type_cost.C_Bool, Type_cost.C_Bool -> Type_cost.C_Bool
     | _ -> raise Invalid_arg_type
 
 
@@ -345,7 +345,8 @@ module Cost_type_ast_mapping = struct
              bin_op_int_to_bool expr1_type_cost expr2_type_cost
            | And | Or -> bin_op_bool_to_bool expr1_type_cost expr2_type_cost)
           result )
-    | VarRead var -> env, expr, get_type_cost var env
+    | Var_read var ->
+      env, expr, Type_cost_result.push_type_cost (get_type_cost var env) result
     | _ -> ignore_branch env expr result
 
 
@@ -362,33 +363,28 @@ module Cost_type_ast_mapping = struct
 
   let var_statement env var_statement (result : Type_cost_result.t) =
     match var_statement with
-    | VarNonInit (_, _) -> ignore_branch env var_statement empty_result
-    | VarInit (var, _, _) | VarDecl (var, _) | VarAssign (var, _) ->
+    | Var_non_init (_, _) -> ignore_branch env var_statement empty_result
+    | Var_init (var, _, _) | Var_decl (var, _) | Var_assign (var, _) ->
       let expr_type_cost = Type_cost_result.extract result.expr_type_cost in
       ( add_to_env var.alpha expr_type_cost env
       , var_statement
       , Type_cost_result.create_with_return None result.return_type_cost )
-    | Pre_inc var ->
-      (match get_type_cost var env with
-      | C_Int cost ->
-        let new_cost = C_Int (Cost.sum Cost.one cost) in
-        ( add_to_env var.alpha new_cost env
-        , var_statement
-        , Type_cost_result.create_with_return
-            (Some new_cost)
-            result.return_type_cost )
-      | _ -> raise Invalid_var_type)
     | Post_inc var ->
       (match get_type_cost var env with
       | C_Int cost ->
-        let new_cost = C_Int (Cost.sum Cost.one cost) in
+        let new_cost = Type_cost.C_Int (Cost.sum Cost.one cost) in
         ( add_to_env var.alpha new_cost env
         , var_statement
-        , Type_cost_result.create_with_return
-            (Some (C_Int cost))
-            result.return_type_cost )
+        , Type_cost_result.create_with_return None result.return_type_cost )
       | _ -> raise Invalid_var_type)
-    | _ -> raise (Failure "REMOVE POST/PRE DEC")
+    | Post_dec var ->
+      (match get_type_cost var env with
+      | C_Int cost ->
+        let new_cost = Type_cost.C_Int (Cost.subtract cost Cost.one) in
+        ( add_to_env var.alpha new_cost env
+        , var_statement
+        , Type_cost_result.create_with_return None result.return_type_cost )
+      | _ -> raise Invalid_var_type)
 
 
   let statement env statement (result : Type_cost_result.t) =
@@ -410,39 +406,45 @@ module Cost_type_ast_mapping = struct
   let update_for_loop_env ~env ~new_init ~new_cond ~new_iter =
     let init_var, init_type_cost =
       match new_init with
-      | VarInit (var, _, annotated_expr) -> var, annotated_expr.annotations
-      | VarDecl (var, annotated_expr) -> var, annotated_expr.annotations
+      | Var_init (var, _, annotated_expr) -> var, annotated_expr.annotations
+      | Var_decl (var, annotated_expr) -> var, annotated_expr.annotations
       | _ -> raise Type_error
     in
     let cond_type_cost = new_cond.annotations in
-    let _ =
+    let is_inc =
       match new_iter with
-      | Pre_inc var ->
+      | Post_inc var ->
         if Alpha.compare init_var.alpha var.alpha = 0
         then true
         else raise Type_error
-      | Post_inc var ->
+      | Post_dec var ->
         if Alpha.compare init_var.alpha var.alpha = 0
         then false
         else raise Type_error
       | _ -> raise Type_error
     in
     match init_type_cost, cond_type_cost with
-    | C_Int init_cost, C_Int cond_cost ->
-      Type_cost_environment.add_new_item
+    | Type_cost.C_Int init_cost, Type_cost.C_Int cond_cost ->
+      Type_cost_context.add_new_item
         init_var.alpha
         (C_Int
-           (Cost.create_lower_upper_bounded_cost
-              ~lower:init_cost
-              ~upper:(Cost.subtract cond_cost Cost.one)))
+           (if is_inc
+           then
+             Cost.create_lower_upper_bounded_cost
+               ~lower:init_cost
+               ~upper:(Cost.subtract cond_cost Cost.one)
+           else
+             Cost.create_lower_upper_bounded_cost
+               ~lower:cond_cost
+               ~upper:(Cost.sum Cost.one init_cost)))
         env
     | _ -> raise Type_error
 
 
   let update_for_each_env ~env ~new_item ~new_iterator =
     match new_iterator with
-    | C_String cost ->
-      Type_cost_environment.add_new_item new_item.alpha (C_String cost) env
+    | Type_cost.C_String cost ->
+      Type_cost_context.add_new_item new_item.alpha (C_String cost) env
     | _ -> raise Type_error
 
 

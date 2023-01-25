@@ -1,7 +1,7 @@
 open! Core
 open Util.Extended_set
 open Util
-open Util.Environment
+open Util.Context
 open Ast.Ast_types
 open Ast.Annotated_ast
 open Ast.Ast_pipeline
@@ -93,17 +93,17 @@ module Block_side_effect_annotation = struct
       (Side_effect_set.string_of_t t.side_effects)
 end
 
-module Func_side_effect_environment = Environment_ (Alpha) (Side_effect_set)
+module Func_side_effect_context = Make_context (Alpha) (Side_effect_set)
 
 module Side_effect_ast =
-  Annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
+  Make_annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
     (Import_annotation)
     (Expr_empty_annotation)
 
 module Side_effect_ast_mapping = struct
   include
     Default_ast_mapping (Alpha_var_ast) (Side_effect_ast)
-      (Func_side_effect_environment)
+      (Func_side_effect_context)
       (Side_effect_set)
 
   exception Func_called_before_defined of string

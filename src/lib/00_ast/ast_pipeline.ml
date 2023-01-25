@@ -1,10 +1,11 @@
 open! Core
 open Ast_types
 open Annotated_ast
-open Util.Environment
+open Util.Context
 open Util.Result
+open Util.Item
 
-module type Type_ast_mapping = sig
+module type Ast_mapping = sig
   type env
   type env_key
   type env_value
@@ -179,37 +180,18 @@ module type Type_ast_mapping = sig
        * result
 end
 
-module Empty_environment = struct
-  type t = unit
-  type key = unit
-  type value = unit
-
-  let empty = ()
-  let add_new_item () () () = ()
-  let add_new_scope () = ()
-  let remove_scope () = ()
-  let get_value () () = None
-  let get_value_outside_scope () () = None
-end
-
-module Empty_result = struct
-  type t = unit
-
-  let empty = ()
-  let join _ _ = ()
-  let join_list _ = ()
-  let union_list _ = ()
-end
+module Empty_context = Make_context (Unit_item) (Unit_item)
+module Empty_result = Empty_result
 
 module Default_ast_mapping
-    (Old_ast : Type_annotated_ast)
-    (New_ast : Type_annotated_ast)
-    (Env : Type_environment)
-    (Result : Type_result) =
+    (Old_ast : Annotated_ast)
+    (New_ast : Annotated_ast)
+    (Context : Context)
+    (Result : Result) =
 struct
-  type env = Env.t
-  type env_key = Env.key
-  type env_value = Env.value
+  type env = Context.t
+  type env_key = Context.key
+  type env_value = Context.value
   type result = Result.t
   type old_block_annot = Old_ast.block_annot
   type old_var_annot = Old_ast.var_annot
@@ -220,12 +202,12 @@ struct
   type new_import_annot = New_ast.import_annot
   type new_expr_annot = New_ast.expr_annot
 
-  let empty_env = Env.empty
-  let add_to_env = Env.add_new_item
-  let add_new_scope = Env.add_new_scope
-  let remove_scope = Env.remove_scope
-  let get_value = Env.get_value
-  let get_value_outside_scope = Env.get_value_outside_scope
+  let empty_env = Context.empty
+  let add_to_env = Context.add_new_item
+  let add_new_scope = Context.add_new_scope
+  let remove_scope = Context.remove_scope
+  let get_value = Context.get_value
+  let get_value_outside_scope = Context.get_value_outside_scope
   let empty_result = Result.empty
   let join_results = Result.join
   let join_results_list = Result.join_list
@@ -283,7 +265,7 @@ struct
     , result )
 end
 
-module Ast_pipeline (Mapping : Type_ast_mapping) = struct
+module Ast_pipeline (Mapping : Ast_mapping) = struct
   let append_tuple (xs, ys) (x, y) = x :: xs, y :: ys
   let unzip l = List.fold_left ~f:append_tuple ~init:([], []) l
 
@@ -411,12 +393,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
         ~mapping:Mapping.expr
         ~new_ast_fun:(fun x -> Value x)
         value
-    | VarRead var ->
+    | Var_read var ->
       single_pipeline
         ~env
         ~sub_pipeline:(pipeline_var ~var_effect:Read)
         ~mapping:Mapping.expr
-        ~new_ast_fun:(fun x -> VarRead x)
+        ~new_ast_fun:(fun x -> Var_read x)
         var
     | Func_call func_call ->
       single_pipeline
@@ -437,12 +419,12 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
 
 
   let pipeline_var_statement env = function
-    | VarNonInit (var, type_id) ->
+    | Var_non_init (var, type_id) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_type_id, type_id_result = pipeline_type_id env type_id in
       let result = Mapping.join_results_list [ var_result; type_id_result ] in
-      Mapping.var_statement env (VarNonInit (new_var, new_type_id)) result
-    | VarInit (var, type_id, expr) ->
+      Mapping.var_statement env (Var_non_init (new_var, new_type_id)) result
+    | Var_init (var, type_id, expr) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_type_id, type_id_result = pipeline_type_id env type_id in
       let env, new_expr, expr_result = pipeline_annotated_expr env expr in
@@ -451,32 +433,18 @@ module Ast_pipeline (Mapping : Type_ast_mapping) = struct
       in
       Mapping.var_statement
         env
-        (VarInit (new_var, new_type_id, new_expr))
+        (Var_init (new_var, new_type_id, new_expr))
         result
-    | VarDecl (var, expr) ->
+    | Var_decl (var, expr) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Init env var in
       let env, new_expr, expr_result = pipeline_annotated_expr env expr in
       let result = Mapping.join_results_list [ var_result; expr_result ] in
-      Mapping.var_statement env (VarDecl (new_var, new_expr)) result
-    | VarAssign (var, expr) ->
+      Mapping.var_statement env (Var_decl (new_var, new_expr)) result
+    | Var_assign (var, expr) ->
       let env, new_var, var_result = pipeline_var ~var_effect:Write env var in
       let env, new_expr, expr_result = pipeline_annotated_expr env expr in
       let result = Mapping.join_results_list [ var_result; expr_result ] in
-      Mapping.var_statement env (VarAssign (new_var, new_expr)) result
-    | Pre_inc var ->
-      single_pipeline
-        ~env
-        ~sub_pipeline:(pipeline_var ~var_effect:Write)
-        ~mapping:Mapping.var_statement
-        ~new_ast_fun:(fun x -> Pre_inc x)
-        var
-    | Pre_dec var ->
-      single_pipeline
-        ~env
-        ~sub_pipeline:(pipeline_var ~var_effect:Write)
-        ~mapping:Mapping.var_statement
-        ~new_ast_fun:(fun x -> Pre_dec x)
-        var
+      Mapping.var_statement env (Var_assign (new_var, new_expr)) result
     | Post_inc var ->
       single_pipeline
         ~env

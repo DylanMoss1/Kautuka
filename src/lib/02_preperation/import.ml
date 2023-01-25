@@ -38,13 +38,13 @@ module Import_annotation = struct
 end
 
 module Import_ast =
-  Annotated_ast (Block_type_annotation) (Var_name_annotation)
+  Make_annotated_ast (Block_Annotation) (Var_name_annotation)
     (Import_annotation)
     (Expr_empty_annotation)
 
 module Import_ast_mapping = struct
   include
-    Default_ast_mapping (Parsed_ast) (Import_ast) (Empty_environment)
+    Default_ast_mapping (Parsed_ast) (Import_ast) (Empty_context)
       (Import_annotation)
 
   let add_result = Import_annotation.add
