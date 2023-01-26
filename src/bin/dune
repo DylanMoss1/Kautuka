@@ -1,7 +1,8 @@
 (executable
  (name main)
  (public_name kautuka)
- (libraries core fmt ast parsing preperation side_effect_system cost_analysis parallelisation)
+ (libraries core fmt ast parsing preperation side_effect_system cost_analysis
+   parallelisation)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))
  (lint
