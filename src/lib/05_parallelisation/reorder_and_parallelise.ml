@@ -1,6 +1,6 @@
 open! Core
 open Ast.Ast_types
-open Side_effect_system.Variable_id
+open Side_effect_system.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
 open Preperation.Import
 open Cost_analysis.Types_cost
@@ -15,20 +15,20 @@ module Block_parallelised_annotation = struct
     }
 
   let string_of_parallelise_contents = function
-    | Some i -> Fmt.str "Some %d" i
-    | None -> "None"
+    | Some i -> Fmt.str "yes (%d blocks)" i
+    | None -> "no"
 
 
   let string_of_t t =
     Fmt.str
-      "[%s, %s, %s]"
+      "{side_effects: %s, runtime_cost: %s, parallelise_contents: %s}"
       (Side_effect_set.string_of_t t.side_effects)
       (Cost.string_of_t t.cost_term)
       (string_of_parallelise_contents t.parallelise_contents)
 end
 
 module Parallelisation_ast =
-  Annotated_ast (Block_parallelised_annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_parallelised_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 

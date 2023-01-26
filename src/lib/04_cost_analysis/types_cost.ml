@@ -5,10 +5,16 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Preperation.Import
 open Cost
-open Ast.Ast_to_string
-open Side_effect_system.Variable_id
+open Side_effect_system.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
 open Util
+
+let string_of_type_id = function
+  | T_Int -> "int"
+  | T_Bool -> "bool"
+  | T_String -> "string"
+  | T_Unit -> ""
+
 
 module Type_cost = struct
   type param = Alpha.t * type_id [@@deriving of_sexp, sexp_of, compare]
@@ -172,7 +178,7 @@ end
 module Expr_type_cost_annotation = Type_cost
 
 module Cost_type_ast =
-  Annotated_ast (Block_side_effect_annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_side_effect_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 

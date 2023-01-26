@@ -5,8 +5,7 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing
 open Preperation.Import
-open Ast.Ast_to_string
-open Side_effect_system.Variable_id
+open Side_effect_system.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
 open Types_cost
 open Cost
@@ -86,14 +85,14 @@ module Block_cost_annotation = struct
 
   let string_of_t t =
     Fmt.str
-      "[%s, %s, %s]"
+      "{block_type: %s, side_effects: %s, runtime_cost: %s}"
       (Parser_types.string_of_block_type t.block_type)
       (Side_effect_set.string_of_t t.side_effects)
       (Cost.string_of_t t.cost_term)
 end
 
 module Cost_ast =
-  Annotated_ast (Block_cost_annotation) (Alpha_var_annotation)
+  Annotated_ast (Block_cost_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 

@@ -24,7 +24,7 @@ end
 module Block_Annotation = struct
   type t = block_type
 
-  let string_of_t = string_of_block_type
+  let string_of_t t = Fmt.str "{block_type: %s}" (string_of_block_type t)
   let create block_type = block_type
 end
 

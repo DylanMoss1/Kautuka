@@ -178,6 +178,15 @@ module type Ast_mapping = sig
          , new_expr_annot )
          program
        * result
+
+  val output_to_debug_file
+    :  string
+    -> ( new_block_annot
+       , new_var_annot
+       , new_import_annot
+       , new_expr_annot )
+       program
+    -> unit
 end
 
 module Empty_context = Make_context (Unit_item) (Unit_item)
@@ -263,6 +272,9 @@ struct
       ; funcs = new_funcs
       }
     , result )
+
+
+  let output_to_debug_file = New_ast.output_to_debug_file
 end
 
 module Ast_pipeline (Mapping : Ast_mapping) = struct
@@ -699,7 +711,10 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
       ~result
 
 
-  let pipeline_ast program =
+  let pipeline_ast program ~debug_file =
     let _, new_program, _ = pipeline_program Mapping.empty_env program in
+    (match debug_file with
+    | Some debug_file -> Mapping.output_to_debug_file debug_file new_program
+    | None -> ());
     new_program
 end
