@@ -13,6 +13,7 @@
     | None -> T_Unit 
 %}
 
+%token NEWLINE
 %token LPAREN RPAREN LBRACE RBRACE
 %token <string> ID
 %token T_INT T_BOOL T_STRING
@@ -51,13 +52,16 @@
 %type <unop> unop
 %type <binop> binop
 
+%type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) annotated_expr list> separated_nonempty_list(COMMA, annotated_expr) loption(separated_nonempty_list(COMMA,annotated_expr))
 %type <type_id option> option(type_id)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) block option> option(_else)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) condition_template list> list(else_if)
-%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) command list> list(command)
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) command list> list(command) nonempty_list(command)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) func list> list(func)
-%type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) var_statement list> list(global_var)
 %type <Parsed_ast.var_annot param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
+%type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) var_statement list> separated_nonempty_list(NEWLINE,global_var) loption(separated_nonempty_list(NEWLINE,global_var))
+%type <unit option> option(NEWLINE)
+
 
 %left MINUS PLUS
 %left MULT
@@ -70,7 +74,7 @@
 %%
 
 program:
-| package=package; global_vars=list(global_var) funcs=list(func) EOF { 
+| package=package NEWLINE global_vars=separated_list(NEWLINE, global_var) funcs=list(func) EOF { 
     { package; imports = Parsed_ast.create_import_annot (); global_vars; funcs } 
 }
 
@@ -110,16 +114,17 @@ func:
   }
 
 block: 
-| LBRACE commands=list(command) RBRACE { 
+| LBRACE option(NEWLINE) commands=nonempty_list(command) option(NEWLINE) RBRACE { 
     { contents = commands; annotations = Parsed_ast.create_block_annot Default }
   }
+| LBRACE option(NEWLINE) RBRACE { { contents = []; annotations = Parsed_ast.create_block_annot Default } }
 | IGNORE LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annot Ignore } }
 | FORCEPAR LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annot Force_par } }
 | FORCESEQ LBRACE commands=list(command) RBRACE { { contents = commands; annotations = Parsed_ast.create_block_annot Force_seq } }
 
 command: 
-| structure=structure { Structure(structure) }
-| statement=statement { Statement(statement) }
+| structure=structure NEWLINE { Structure(structure) }
+| statement=statement NEWLINE { Statement(statement) }
 
 param: 
 | var=var type_id=type_id { (var, type_id) }

@@ -5,6 +5,7 @@ open Format
 open Parser_types
 
 let pprint_tokens ppf = function
+  | NEWLINE -> Fmt.pf ppf "NEWLINE@."
   | LPAREN -> Fmt.pf ppf "LPAREN@."
   | RPAREN -> Fmt.pf ppf "RPAREN@."
   | LBRACE -> Fmt.pf ppf "LBRACE@."

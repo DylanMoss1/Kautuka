@@ -13,7 +13,7 @@
 }
 
 let whitespace = [' ' '\t']+
-let newline = '\r' | '\n' | "\r\n"
+let newline = ('\r' | '\n' | "\r\n")+
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+
@@ -22,7 +22,7 @@ let func_call_id = id whitespace ['(']
 
 rule read_token = parse
   | whitespace                       { read_token lexbuf }
-  | newline                          { next_line lexbuf; read_token lexbuf }
+  | newline                          { next_line lexbuf; NEWLINE }
   | '('                              { LPAREN }
   | ')'                              { RPAREN }
   | '{'                              { LBRACE }
