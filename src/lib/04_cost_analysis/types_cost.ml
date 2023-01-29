@@ -101,27 +101,51 @@ module Type_cost_result = struct
     ; return_type_cost : Type_cost.t list
     }
 
-  exception Invalid_arg_number
+  exception Invalid_arg_number of string
   exception Type_error
+
+  let string_of_type_cost_list type_cost_list =
+    Fmt.str
+      "[%s]"
+      (String.concat
+         ~sep:", "
+         (List.map ~f:Type_cost.string_of_t type_cost_list))
+
+
+  let string_of_t t =
+    Fmt.str
+      "{ expr_type_cost = %s; return_type_cost = %s }"
+      (string_of_type_cost_list t.expr_type_cost)
+      (string_of_type_cost_list t.return_type_cost)
+
 
   let empty = { expr_type_cost = []; return_type_cost = [] }
 
   let extract xs =
     match xs with
     | [ x ] -> x
-    | _ -> raise Invalid_arg_number
+    | _ ->
+      raise
+        (Invalid_arg_number
+           (Fmt.str "Expected 1 arg, found %d" (List.length xs)))
 
 
   let extract_2 xs =
     match xs with
     | [ x1; x2 ] -> x1, x2
-    | _ -> raise Invalid_arg_number
+    | _ ->
+      raise
+        (Invalid_arg_number
+           (Fmt.str "Expected 2 args, found %d" (List.length xs)))
 
 
   let rec extract_n xs n =
     match xs, n with
     | [], 0 -> []
-    | [], _ | _ :: _, 0 -> raise Invalid_arg_number
+    | [], _ | _ :: _, 0 ->
+      raise
+        (Invalid_arg_number
+           (Fmt.str "Expected %d arg(s), found %d" n (List.length xs)))
     | x :: xs, n -> x :: extract_n xs (n - 1)
 
 
@@ -177,14 +201,14 @@ end
 
 module Expr_type_cost_annotation = Type_cost
 
-module Cost_type_ast =
+module Type_cost_ast =
   Annotated_ast (Block_side_effect_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
-module Cost_Ast_mapping = struct
+module Type_cost_ast_mapping = struct
   include
-    Default_ast_mapping (Side_effect_ast) (Cost_type_ast) (Type_cost_context)
+    Default_ast_mapping (Side_effect_ast) (Type_cost_ast) (Type_cost_context)
       (Type_cost_result)
 
   exception Invalid_arg_number
@@ -363,15 +387,19 @@ module Cost_Ast_mapping = struct
       ~(result : Type_cost_result.t)
     =
     ( env
-    , { expr = new_expr; annotations = result }
+    , { expr = new_expr
+      ; annotations = Type_cost_result.extract result.expr_type_cost
+      }
     , Type_cost_result.create_with_return None result.return_type_cost )
 
 
   let var_statement env var_statement (result : Type_cost_result.t) =
     match var_statement with
     | Var_non_init (_, _) -> ignore_branch env var_statement empty_result
-    | Var_init (var, _, _) | Var_decl (var, _) | Var_assign (var, _) ->
-      let expr_type_cost = Type_cost_result.extract result.expr_type_cost in
+    | Var_init (var, _, annot_expr)
+    | Var_decl (var, annot_expr)
+    | Var_assign (var, annot_expr) ->
+      let expr_type_cost = annot_expr.annotations in
       ( add_to_env var.alpha expr_type_cost env
       , var_statement
       , Type_cost_result.create_with_return None result.return_type_cost )
@@ -409,7 +437,12 @@ module Cost_Ast_mapping = struct
     | _ -> ignore_branch env statement result
 
 
-  let update_for_loop_env ~env ~new_init ~new_cond ~new_iter =
+  let update_for_loop_env
+      ~env
+      ~new_init
+      ~(new_cond : ('a, 'b) annotated_expr)
+      ~new_iter
+    =
     let init_var, init_type_cost =
       match new_init with
       | Var_init (var, _, annotated_expr) -> var, annotated_expr.annotations
@@ -447,14 +480,18 @@ module Cost_Ast_mapping = struct
     | _ -> raise Type_error
 
 
-  let update_for_each_env ~env ~new_item ~new_iterator =
-    match new_iterator with
+  let update_for_each_env
+      ~env
+      ~new_item
+      ~(new_iterator : ('a, 'b) annotated_expr)
+    =
+    match new_iterator.annotations with
     | Type_cost.C_String cost ->
       Type_cost_context.add_new_item new_item.alpha (C_String cost) env
     | _ -> raise Type_error
 
 
-  let if_record env if_record result =
+  let if_record env if_record (result : result) =
     let number_of_conditions =
       1
       + List.length if_record.else_if
@@ -463,8 +500,12 @@ module Cost_Ast_mapping = struct
       | Some _ -> 1
       | None -> 0
     in
-    let _ = Type_cost_result.extract_n result number_of_conditions in
-    env, if_record, Type_cost_result.empty
+    let _ =
+      Type_cost_result.extract_n result.expr_type_cost number_of_conditions
+    in
+    ( env
+    , if_record
+    , Type_cost_result.create_with_return None result.return_type_cost )
 
 
   let get_new_env start_env end_env iteration_bound =
@@ -477,19 +518,23 @@ module Cost_Ast_mapping = struct
 
   let func env func (result : Type_cost_result.t) =
     let { name; params; body = _; return_type } = func in
-    add_to_env
-      name.alpha
-      (Type_cost.C_Func
-         { params =
-             List.map
-               ~f:(fun param ->
-                 let var, type_id = param in
-                 var.alpha, type_id)
-               params
-         ; return =
-             Type_cost_result.get_return_type_cost
-               result.return_type_cost
-               return_type
-         })
-      env
+    ( add_to_env
+        name.alpha
+        (Type_cost.C_Func
+           { params =
+               List.map
+                 ~f:(fun param ->
+                   let var, type_id = param in
+                   var.alpha, type_id)
+                 params
+           ; return =
+               Type_cost_result.get_return_type_cost
+                 result.return_type_cost
+                 return_type
+           })
+        env
+    , func
+    , Type_cost_result.empty )
 end
+
+module Type_cost_ast_pipeline = Ast_pipeline (Type_cost_ast_mapping)

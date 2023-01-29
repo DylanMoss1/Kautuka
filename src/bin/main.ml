@@ -3,6 +3,8 @@ open Lexing
 open Parsing
 open Preperation
 open Side_effect_system
+open Cost_analysis
+open Parallelisation
 
 let usage_msg = "x [--debug]"
 let debug = ref false
@@ -18,29 +20,45 @@ let token_list_of_lexbuf lexbuf =
   lexbuf_to_string_inner lexbuf []
 
 
+let print_error_position lexbuf =
+  let pos = lexbuf.lex_curr_p in
+  Fmt.str "Line:%d Position:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+
+
 let () =
   Arg.parse speclist anon_fun usage_msg;
   print_endline "\n";
   In_channel.read_all "./files/kau_program.kau"
-  |> Lexing.from_string
-  |> (fun lexbuf ->
-       let () =
-         Out_channel.write_all
-           "./files/01_parsing_lexer_tokens"
-           ~data:(Tokens.string_of_token_list (token_list_of_lexbuf lexbuf))
-       in
-       lexbuf)
-  |> (fun lexbuf ->
-       Parser_types.Parsed_ast.create (Parser.program Lexer.read_token lexbuf))
-  |> (fun parsed_ast ->
-       Parser_types.Parsed_ast.output_to_debug_file
-         "01_parsing_parsed_ast"
-         parsed_ast;
-       parsed_ast)
-  |> Import.Import_ast_pipeline.pipeline_ast
-       ~debug_file:(Some "02_preperation_import")
-  |> Alpha_conversion.Alpha_conversion_ast_pipeline.pipeline_ast
-       ~debug_file:(Some "03_side-effect-system_alpha-conversion")
-  |> Side_effect_tracking.Side_effect_ast_pipeline.pipeline_ast
-       ~debug_file:(Some "03_side-effect-system_side-effect-tracking")
-  |> fun _ -> ()
+  |> fun program ->
+  Out_channel.write_all
+    "./files/intermediary_steps/01_parsing_lexer"
+    ~data:
+      (Tokens.string_of_token_list
+         (token_list_of_lexbuf (Lexing.from_string program)));
+  let lexbuf = Lexing.from_string program in
+  try
+    Parser_types.Parsed_ast.create (Parser.program Lexer.read_token lexbuf)
+    |> (fun parsed_ast ->
+         Parser_types.Parsed_ast.output_to_debug_file
+           "01_parsing_parser"
+           parsed_ast;
+         parsed_ast)
+    |> Import.Import_ast_pipeline.pipeline_ast
+         ~debug_file:(Some "02_preperation_import")
+    |> Alpha_conversion.Alpha_conversion_ast_pipeline.pipeline_ast
+         ~debug_file:(Some "03_side-effect-system_alpha-conversion")
+    |> Side_effect_tracking.Side_effect_ast_pipeline.pipeline_ast
+         ~debug_file:(Some "03_side-effect-system_side-effect-tracking")
+    |> Types_cost.Type_cost_ast_pipeline.pipeline_ast
+         ~debug_file:(Some "04_cost-analysis_type-cost")
+    |> Cost_tracking.Cost_tracking_ast_pipeline.pipeline_ast
+         ~debug_file:(Some "04_cost-analysis_cost-tracking")
+    |> Reorder_and_parallelise.pipeline_ast
+         ~debug_file:(Some "05_parallelisation_reorder-and-parallelise")
+    |> Translate_to_go.pipeline_ast
+  with
+  | Lexer.Lexer_error msg ->
+    print_endline
+      (Fmt.str "Lexer Error: %s: %s" (print_error_position lexbuf) msg)
+  | Parser.Error ->
+    print_endline (Fmt.str "Parsing Error: %s" (print_error_position lexbuf))

@@ -74,31 +74,33 @@ end
 
 module Runtime_cost_context = Make_context (Alpha) (Runtime_func_cost)
 
-type block_cost =
+type block_runtime_cost =
   { block_type : Parser_types.block_type
+  ; scoped_vars : Alpha.t list
   ; side_effects : Side_effect_set.t
-  ; cost_term : Cost.t
+  ; runtime_cost : Cost.t
   }
 
-module Block_cost_annotation = struct
-  type t = block_cost
+module Block_runtime_cost_annotation = struct
+  type t = block_runtime_cost
 
   let string_of_t t =
     Fmt.str
-      "{block_type: %s, side_effects: %s, runtime_cost: %s}"
+      "{block_type: %s, scoped_vars: %s, side_effects: %s, runtime_cost: %s}"
       (Parser_types.string_of_block_type t.block_type)
+      (string_of_scoped_vars t.scoped_vars)
       (Side_effect_set.string_of_t t.side_effects)
-      (Cost.string_of_t t.cost_term)
+      (Cost.string_of_t t.runtime_cost)
 end
 
-module Cost_ast =
-  Annotated_ast (Block_cost_annotation) (Alpha_conversion_annotation)
+module Cost_tracking_ast =
+  Annotated_ast (Block_runtime_cost_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
-module Cost_ast_mapping = struct
+module Cost_tracking_ast_mapping = struct
   include
-    Default_ast_mapping (Cost_type_ast) (Cost_ast) (Runtime_cost_context)
+    Default_ast_mapping (Type_cost_ast) (Cost_tracking_ast) (Runtime_cost_context)
       (Runtime_cost)
 
   exception Type_error
@@ -238,11 +240,12 @@ module Cost_ast_mapping = struct
     , { contents = new_contents
       ; annotations =
           { block_type = old_annotations.block_type
+          ; scoped_vars = old_annotations.scoped_vars
           ; side_effects = old_annotations.side_effects
-          ; cost_term = result
+          ; runtime_cost = result
           }
       }
     , result )
 end
 
-module Cost_ast_pipeline = Ast_pipeline (Cost_ast_mapping)
+module Cost_tracking_ast_pipeline = Ast_pipeline (Cost_tracking_ast_mapping)

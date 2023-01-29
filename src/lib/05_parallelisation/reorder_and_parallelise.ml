@@ -1,16 +1,19 @@
 open! Core
 open Ast.Ast_types
-open Side_effect_system.Alpha_conversion
+open Util
+open Side_effect_system
 open Side_effect_system.Side_effect_tracking
 open Preperation.Import
 open Cost_analysis.Types_cost
 open Ast.Annotated_ast
+open Cost_analysis
 open Cost_analysis.Cost
 
 module Block_parallelised_annotation = struct
   type t =
-    { side_effects : Side_effect_set.t
-    ; cost_term : Cost.t
+    { side_effects : Side_effect_tracking.Side_effect_set.t
+    ; scoped_vars : Alpha.t list
+    ; runtime_cost : Cost.t
     ; parallelise_contents : int option
     }
 
@@ -21,86 +24,120 @@ module Block_parallelised_annotation = struct
 
   let string_of_t t =
     Fmt.str
-      "{side_effects: %s, runtime_cost: %s, parallelise_contents: %s}"
+      "{side_effects: %s, scoped_vars: %s, runtime_cost: %s, \
+       parallelise_contents: %s}"
       (Side_effect_set.string_of_t t.side_effects)
-      (Cost.string_of_t t.cost_term)
+      (Alpha_conversion.string_of_scoped_vars t.scoped_vars)
+      (Cost.string_of_t t.runtime_cost)
       (string_of_parallelise_contents t.parallelise_contents)
 end
 
 module Parallelisation_ast =
-  Annotated_ast (Block_parallelised_annotation) (Alpha_conversion_annotation)
+  Annotated_ast
+    (Block_parallelised_annotation)
+    (Alpha_conversion.Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
-let rec disjoint_block_collection_single_pass
-    (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
-    collected_effects
-    collected_blocks
-    passed_blocks
-  =
-  match block_list with
-  | block :: block_list ->
-    let new_collected_effects =
-      Side_effect_set.union block.annotations.side_effects collected_effects
-    in
-    let partial_apply_collect_blocks =
-      disjoint_block_collection_single_pass block_list new_collected_effects
-    in
-    if Side_effect_set.disjoint block.annotations.side_effects collected_effects
-    then partial_apply_collect_blocks (block :: collected_blocks) passed_blocks
-    else partial_apply_collect_blocks collected_blocks (block :: passed_blocks)
-  | [] -> List.rev collected_blocks, List.rev passed_blocks
-
-
-let disjoint_block_collection
+let find_disjoint_blocks_collection
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
-  let rec disjoint_block_collection_inner block_list thread_list =
-    if List.length block_list = 0
-    then thread_list
-    else (
-      let collected_blocks, remaining_blocks =
-        disjoint_block_collection_single_pass
-          block_list
-          Side_effect_set.empty
-          []
-          []
+  let rec find_disjoint_blocks_collection_inner
+      (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
+      collected_effects
+      collected_blocks
+      passed_blocks
+    =
+    match block_list with
+    | block :: block_list ->
+      let new_collected_effects =
+        Side_effect_set.union block.annotations.side_effects collected_effects
       in
-      disjoint_block_collection_inner
-        remaining_blocks
-        (List.append thread_list [ collected_blocks ]))
+      let collected_blocks, passed_blocks =
+        if Side_effect_set.disjoint
+             block.annotations.side_effects
+             collected_effects
+        then collected_blocks @ [ block ], passed_blocks
+        else collected_blocks, passed_blocks @ [ block ]
+      in
+      find_disjoint_blocks_collection_inner
+        block_list
+        new_collected_effects
+        collected_blocks
+        passed_blocks
+    | [] -> collected_blocks, passed_blocks
   in
-  disjoint_block_collection_inner block_list []
+  find_disjoint_blocks_collection_inner block_list Side_effect_set.empty [] []
+
+
+let find_all_disjoint_block_collections
+    (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
+  =
+  let rec find_all_disjoint_block_collections_inner
+      remaining_blocks
+      all_disjoint_block_collections
+    =
+    if List.length remaining_blocks = 0
+    then all_disjoint_block_collections
+    else (
+      let disjoint_block_collection, remaining_blocks =
+        find_disjoint_blocks_collection remaining_blocks
+      in
+      find_all_disjoint_block_collections_inner
+        remaining_blocks
+        (List.append
+           all_disjoint_block_collections
+           [ disjoint_block_collection ]))
+  in
+  find_all_disjoint_block_collections_inner block_list []
+
+
+exception Empty_disjoint_blocks_list
+
+let wrap_in_block_structure block = Structure (Block_struct block)
+
+let get_side_effects_of_contents
+    (contents : (Block_parallelised_annotation.t, 'b, 'c) block list)
+  =
+  List.fold_left
+    ~init:Side_effect_set.empty
+    ~f:(fun acc block ->
+      Side_effect_set.union acc block.annotations.side_effects)
+    contents
+
+
+let get_scoped_vars_of_contents
+    (contents : (Block_parallelised_annotation.t, 'b, 'c) block list)
+  =
+  match contents with
+  | block :: _ -> block.annotations.scoped_vars
+  | [] -> raise Empty_disjoint_blocks_list
+
+
+let get_runtime_cost_of_contents
+    (contents : (Block_parallelised_annotation.t, 'b, 'c) block list)
+  =
+  List.fold_left
+    ~init:Cost.zero
+    ~f:(fun acc block -> Cost.sum acc block.annotations.runtime_cost)
+    contents
 
 
 let parallelise_disjoint_blocks
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
-  let disjoint_blocks_list = disjoint_block_collection block_list in
+  let disjoint_blocks_list = find_all_disjoint_block_collections block_list in
   List.map
     ~f:(fun disjoint_blocks ->
-      Structure
-        (Block_struct
-           { contents =
-               List.map
-                 ~f:(fun block -> Structure (Block_struct block))
-                 disjoint_blocks
-           ; annotations =
-               { side_effects =
-                   List.fold_left
-                     ~init:Side_effect_set.empty
-                     ~f:(fun acc block ->
-                       Side_effect_set.union acc block.annotations.side_effects)
-                     disjoint_blocks
-               ; cost_term =
-                   List.fold_left
-                     ~init:Cost.zero
-                     ~f:(fun acc block ->
-                       Cost.sum acc block.annotations.cost_term)
-                     disjoint_blocks
-               ; parallelise_contents = Some (List.length disjoint_blocks)
-               }
-           }))
+      wrap_in_block_structure
+        { contents = List.map ~f:wrap_in_block_structure disjoint_blocks
+        ; annotations =
+            { side_effects = get_side_effects_of_contents disjoint_blocks
+            ; scoped_vars = get_scoped_vars_of_contents disjoint_blocks
+            ; runtime_cost = get_runtime_cost_of_contents disjoint_blocks
+            ; parallelise_contents = Some (List.length disjoint_blocks)
+            }
+        })
     disjoint_blocks_list
 
 
@@ -144,39 +181,91 @@ and parallelise_command = function
   | Statement statement -> Statement statement
 
 
-and join_block_list_to_acc acc block_list =
-  match block_list with
+and add_parallelised_adjacent_blocks_to_acc adjacent_blocks acc =
+  match adjacent_blocks with
   | [] -> acc
   | [ block ] -> acc @ [ Structure (Block_struct block) ]
-  | _ -> acc @ parallelise_disjoint_blocks block_list
+  | _ -> acc @ parallelise_disjoint_blocks adjacent_blocks
 
 
-and parallelise_block block : (Parallelisation_ast.block_annot, 'c, 'd) block =
+and string_of_block_list block_list =
+  Fmt.str
+    "[%s]"
+    (String.concat
+       ~sep:", "
+       (List.map ~f:Parallelisation_ast.string_of_block block_list))
+
+
+and string_of_contents_list contents_list =
+  Fmt.str
+    "[%s]"
+    (String.concat
+       ~sep:", "
+       (List.map ~f:Parallelisation_ast.string_of_command contents_list))
+
+
+and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
+  =
   let { contents; annotations } = block in
-  let inner_parallelised_contents = List.map ~f:parallelise_command contents in
+  let contents = List.map ~f:parallelise_command contents in
   let parallelised_contents =
-    let rec parallelise_contents command_list block_acc command_acc =
-      match command_list with
-      | command :: command_list ->
+    let rec parallelise_contents_inner
+        remaining_contents
+        passed_adjacent_blocks
+        parallelised_contents_acc
+      =
+      (* print_endline
+        (Fmt.str
+           "remaining_contents: %s"
+           (string_of_contents_list remaining_contents));
+      print_endline
+        (Fmt.str
+           "passed_adjacent_blocks: %s"
+           (string_of_block_list passed_adjacent_blocks));
+      print_endline
+        (Fmt.str
+           "parallelised_contents_acc: %s"
+           (string_of_contents_list parallelised_contents_acc));
+      print_endline ""; *)
+      match remaining_contents with
+      | command :: remaining_contents ->
         (match command with
         | Structure (Block_struct block) ->
-          parallelise_contents command_list (block_acc @ [ block ]) command_acc
+          parallelise_contents_inner
+            remaining_contents
+            (passed_adjacent_blocks @ [ block ])
+            parallelised_contents_acc
         | _ ->
-          parallelise_contents
-            command_list
+          parallelise_contents_inner
+            remaining_contents
             []
-            (join_block_list_to_acc command_acc block_acc)
+            (add_parallelised_adjacent_blocks_to_acc
+               passed_adjacent_blocks
+               parallelised_contents_acc)
           @ [ command ])
-      | [] -> join_block_list_to_acc command_acc block_acc
+      | [] ->
+        add_parallelised_adjacent_blocks_to_acc
+          passed_adjacent_blocks
+          parallelised_contents_acc
     in
-    parallelise_contents inner_parallelised_contents [] []
+    parallelise_contents_inner contents [] []
   in
-  { contents = parallelised_contents; annotations }
+  (* print_endline
+    (Fmt.str
+       "final_contents: %s"
+       (string_of_contents_list parallelised_contents));
+  print_endline "\n"; *)
+  { contents = List.rev parallelised_contents
+  ; annotations =
+      { side_effects = annotations.side_effects
+      ; scoped_vars = annotations.scoped_vars
+      ; runtime_cost = annotations.runtime_cost
+      ; parallelise_contents = None
+      }
+  }
 
 
-and parallelise_func (func : ('a, 'b, 'c) func)
-    : (Parallelisation_ast.block_annot, 'd, 'e) func
-  =
+and parallelise_func (func : ('a, 'b, 'c) func) =
   { name = func.name
   ; params = func.params
   ; body = parallelise_block func.body
@@ -184,11 +273,18 @@ and parallelise_func (func : ('a, 'b, 'c) func)
   }
 
 
-let parallelise_program program
-    : (Parallelisation_ast.block_annot, 'b, 'c, 'd) program
-  =
+let parallelise_program program =
   { package = program.package
   ; imports = program.imports
   ; global_vars = program.global_vars
   ; funcs = List.map ~f:parallelise_func program.funcs
   }
+
+
+let pipeline_ast ~debug_file program =
+  let new_program = parallelise_program program in
+  (match debug_file with
+  | Some debug_file ->
+    Parallelisation_ast.output_to_debug_file debug_file new_program
+  | None -> ());
+  new_program

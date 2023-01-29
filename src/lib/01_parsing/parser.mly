@@ -57,8 +57,8 @@
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) block option> option(_else)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) condition_template list> list(else_if)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) command list> list(command) nonempty_list(command)
-%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) func list> list(func)
-%type <Parsed_ast.var_annot param list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) func list> separated_nonempty_list(NEWLINE, func)
+%type <(Parsed_ast.var_annot param) list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 %type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) var_statement list> separated_nonempty_list(NEWLINE,global_var) loption(separated_nonempty_list(NEWLINE,global_var))
 %type <unit option> option(NEWLINE)
 
@@ -74,7 +74,10 @@
 %%
 
 program:
-| package=package NEWLINE global_vars=separated_list(NEWLINE, global_var) funcs=list(func) EOF { 
+| package=package NEWLINE funcs=separated_nonempty_list(NEWLINE, func) EOF { 
+    { package; imports = Parsed_ast.create_import_annot (); global_vars = []; funcs } 
+}
+| package=package NEWLINE global_vars=separated_list(NEWLINE, global_var) NEWLINE funcs=separated_nonempty_list(NEWLINE, func) EOF { 
     { package; imports = Parsed_ast.create_import_annot (); global_vars; funcs } 
 }
 

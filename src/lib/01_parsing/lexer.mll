@@ -13,7 +13,8 @@
 }
 
 let whitespace = [' ' '\t']+
-let newline = ('\r' | '\n' | "\r\n")+
+let carriage_newline = "\r\n"
+let newline = ('\r' | '\n' | carriage_newline)+
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+

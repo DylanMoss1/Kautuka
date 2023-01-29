@@ -12,6 +12,7 @@ module type Context = sig
   val remove_scope : t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
+  val get_all_values : t -> value list
   val string_of_t : t -> string
 end
 
@@ -58,6 +59,11 @@ module Make_context (Key : Item) (Value : Item) = struct
       | Some _ -> raise Key_in_inner_scope
       | None -> get_value key tss)
     | [] -> raise Empty_scope
+
+
+  let get_all_values =
+    List.fold_left ~init:[] ~f:(fun acc scope ->
+        acc @ List.map ~f:(fun (_, value) -> value) scope)
 
 
   let string_of_key_value_pair (key, value) =

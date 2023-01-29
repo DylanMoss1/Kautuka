@@ -191,7 +191,7 @@ struct
 
 
   and string_of_structure = function
-    | Block_struct block -> string_of_block block
+    | Block_struct block -> Fmt.str "{\n%s\n}" (string_of_block block)
     | If if_record -> string_of_if_record if_record
     | For_loop for_loop -> string_of_for_loop for_loop
     | For_each for_each -> string_of_for_each for_each
@@ -204,7 +204,7 @@ struct
 
   and string_of_block block =
     Fmt.str
-      "//%s\n%s"
+      "//%s\n\n%s"
       (string_of_block_annot block.annotations)
       (map_concat ~sep:"\n" ~f:string_of_command block.contents)
 
@@ -256,6 +256,6 @@ struct
 
   let output_to_debug_file debug_file program =
     Out_channel.write_all
-      (Fmt.str "./files/%s" debug_file)
+      (Fmt.str "./files/intermediary_steps/%s" debug_file)
       ~data:(string_of_program program)
 end

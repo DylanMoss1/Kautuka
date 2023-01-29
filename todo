@@ -2,3 +2,9 @@
 - Make write_template.file not a var
 - Input(max_size), Read(var, max_size)
 - Add lists, append, split and full file functionality 
+
+====
+
+- Make "main" alpha convert back 
+- Side effect tracking doesn't apply to vars in local scope 
+- Funs affecting their environment 

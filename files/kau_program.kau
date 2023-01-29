@@ -1,19 +1,10 @@
 package main
 
 func main() {
-
-    for i := 1; i <= 3; i++ {
-        print(i)
-    }
-
-    for j := 7; j <= 9; j++ {
-        print(j)
-    }
-
-    for n := 0; n <= 5; n++ {
-        if n == 0 {
-            continue
-        }
-        print(n)
-    }
+	var x int = 1
+	var y int = 2
+	{
+		x = 3
+		y = 4
+	}
 }

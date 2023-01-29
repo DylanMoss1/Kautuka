@@ -1,13 +1,18 @@
 open! Core
 
+type alpha_generator = int ref
 type t = int [@@deriving of_sexp, sexp_of, compare]
 
-let counter = ref 0
+let t = ref 0
+let create = t
 
-let create =
-  let x = !counter in
-  counter := x + 1;
-  x
+let get_new_alpha ?(is_main = false) t =
+  if is_main
+  then 0
+  else (
+    t := !t + 1;
+    !t)
 
 
-let string_of_t t = Fmt.str "id{%d}" t
+let is_t_main t = t = 0
+let string_of_t t = if is_t_main t then "main" else Fmt.str "alpha_%d" t

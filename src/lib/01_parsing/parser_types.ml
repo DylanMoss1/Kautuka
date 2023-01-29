@@ -38,7 +38,7 @@ end
 module Expr_empty_annotation = struct
   type t = unit
 
-  let string_of_t _ = ""
+  let string_of_t _ = "UNTYPED"
   let create = ()
 end
 

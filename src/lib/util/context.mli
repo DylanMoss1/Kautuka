@@ -11,6 +11,7 @@ module type Context = sig
   val remove_scope : t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
+  val get_all_values : t -> value list
   val string_of_t : t -> string
 end
 
