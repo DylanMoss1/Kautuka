@@ -100,7 +100,8 @@ module Cost_tracking_ast =
 
 module Cost_tracking_ast_mapping = struct
   include
-    Default_ast_mapping (Type_cost_ast) (Cost_tracking_ast) (Runtime_cost_context)
+    Default_ast_mapping (Type_cost_ast) (Cost_tracking_ast)
+      (Runtime_cost_context)
       (Runtime_cost)
 
   exception Type_error
