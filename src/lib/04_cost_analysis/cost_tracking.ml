@@ -72,9 +72,11 @@ module Runtime_func_cost = struct
       (Cost.string_of_t t.runtime_cost)
 end
 
-module Runtime_cost_context = Make_context (Alpha) (Runtime_func_cost) (struct
-let t = false
-end)
+module Runtime_cost_context =
+  Make_context (Alpha) (Runtime_func_cost)
+    (struct
+      let t = false
+    end)
 
 type block_runtime_cost =
   { block_type : Parser_types.block_type
