@@ -169,7 +169,7 @@ and go_of_block (block : (Parallelisation_ast.block_annot, 'a, 'b) block) =
   | Some num_block ->
     let wg_var = Alpha.get_new_alpha alpha_generator in
     Fmt.str
-      "var wg_%s sync.WaitGroup\n%s.Add(%d)\n%s"
+      "var wg_%s sync.WaitGroup\nwg_%s.Add(%d)\n%s"
       (Alpha.string_of_t wg_var)
       (Alpha.string_of_t wg_var)
       num_block

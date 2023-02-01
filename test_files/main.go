@@ -1,30 +1,9 @@
 package main
 
-import (
-	"sync"
-)
-
 func main() {
-
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func() {
-		{
-			print(1)
-			print(2)
-		}
-		{
-			print(3)
-			print(4)
-		}
-
-		wg.Done()
-	}()
-	wg.Wait()
-
+	var y int
 	{
-		print(5)
-		print(6)
+		y = 0
 	}
+	print(y)
 }

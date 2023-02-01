@@ -4,7 +4,7 @@ open Util
 open Side_effect_system
 open Side_effect_system.Side_effect_tracking
 open Preperation.Import
-open Cost_analysis.Types_cost
+open Cost_analysis.Type_cost
 open Ast.Annotated_ast
 open Cost_analysis
 open Cost_analysis.Cost

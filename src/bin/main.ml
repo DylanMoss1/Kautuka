@@ -49,7 +49,7 @@ let () =
          ~debug_file:(Some "03_side-effect-system_alpha-conversion")
     |> Side_effect_tracking.Side_effect_ast_pipeline.pipeline_ast
          ~debug_file:(Some "03_side-effect-system_side-effect-tracking")
-    |> Types_cost.Type_cost_ast_pipeline.pipeline_ast
+    |> Type_cost.Type_cost_ast_pipeline.pipeline_ast
          ~debug_file:(Some "04_cost-analysis_type-cost")
     |> Cost_tracking.Cost_tracking_ast_pipeline.pipeline_ast
          ~debug_file:(Some "04_cost-analysis_cost-tracking")

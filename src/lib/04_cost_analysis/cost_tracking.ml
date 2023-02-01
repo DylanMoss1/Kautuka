@@ -7,7 +7,7 @@ open Parsing
 open Preperation.Import
 open Side_effect_system.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
-open Types_cost
+open Type_cost
 open Cost
 open Util
 
@@ -72,7 +72,9 @@ module Runtime_func_cost = struct
       (Cost.string_of_t t.runtime_cost)
 end
 
-module Runtime_cost_context = Make_context (Alpha) (Runtime_func_cost)
+module Runtime_cost_context = Make_context (Alpha) (Runtime_func_cost) (struct
+let t = false
+end)
 
 type block_runtime_cost =
   { block_type : Parser_types.block_type

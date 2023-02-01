@@ -8,15 +8,20 @@ module type Context = sig
 
   val empty : t
   val add_new_item : key -> value -> t -> t
-  val add_new_scope : t -> t
-  val remove_scope : t -> t
+  val add_new_scope : is_func:bool -> t -> t
+  val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
   val get_all_values : t -> value list
   val string_of_t : t -> string
 end
 
-module Make_context (Key : Item) (Value : Item) = struct
+module type Bool_value = sig
+  val t : bool
+end
+
+module Make_context (Key : Item) (Value : Item) (Is_func_context : Bool_value) =
+struct
   type key = Key.t
   type value = Value.t
   type t = (key * value) list list
@@ -32,11 +37,17 @@ module Make_context (Key : Item) (Value : Item) = struct
     | [] -> raise Empty_scope
 
 
-  let add_new_scope t = [] :: t
+  let add_new_scope ~is_func t =
+    if Is_func_context.t && not is_func then t else [] :: t
 
-  let remove_scope = function
-    | _ :: xs -> xs
-    | [] -> raise Empty_scope
+
+  let remove_scope ~is_func t =
+    if Is_func_context.t && not is_func
+    then t
+    else (
+      match t with
+      | _ :: xs -> xs
+      | [] -> raise Empty_scope)
 
 
   let rec get_value_in_scope key = function

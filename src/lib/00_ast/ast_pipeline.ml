@@ -26,8 +26,8 @@ module type Ast_mapping = sig
 
   val empty_env : env
   val add_to_env : env_key -> env_value -> env -> env
-  val add_new_scope : env -> env
-  val remove_scope : env -> env
+  val add_new_scope : is_func:bool -> env -> env
+  val remove_scope : is_func:bool -> env -> env
   val get_value : env_key -> env -> env_value option
   val get_value_outside_scope : env_key -> env -> env_value option
   val empty_result : result
@@ -189,7 +189,12 @@ module type Ast_mapping = sig
     -> unit
 end
 
-module Empty_context = Make_context (Unit_item) (Unit_item)
+module Empty_context =
+  Make_context (Unit_item) (Unit_item)
+    (struct
+      let t = false
+    end)
+
 module Empty_result = Empty_result
 
 module Default_ast_mapping
@@ -647,12 +652,12 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
         statement
 
 
-  and pipeline_block env block =
-    let env = Mapping.add_new_scope env in
+  and pipeline_block ?(is_func = false) env block =
+    let env = Mapping.add_new_scope ~is_func env in
     let env, new_contents, contents_result =
       pipeline_map_collect ~env ~f:pipeline_command block.contents
     in
-    let env = Mapping.remove_scope env in
+    let env = Mapping.remove_scope ~is_func env in
     Mapping.block
       ~env
       ~new_contents
@@ -674,7 +679,9 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     let env, new_param, param_result =
       pipeline_map_collect ~env ~f:pipeline_param func.params
     in
-    let env, new_body, body_result = pipeline_block env func.body in
+    let env, new_body, body_result =
+      pipeline_block ~is_func:true env func.body
+    in
     let env, new_return_type, return_type_result =
       pipeline_type_id env func.return_type
     in
