@@ -14,7 +14,8 @@
 
 let whitespace = [' ' '\t']+
 let carriage_newline = "\r\n"
-let newline = ('\r' | '\n' | carriage_newline)+
+let newline_eof = (('\r' | '\n' | carriage_newline | ';')*) eof
+let newline = (whitespace* ('\r' | '\n' | carriage_newline | ';') whitespace*)+
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+
@@ -75,7 +76,7 @@ rule read_token = parse
   | "||"                             { OR }
   | "!"                              { NOT }
   | id as s                          { ID (s) }
-  | eof                              { EOF }
+  | newline_eof                      { EOF }
   | _ { raise (Lexer_error ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }
 
   and read_string buf = parse

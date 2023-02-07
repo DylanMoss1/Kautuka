@@ -1,9 +1,18 @@
 package main
 
+var x int
+
+func set_x() { 
+	x = 1
+}
+
 func main() {
-	var y int
-	{
-		y = 0
+  {
+		set_x()
 	}
-	print(y)
+	{
+		if x == 1 { 
+			print("true")
+		}
+	}
 }

@@ -2,6 +2,11 @@
     open Ast.Ast_types
     open Parser_types 
 
+    type ('block, 'var, 'expr) program_contents = 
+    { global_vars : ('var, 'expr) var_statement list
+    ; funcs : ('block, 'var, 'expr) func list
+    }
+
     let block_wrapper command =
         Block_struct
           { contents = [ command ];
@@ -51,13 +56,13 @@
 %type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) func_call> func_call 
 %type <unop> unop
 %type <binop> binop
+%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) program_contents> program_contents
 
 %type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) annotated_expr list> separated_nonempty_list(COMMA, annotated_expr) loption(separated_nonempty_list(COMMA,annotated_expr))
 %type <type_id option> option(type_id)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) block option> option(_else)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) condition_template list> list(else_if)
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) command list> list(command) nonempty_list(command)
-%type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) func list> separated_nonempty_list(NEWLINE, func)
 %type <(Parsed_ast.var_annot param) list> loption(separated_nonempty_list(COMMA,param)) separated_nonempty_list(COMMA,param)
 %type <unit option> option(NEWLINE)
 
@@ -72,12 +77,21 @@
 
 %%
 
-program:
-| package=package NEWLINE funcs=separated_nonempty_list(NEWLINE, func) EOF { 
-    { package; imports = Parsed_ast.create_import_annot (); global_vars = []; funcs } 
+program: 
+| package=package NEWLINE program_contents=program_contents EOF { 
+  { package; imports = Parsed_ast.create_import_annot (); global_vars = program_contents.global_vars; funcs = program_contents.funcs }
 }
 
-package: 
+program_contents: 
+| func=func NEWLINE program_contents=program_contents {
+  { program_contents with funcs = func :: program_contents.funcs } 
+}
+| global_var=global_var NEWLINE program_contents=program_contents { 
+  { program_contents with global_vars = global_var :: program_contents.global_vars } 
+}
+| func=func { { global_vars = []; funcs = [func] } }
+
+package:
 | PACKAGE id=ID { id } 
 
 type_id: 

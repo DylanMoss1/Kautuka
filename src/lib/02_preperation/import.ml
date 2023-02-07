@@ -5,20 +5,20 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing.Parser_types
 
-type import =
-  | I_Fmt
-  | I_Os
-[@@deriving of_sexp, sexp_of, compare]
-
 module Import = struct
-  type t = import [@@deriving of_sexp, sexp_of, compare]
+  type t =
+    | I_Fmt
+    | I_Os
+    | I_Sync
+  [@@deriving of_sexp, sexp_of, compare]
 
   let string_of_t t =
     Fmt.str
       "\"%s\""
       (match t with
       | I_Fmt -> "fmt"
-      | I_Os -> "os")
+      | I_Os -> "os"
+      | I_Sync -> "sync")
 
 
   let create x = x
@@ -28,13 +28,16 @@ module Import_annotation = struct
   include Make_extended_set (Import)
 
   let string_of_t t =
-    Fmt.str
-      "import (%s)\n"
-      (String.concat
-         ~sep:"\n"
-         (List.sort
-            ~compare:String.compare
-            (List.map ~f:Import.string_of_t (elements t))))
+    if length t = 0
+    then ""
+    else
+      Fmt.str
+        "import (%s)\n"
+        (String.concat
+           ~sep:"\n"
+           (List.sort
+              ~compare:String.compare
+              (List.map ~f:Import.string_of_t (elements t))))
 end
 
 module Import_ast =

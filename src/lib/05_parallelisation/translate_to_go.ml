@@ -169,7 +169,7 @@ and go_of_block (block : (Parallelisation_ast.block_annot, 'a, 'b) block) =
   | Some num_block ->
     let wg_var = Alpha.get_new_alpha alpha_generator in
     Fmt.str
-      "var wg_%s sync.WaitGroup\nwg_%s.Add(%d)\n%s"
+      "var wg_%s sync.WaitGroup\nwg_%s.Add(%d)\n%s\nwg_%s.Wait()"
       (Alpha.string_of_t wg_var)
       (Alpha.string_of_t wg_var)
       num_block
@@ -177,8 +177,9 @@ and go_of_block (block : (Parallelisation_ast.block_annot, 'a, 'b) block) =
          ~sep:"\n"
          (List.map
             ~f:(fun block_item ->
-              Fmt.str "go func(){\n%s\n}()" (go_of_command block_item))
+              Fmt.str "go func(){\n%s\nwg_%s.Done()\n}()" (go_of_command block_item) (Alpha.string_of_t wg_var))
             block.contents))
+      (Alpha.string_of_t wg_var)
   | None -> Fmt.str "%s" (map_concat ~sep:"\n" ~f:go_of_command block.contents)
 
 
@@ -200,7 +201,7 @@ let go_of_program program =
   ^ Parallelisation_ast.string_of_import_annot program.imports
   ^ map_concat ~sep:"\n" ~f:go_of_var_statement program.global_vars
   ^ "\n\n"
-  ^ map_concat ~sep:"\n" ~f:go_of_func program.funcs
+  ^ map_concat ~sep:"\n\n" ~f:go_of_func program.funcs
 
 
 let pipeline_ast program =

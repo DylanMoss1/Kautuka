@@ -39,6 +39,8 @@ module Parallelisation_ast =
     (Import_annotation)
     (Expr_type_cost_annotation)
 
+let contains_parallelisation = ref false
+
 let find_disjoint_blocks_collection
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
@@ -129,15 +131,20 @@ let parallelise_disjoint_blocks
   let disjoint_blocks_list = find_all_disjoint_block_collections block_list in
   List.map
     ~f:(fun disjoint_blocks ->
-      wrap_in_block_structure
-        { contents = List.map ~f:wrap_in_block_structure disjoint_blocks
-        ; annotations =
-            { side_effects = get_side_effects_of_contents disjoint_blocks
-            ; scoped_vars = get_scoped_vars_of_contents disjoint_blocks
-            ; runtime_cost = get_runtime_cost_of_contents disjoint_blocks
-            ; parallelise_contents = Some (List.length disjoint_blocks)
-            }
-        })
+      match disjoint_blocks with
+      | [] -> raise Empty_disjoint_blocks_list
+      | [ block ] -> wrap_in_block_structure block
+      | disjoint_blocks ->
+        contains_parallelisation := true;
+        wrap_in_block_structure
+          { contents = List.map ~f:wrap_in_block_structure disjoint_blocks
+          ; annotations =
+              { side_effects = get_side_effects_of_contents disjoint_blocks
+              ; scoped_vars = get_scoped_vars_of_contents disjoint_blocks
+              ; runtime_cost = get_runtime_cost_of_contents disjoint_blocks
+              ; parallelise_contents = Some (List.length disjoint_blocks)
+              }
+          })
     disjoint_blocks_list
 
 
@@ -204,9 +211,23 @@ and string_of_contents_list contents_list =
        (List.map ~f:Parallelisation_ast.string_of_command contents_list))
 
 
+and string_of_contents_list_cost_tracking contents_list =
+  Fmt.str
+    "[%s]"
+    (String.concat
+       ~sep:", "
+       (List.map
+          ~f:Cost_tracking.Cost_tracking_ast.string_of_command
+          contents_list))
+
+
 and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
   =
+  (* print_endline (Cost_tracking.Cost_tracking_ast.string_of_block block); *)
+  (* print_endline "\n"; *)
+  (* print_endline (string_of_contents_list_cost_tracking block.contents); *)
   let { contents; annotations } = block in
+  (* print_endline (string_of_contents_list_cost_tracking contents); *)
   let contents = List.map ~f:parallelise_command contents in
   let parallelised_contents =
     let rec parallelise_contents_inner
@@ -226,9 +247,12 @@ and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
         (Fmt.str
            "parallelised_contents_acc: %s"
            (string_of_contents_list parallelised_contents_acc));
-      print_endline ""; *)
+      print_endline "\n\n--\n\n"; *)
+
+      (* print_endline "\n\n------\n\n"; *)
       match remaining_contents with
       | command :: remaining_contents ->
+        (* print_endline (Parallelisation_ast.string_of_command command); *)
         (match command with
         | Structure (Block_struct block) ->
           parallelise_contents_inner
@@ -241,12 +265,16 @@ and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
             []
             (add_parallelised_adjacent_blocks_to_acc
                passed_adjacent_blocks
-               parallelised_contents_acc)
-          @ [ command ])
+               parallelised_contents_acc
+            @ [ command ]))
       | [] ->
+        (* let x = *)
         add_parallelised_adjacent_blocks_to_acc
           passed_adjacent_blocks
           parallelised_contents_acc
+      (* in
+        print_endline (string_of_contents_list x);
+        x *)
     in
     parallelise_contents_inner contents [] []
   in
@@ -254,8 +282,9 @@ and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
     (Fmt.str
        "final_contents: %s"
        (string_of_contents_list parallelised_contents));
-  print_endline "\n"; *)
-  { contents = List.rev parallelised_contents
+  print_endline "\n\n----\n\n"; *)
+  (* print_endline "\n\n-----\n\n"; *)
+  { contents = parallelised_contents
   ; annotations =
       { side_effects = annotations.side_effects
       ; scoped_vars = annotations.scoped_vars
@@ -266,6 +295,7 @@ and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
 
 
 and parallelise_func (func : ('a, 'b, 'c) func) =
+  (* print_endline (Cost_tracking.Cost_tracking_ast.string_of_block func.body); *)
   { name = func.name
   ; params = func.params
   ; body = parallelise_block func.body
@@ -274,14 +304,19 @@ and parallelise_func (func : ('a, 'b, 'c) func) =
 
 
 let parallelise_program program =
+  let parallelised_funcs = List.map ~f:parallelise_func program.funcs in
   { package = program.package
-  ; imports = program.imports
+  ; imports =
+      (if !contains_parallelisation
+      then Import_annotation.add program.imports (Import.create Import.I_Sync)
+      else program.imports)
   ; global_vars = program.global_vars
-  ; funcs = List.map ~f:parallelise_func program.funcs
+  ; funcs = parallelised_funcs
   }
 
 
 let pipeline_ast ~debug_file program =
+  contains_parallelisation := false;
   let new_program = parallelise_program program in
   (match debug_file with
   | Some debug_file ->

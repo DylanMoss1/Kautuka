@@ -202,17 +202,12 @@ module Cost_tracking_ast_mapping = struct
     | Type_cost.C_Int init_cost, Type_cost.C_Int cond_cost ->
       ( end_env
       , for_loop
-      , if is_inc
-        then
-          Runtime_cost.multiply
-            (Runtime_cost.subtract
-               (Runtime_cost.subtract cond_cost Runtime_cost.one)
-               init_cost)
-            result
-        else
-          Runtime_cost.multiply
-            (Runtime_cost.subtract (Cost.sum Cost.one init_cost) cond_cost)
-            result )
+      , let iterations =
+          if is_inc
+          then Runtime_cost.subtract cond_cost Runtime_cost.one
+          else Runtime_cost.subtract (Cost.sum Cost.one init_cost) cond_cost
+        in
+        Runtime_cost.multiply iterations result )
     | _ -> raise Type_error
 
 
