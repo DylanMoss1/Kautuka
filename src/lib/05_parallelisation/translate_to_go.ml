@@ -3,6 +3,7 @@ open Ast.Ast_types
 open Reorder_and_parallelise
 open Util
 open Side_effect_system.Alpha_conversion
+open Preperation.Import
 
 let alpha_generator = Alpha.create
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
@@ -116,57 +117,62 @@ let go_of_statement = function
   | Expr annotated_expr -> go_of_annotated_expr annotated_expr
 
 
-let rec go_of_for_loop for_loop =
+let rec go_of_for_loop ~sequential for_loop =
   Fmt.str
     "for %s;%s;%s {\n%s\n}"
     (go_of_var_statement for_loop.init)
     (go_of_annotated_expr for_loop.cond)
     (go_of_var_statement for_loop.iter)
-    (go_of_block for_loop.contents)
+    (go_of_block ~sequential for_loop.contents)
 
 
-and go_of_for_each for_each =
+and go_of_for_each ~sequential for_each =
   Fmt.str
-    "for %s := %s {\n%s\n}"
+    "for _, %s := range %s {\nvar %s string = string(%s)\n    %s\n}"
     (go_of_var for_each.item)
     (go_of_annotated_expr for_each.iterator)
-    (go_of_block for_each.contents)
+    (go_of_var for_each.item)
+    (go_of_var for_each.item)
+    (go_of_block ~sequential for_each.contents)
 
 
-and go_of_condition_template condition_template =
+and go_of_condition_template ~sequential condition_template =
   Fmt.str
     "%s {\n%s\n}"
     (go_of_annotated_expr condition_template.condition)
-    (go_of_block condition_template.contents)
+    (go_of_block ~sequential condition_template.contents)
 
 
-and go_of_if_record if_record =
+and go_of_if_record ~sequential if_record =
   Fmt.str
     "if %s %s"
     (map_concat
        ~sep:" else if "
-       ~f:go_of_condition_template
+       ~f:(go_of_condition_template ~sequential)
        (List.append [ if_record._if ] if_record.else_if))
     (match if_record.else_contents with
-    | Some else_contents -> go_of_block else_contents
+    | Some else_contents -> go_of_block ~sequential else_contents
     | None -> "")
 
 
-and go_of_structure = function
-  | Block_struct block -> Fmt.str "{%s}" (go_of_block block)
-  | If if_record -> go_of_if_record if_record
-  | For_loop for_loop -> go_of_for_loop for_loop
-  | For_each for_each -> go_of_for_each for_each
+and go_of_structure ~sequential = function
+  | Block_struct block -> Fmt.str "{%s}" (go_of_block ~sequential block)
+  | If if_record -> go_of_if_record ~sequential if_record
+  | For_loop for_loop -> go_of_for_loop ~sequential for_loop
+  | For_each for_each -> go_of_for_each ~sequential for_each
 
 
-and go_of_command = function
-  | Structure structure -> go_of_structure structure
+and go_of_command ~sequential = function
+  | Structure structure -> go_of_structure ~sequential structure
   | Statement statement -> go_of_statement statement
 
 
-and go_of_block (block : (Parallelisation_ast.block_annot, 'a, 'b) block) =
-  match block.annotations.parallelise_contents with
-  | Some num_block ->
+and go_of_block
+    ~sequential
+    (block : (Parallelisation_ast.block_annot, 'a, 'b) block)
+  =
+  match block.annotations.parallelise_contents, sequential with
+  | Some num_block, false ->
     let wg_var = Alpha.get_new_alpha alpha_generator in
     Fmt.str
       "var wg_%s sync.WaitGroup\nwg_%s.Add(%d)\n%s\nwg_%s.Wait()"
@@ -177,34 +183,49 @@ and go_of_block (block : (Parallelisation_ast.block_annot, 'a, 'b) block) =
          ~sep:"\n"
          (List.map
             ~f:(fun block_item ->
-              Fmt.str "go func(){\n%s\nwg_%s.Done()\n}()" (go_of_command block_item) (Alpha.string_of_t wg_var))
+              Fmt.str
+                "go func(){\n%s\nwg_%s.Done()\n}()"
+                (go_of_command ~sequential block_item)
+                (Alpha.string_of_t wg_var))
             block.contents))
       (Alpha.string_of_t wg_var)
-  | None -> Fmt.str "%s" (map_concat ~sep:"\n" ~f:go_of_command block.contents)
+  | _ ->
+    Fmt.str
+      "%s"
+      (map_concat ~sep:"\n" ~f:(go_of_command ~sequential) block.contents)
 
 
 and go_of_param (var, type_id) =
   Fmt.str "%s %s" (go_of_var var) (go_of_type_id type_id)
 
 
-and go_of_func (func : ('c, 'd, 'e) func) =
+and go_of_func ~sequential (func : ('c, 'd, 'e) func) =
   Fmt.str
     "func %s (%s) %s {\n%s\n}"
     (go_of_var func.name)
     (map_concat ~sep:", " ~f:go_of_param func.params)
     (go_of_type_id func.return_type)
-    (go_of_block func.body)
+    (go_of_block ~sequential func.body)
 
 
-let go_of_program program =
+let go_of_program ~sequential program =
   Fmt.str "package %s\n\n" program.package
   ^ Parallelisation_ast.string_of_import_annot program.imports
   ^ map_concat ~sep:"\n" ~f:go_of_var_statement program.global_vars
   ^ "\n\n"
-  ^ map_concat ~sep:"\n\n" ~f:go_of_func program.funcs
+  ^ map_concat ~sep:"\n\n" ~f:(go_of_func ~sequential) program.funcs
 
 
-let pipeline_ast program =
-  Out_channel.write_all
-    (Fmt.str "./files/go_program.go")
-    ~data:(go_of_program program)
+let pipeline_ast ~sequential program =
+  let output_file =
+    if sequential
+    then "./files/compiled/seq_go_program.go"
+    else "./files/compiled/go_program.go"
+  in
+  let program =
+    if sequential
+    then
+      { program with imports = Import_annotation.remove program.imports I_Sync }
+    else program
+  in
+  Out_channel.write_all output_file ~data:(go_of_program ~sequential program)

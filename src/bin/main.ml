@@ -8,8 +8,14 @@ open Parallelisation
 
 let usage_msg = "x [--debug]"
 let debug = ref false
+let sequential = ref false
 let anon_fun _ = ()
-let speclist = [ "--debug", Arg.Set debug, "Output intermediary steps" ]
+
+let speclist =
+  [ "--debug", Arg.Set debug, "Output intermediary steps"
+  ; "--seq", Arg.Set sequential, "Disable automatic parallelisation"
+  ]
+
 
 let token_list_of_lexbuf lexbuf =
   let rec lexbuf_to_string_inner lexbuf acc =
@@ -40,7 +46,7 @@ let () =
     Parser_types.Parsed_ast.create (Parser.program Lexer.read_token lexbuf)
     |> (fun parsed_ast ->
          Parser_types.Parsed_ast.output_to_debug_file
-           "01_parsing_parser"
+           "01_parsing_parser.go"
            parsed_ast;
          parsed_ast)
     |> Import.Import_ast_pipeline.pipeline_ast
@@ -55,7 +61,7 @@ let () =
          ~debug_file:(Some "04_cost-analysis_cost-tracking")
     |> Reorder_and_parallelise.pipeline_ast
          ~debug_file:(Some "05_parallelisation_reorder-and-parallelise")
-    |> Translate_to_go.pipeline_ast
+    |> Translate_to_go.pipeline_ast ~sequential:!sequential
   with
   | Lexer.Lexer_error msg ->
     print_endline

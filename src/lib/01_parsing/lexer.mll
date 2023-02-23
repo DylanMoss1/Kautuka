@@ -14,8 +14,8 @@
 
 let whitespace = [' ' '\t']+
 let carriage_newline = "\r\n"
-let newline_eof = (('\r' | '\n' | carriage_newline | ';')*) eof
-let newline = (whitespace* ('\r' | '\n' | carriage_newline | ';') whitespace*)+
+let newline_eof = (('\r' | '\n' | carriage_newline)*) eof
+let newline = (whitespace* ('\r' | '\n' | carriage_newline) whitespace*)+
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+
@@ -64,6 +64,7 @@ rule read_token = parse
   | "++"                             { INCREMENT }
   | "--"                             { DECREMENT }
   | "+"                              { PLUS }
+  | "+="                             { PLUS_EQUALS }
   | "-"                              { MINUS }
   | "*"                              { MULT }
   | "=="                             { EQ }

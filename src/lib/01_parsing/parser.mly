@@ -1,21 +1,34 @@
 %{ 
-    open Ast.Ast_types
-    open Parser_types 
+  open Ast.Ast_types
+  open Parser_types 
 
-    type ('block, 'var, 'expr) program_contents = 
-    { global_vars : ('var, 'expr) var_statement list
-    ; funcs : ('block, 'var, 'expr) func list
+  type ('block, 'var, 'expr) program_contents = 
+  { global_vars : ('var, 'expr) var_statement list
+  ; funcs : ('block, 'var, 'expr) func list
+  }
+
+  let block_wrapper command =
+      Block_struct
+        { contents = [ command ];
+          annotations = Parsed_ast.create_block_annot Default
+        }
+
+  let parse_return_type = function 
+  | Some(return_type) -> return_type  
+  | None -> T_Unit 
+
+  let create_annotated_plus_binop left right =
+    { expr = Binop (left, Plus, right)
+    ; annotations = Parsed_ast.create_expr_annot ()
     }
 
-    let block_wrapper command =
-        Block_struct
-          { contents = [ command ];
-            annotations = Parsed_ast.create_block_annot Default
-          }
 
-    let parse_return_type = function 
-    | Some(return_type) -> return_type  
-    | None -> T_Unit 
+  let plus_equals_unsugar var annotated_expr =
+    Var_assign
+      ( var
+      , create_annotated_plus_binop
+          { expr = Var_read var; annotations = Parsed_ast.create_expr_annot () }
+          annotated_expr )
 %}
 
 %token NEWLINE
@@ -35,13 +48,13 @@
 %token FOR
 %token BREAK CONTINUE RETURN 
 %token INCREMENT DECREMENT
-%token PLUS MINUS MULT EQ NE LT LE GT GE AND OR NOT 
+%token PLUS PLUS_EQUALS MINUS MULT EQ NE LT LE GT GE AND OR NOT
 %token PRINT INPUT OPEN READ WRITE APPEND 
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.import_annot, Parsed_ast.expr_annot) program> program
 %type <string> package
 %type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) statement> statement 
 %type <Parsed_ast.var_annot var> var
-%type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) var_statement> var_statement global_var var_mod
+%type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) var_statement> var_statement global_var
 %type <type_id> type_id
 %type <value> value 
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.expr_annot) func> func
@@ -111,16 +124,14 @@ var_statement:
 | var_statement=global_var { var_statement }
 | var=var DECL annotated_expr=annotated_expr { Var_decl(var, annotated_expr) }
 | var=var EQUALS annotated_expr=annotated_expr { Var_assign(var, annotated_expr) }
-| var_mod=var_mod { var_mod }
+| var=var PLUS_EQUALS annotated_expr=annotated_expr { plus_equals_unsugar var annotated_expr }
+| var=var INCREMENT { Post_inc(var) }
+| var=var DECREMENT { Post_dec(var) }
 
 global_var:
 | VAR var=var type_id=type_id { Var_non_init(var, type_id) }
 | VAR var=var type_id=type_id EQUALS annotated_expr=annotated_expr { Var_init(var, type_id, annotated_expr) }
 | VAR var=var EQUALS annotated_expr=annotated_expr { Var_decl(var, annotated_expr) }
-
-var_mod:
-| var=var INCREMENT { Post_inc(var) }
-| var=var DECREMENT { Post_dec(var) }
 
 func: 
 | FUNC var=var LPAREN params=separated_list(COMMA, param) RPAREN return_type=option(type_id) block=block {

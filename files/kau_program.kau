@@ -1,18 +1,16 @@
 package main
 
-var x int
-
-func set_x() { 
-	x = 1
-}
-
 func main() {
-  {
-		set_x()
-	}
+	x := 0
 	{
-		if x == 1 { 
-			print("true")
+		for i := 0; i < 500; i++ { 
+			print("hello world")
 		}
 	}
+	{
+		for i := 0; i < 500; i++ { 
+			x += i 
+		}
+	}
+	print(x)
 }

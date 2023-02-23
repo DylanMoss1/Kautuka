@@ -1,6 +1,6 @@
 (library
  (name parallelisation)
- (libraries ast core fmt side_effect_system cost_analysis util)
+ (libraries ast core fmt preperation side_effect_system cost_analysis util)
  (preprocess
   (pps bisect_ppx --conditional))
  (lint

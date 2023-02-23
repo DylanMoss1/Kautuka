@@ -165,7 +165,7 @@ struct
 
   and string_of_for_each for_each =
     Fmt.str
-      "for %s := %s {\n%s\n}"
+      "for %s := range %s {\n%s\n}"
       (string_of_var for_each.item)
       (string_of_annotated_expr for_each.iterator)
       (string_of_block for_each.contents)

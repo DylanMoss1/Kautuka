@@ -40,12 +40,12 @@ module Runtime_cost = struct
   let cost_of_post_inc = tr
   let cost_of_post_dec = tr
   let cost_of_user_func_call = create_int_cost 50
-  let cost_of_print x = multiply (create_int_cost 20) x
+  let cost_of_print = create_int_cost 200
   let cost_of_input = create_int_cost 5000
   let cost_of_open = create_int_cost 300
   let cost_of_read = create_int_cost 300
-  let cost_of_write x = sum (create_int_cost 500) x
-  let cost_of_append x = sum (create_int_cost 500) x
+  let cost_of_write = create_int_cost 500
+  let cost_of_append = create_int_cost 500
   let cost_of_for_loop = create_int_cost 20
   let cost_of_for_each = create_int_cost 30
   let cost_of_if_record = create_int_cost 10
@@ -128,6 +128,18 @@ module Cost_tracking_ast_mapping = struct
            runtime_cost) )
 
 
+  let func_call env func_call result =
+    match func_call with
+    | Print _ -> env, func_call, join_results result Runtime_cost.cost_of_print
+    | Input -> env, func_call, join_results result Runtime_cost.cost_of_input
+    | Open _ -> env, func_call, join_results result Runtime_cost.cost_of_open
+    | Read _ -> env, func_call, join_results result Runtime_cost.cost_of_read
+    | Write _ -> env, func_call, join_results result Runtime_cost.cost_of_write
+    | Append _ ->
+      env, func_call, join_results result Runtime_cost.cost_of_append
+    | _ -> ignore_branch env func_call result
+
+
   let expr env expr result =
     ( env
     , expr
@@ -185,7 +197,20 @@ module Cost_tracking_ast_mapping = struct
       | Var_decl (var, annotated_expr) -> var, annotated_expr.annotations
       | _ -> raise Type_error
     in
-    let cond_type_cost = cond.annotations in
+    let cond_type_cost =
+      let new_code_expr = cond.expr in
+      match new_code_expr with
+      | Binop (var, Lt, value) ->
+        let var =
+          match var.expr with
+          | Var_read var -> var
+          | _ -> raise Type_error
+        in
+        if Alpha.compare init_var.alpha var.alpha = 0
+        then value.annotations
+        else raise Type_error
+      | _ -> raise Type_error
+    in
     let is_inc =
       match iter with
       | Post_inc var ->
