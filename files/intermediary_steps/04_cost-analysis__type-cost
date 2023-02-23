@@ -1,0 +1,37 @@
+package main
+
+import ("fmt")
+
+
+func var{name: main, alpha: main} ()  {
+//{block_type: Default, scoped_vars: {main}, side_effects: {W:console}}
+
+var{name: x, alpha: alpha_1} := (0 : int<0,0>)
+{
+//{block_type: Default, scoped_vars: {alpha_1, main}, side_effects: {W:console}}
+
+{
+//{block_type: Default, scoped_vars: {alpha_1, main}, side_effects: {W:console}}
+
+for var{name: i, alpha: alpha_2} := (0 : int<0,0>);((var{name: i, alpha: alpha_2} : int<0,0>) < (500 : int<500,500>) : bool);var{name: i, alpha: alpha_2}++ {
+//{block_type: Default, scoped_vars: {alpha_2, alpha_1, main}, side_effects: {W:console}}
+
+(fmt.Println(("hello world" : string<11,11>)) : unit)
+}
+}
+}
+{
+//{block_type: Default, scoped_vars: {alpha_1, main}, side_effects: {R:var[alpha_1], W:var[alpha_1]}}
+
+{
+//{block_type: Default, scoped_vars: {alpha_1, main}, side_effects: {R:var[alpha_1], W:var[alpha_1]}}
+
+for var{name: i, alpha: alpha_3} := (0 : int<0,0>);((var{name: i, alpha: alpha_3} : int<0,0>) < (500 : int<500,500>) : bool);var{name: i, alpha: alpha_3}++ {
+//{block_type: Default, scoped_vars: {alpha_3, alpha_1, main}, side_effects: {R:var[alpha_1], R:var[alpha_3], W:var[alpha_1]}}
+
+var{name: x, alpha: alpha_1} = ((var{name: x, alpha: alpha_1} : int<0,0>) + (var{name: i, alpha: alpha_3} : int<0,499>) : int<0,499>)
+}
+}
+}
+(fmt.Println((var{name: x, alpha: alpha_1} : int<0,499>)) : unit)
+}
