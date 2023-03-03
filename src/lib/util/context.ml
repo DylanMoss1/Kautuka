@@ -7,13 +7,14 @@ module type Context = sig
   type t
 
   val empty : t
-  val add_new_item : key -> value -> t -> t
+  val add_item : key -> value -> t -> t
   val add_new_scope : is_func:bool -> t -> t
   val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
-  val apply_unary_fun : f:(value -> value) -> t -> t
-  val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t
+
+  (* val apply_unary_fun : f:(value -> value) -> t -> t *)
+  (* val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t *)
   val get_all_values : t -> value list
   val string_of_t : t -> string
 
@@ -22,7 +23,7 @@ module type Context = sig
     -> end_env:t
     -> sum:(value -> value -> value)
     -> subtract:(value -> value -> value)
-    -> multiply:(value -> 'a -> value)
+    -> multiply:('a -> value -> value)
     -> iterations:'a
     -> t
 end
@@ -57,11 +58,47 @@ struct
 
   let empty = [ [] ]
 
-  let add_new_item key value t =
-    match t with
-    | ts :: tss -> ((key, value) :: ts) :: tss
-    | [] -> raise Empty_scope
+  let rec add_item_to_scope key value scope acc =
+    match scope with
+    | (k, v) :: remaining_scope ->
+      if Key.compare key k = 0
+      then Some (acc @ ((key, value) :: remaining_scope))
+      else add_item_to_scope key value remaining_scope ((k, v) :: acc)
+    | [] -> None
 
+
+  let add_item key value env =
+    let rec add_item_to_env key value remaining_env acc =
+      match remaining_env with
+      | scope :: remaining_env ->
+        (match add_item_to_scope key value scope [] with
+        | Some scope -> acc @ (scope :: remaining_env)
+        | None -> add_item_to_env key value remaining_env (scope :: acc))
+      | [] ->
+        (match env with
+        | inner_scope :: remaining_scope ->
+          ((key, value) :: inner_scope) :: remaining_scope
+        | [] -> raise Empty_scope)
+    in
+    add_item_to_env key value env []
+
+
+  (* let rec add_item_to_scope key = function
+    | (k, v) :: ts ->
+      if Key.compare k key = 0 then Some v else get_value_in_scope key ts
+    | [] -> None
+
+
+  let add_item key value = function
+    | ts :: tss ->
+      (match get_value_in_scope key ts with
+      | None -> get_value key tss
+      | Some value -> Some value)
+    | [] -> None *)
+
+  (* match t with
+    | ts :: tss -> ((key, value) :: ts) :: tss
+    | [] -> raise Empty_scope *)
 
   let add_new_scope ~is_func t =
     if Is_func_context.t && not is_func then t else [] :: t
@@ -128,14 +165,38 @@ struct
 
 
   let get_post_loop_context
-      ~(start_env : t)
-      ~(end_env : t)
+      ~start_env
+      ~end_env
       ~sum
       ~subtract
       ~multiply
       ~iterations
     =
-    let delta_scope =
+    let delta_env = apply_bin_fun end_env start_env ~f:subtract in
+    let delta_env = apply_unary_fun delta_env ~f:(multiply iterations) in
+    apply_bin_fun start_env delta_env ~f:sum
+
+  (* let delta_env =
+      Type_cost_context.apply_bin_fun
+        ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.subtract)
+        (Type_cost_context.remove_scope ~is_func:true end_env)
+        (Type_cost_context.remove_scope ~is_func:true start_env)
+    in
+    let delta_env =
+      Type_cost_context.apply_unary_fun
+        ~f:(Type_cost.apply_cost_unary_fun ~f:(Cost.multiply iterations))
+        delta_env
+    in
+    let x =
+      Type_cost_context.apply_bin_fun
+        ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.sum)
+        start_env
+        (Type_cost_context.add_new_scope ~is_func:true delta_env)
+    in
+    (* print_endline (Type_cost_context.string_of_t x); *)
+    x *)
+
+  (* let delta_scope =
       match end_env with
       | end_scope :: _ ->
         List.fold_left
@@ -155,5 +216,5 @@ struct
     match start_env with
     | start_scope :: remaining_scope ->
       (delta_scope @ start_scope) :: remaining_scope
-    | _ -> raise Empty_scope
+    | _ -> raise Empty_scope *)
 end

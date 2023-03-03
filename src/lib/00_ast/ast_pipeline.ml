@@ -221,7 +221,7 @@ struct
   type new_expr_annot = New_ast.expr_annot
 
   let empty_env = Context.empty
-  let add_to_env = Context.add_new_item
+  let add_to_env = Context.add_item
   let add_new_scope = Context.add_new_scope
   let remove_scope = Context.remove_scope
   let get_value = Context.get_value

@@ -6,13 +6,13 @@ module type Context = sig
   type t
 
   val empty : t
-  val add_new_item : key -> value -> t -> t
+  val add_item : key -> value -> t -> t
   val add_new_scope : is_func:bool -> t -> t
   val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
-  val apply_unary_fun : f:(value -> value) -> t -> t
-  val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t
+  (* val apply_unary_fun : f:(value -> value) -> t -> t *)
+  (* val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t *)
   val get_all_values : t -> value list
   val string_of_t : t -> string
 
@@ -21,7 +21,7 @@ module type Context = sig
     -> end_env:t
     -> sum:(value -> value -> value)
     -> subtract:(value -> value -> value)
-    -> multiply:(value -> 'a -> value)
+    -> multiply:('a -> value -> value)
     -> iterations:'a
     -> t
 end

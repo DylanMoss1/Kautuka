@@ -114,7 +114,7 @@ module Type_cost = struct
   let sum = apply_cost_bin_fun ~f:Cost.sum
   let subtract = apply_cost_bin_fun ~f:Cost.subtract
 
-  let multiply t scalar_cost =
+  let multiply scalar_cost t =
     apply_cost_unary_fun ~f:(Cost.multiply scalar_cost) t
 end
 
@@ -518,7 +518,7 @@ module Type_cost_ast_mapping = struct
     in
     match init_type_cost, cond_type_cost with
     | Type_cost.C_Int init_cost, Type_cost.C_Int cond_cost ->
-      Type_cost_context.add_new_item
+      Type_cost_context.add_item
         init_var.alpha
         (C_Int
            (if is_inc
@@ -541,11 +541,12 @@ module Type_cost_ast_mapping = struct
     =
     match new_iterator.annotations with
     | Type_cost.C_String cost ->
-      Type_cost_context.add_new_item new_item.alpha (C_String cost) env
+      Type_cost_context.add_item new_item.alpha (C_String cost) env
     | _ -> raise Type_error
 
 
   let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
+    let end_env = remove_scope ~is_func:false end_env in
     Type_cost_context.get_post_loop_context
       ~start_env
       ~end_env
@@ -554,9 +555,12 @@ module Type_cost_ast_mapping = struct
       ~multiply:Type_cost.multiply
       ~iterations
 
-
-  (* (print_endline (Type_cost_context.string_of_t start_env));
-    (print_endline (Type_cost_context.string_of_t end_env));
+    (* let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
+    print_endline (Type_cost_context.string_of_t start_env);
+    print_endline (Type_cost_context.string_of_t end_env);
+    let end_env = remove_scope ~is_func:false end_env in
+    print_endline (Type_cost_context.string_of_t end_env);
+    print_endline "\n\n";
     let delta_env =
       Type_cost_context.apply_bin_fun
         ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.subtract)
@@ -568,12 +572,15 @@ module Type_cost_ast_mapping = struct
         ~f:(Type_cost.apply_cost_unary_fun ~f:(Cost.multiply iterations))
         delta_env
     in
-    let x = 
-    Type_cost_context.apply_bin_fun
-      ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.sum)
-      start_env
-      (Type_cost_context.add_new_scope ~is_func:true delta_env)
-    in (print_endline (Type_cost_context.string_of_t x)); x  *)
+    let x =
+      Type_cost_context.apply_bin_fun
+        ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.sum)
+        start_env
+        (Type_cost_context.add_new_scope ~is_func:true delta_env)
+    in
+    (* print_endline (Type_cost_context.string_of_t x); *)
+    x *)
+
 
   let for_loop ~start_env ~end_env ~for_loop ~result =
     let { init; cond; iter; contents = _ } = for_loop in
@@ -646,8 +653,8 @@ module Type_cost_ast_mapping = struct
     , Type_cost_result.create_with_return None result.return_type_cost )
 
 
-  let block ~env ~old_env ~new_contents ~old_annotations ~result =
-    let x = get_new_env ~start_env:old_env ~end_env:env ~iterations:Cost.one in
+  (* let block ~env ~old_env ~new_contents ~old_annotations ~result =
+    (* let x = get_new_env ~start_env:old_env ~end_env:env ~iterations:Cost.one in
     print_endline (Type_cost_context.string_of_t old_env);
     print_endline (Type_cost_context.string_of_t env);
     print_endline (Type_cost_context.string_of_t x);
@@ -655,8 +662,8 @@ module Type_cost_ast_mapping = struct
     ( get_new_env ~start_env:old_env ~end_env:env ~iterations:Cost.one
     , old_env
     , { contents = new_contents; annotations = old_annotations }
-    , result )
-
+    , result ) *)
+    ( env, ) *)
 
   let param env param result =
     let var, type_id = param in

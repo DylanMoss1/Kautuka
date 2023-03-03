@@ -75,6 +75,7 @@ module Alpha_conversion_ast_mapping = struct
           ~is_main:(String.compare var.name "main" = 0)
           alpha_generator
       in
+      (* print_endline (Alpha_conversion_context.string_of_t env); *)
       add_to_env var.name alpha env, { name = var.name; alpha }, empty_result
     | Read | Write ->
       (match Alpha_conversion_context.get_value var.name env with

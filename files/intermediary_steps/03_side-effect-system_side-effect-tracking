@@ -4,17 +4,14 @@ import ("fmt")
 
 
 func var{name: main, alpha: main} ()  {
-//{block_type: Default, scoped_vars: {alpha_1, main}, side_effects: {R:var[alpha_1], W:console, W:var[alpha_1]}}
+//{block_type: Default, scoped_vars: {main}, side_effects: {W:console}}
 
-var{name: total, alpha: alpha_1} := (0 : UNTYPED)
+var{name: x, alpha: alpha_1} := (0 : UNTYPED)
 {
-//{block_type: Default, scoped_vars: {alpha_2, alpha_1, main}, side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_1], W:var[alpha_2]}}
+//{block_type: Default, scoped_vars: {alpha_1, main}, side_effects: {W:var[alpha_1]}}
 
-for var{name: i, alpha: alpha_2} := (0 : UNTYPED);((var{name: i, alpha: alpha_2} : UNTYPED) < (1000 : UNTYPED) : UNTYPED);var{name: i, alpha: alpha_2}++ {
-//{block_type: Default, scoped_vars: {alpha_2, alpha_1, main}, side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_1]}}
-
-var{name: total, alpha: alpha_1} = ((var{name: total, alpha: alpha_1} : UNTYPED) + (var{name: i, alpha: alpha_2} : UNTYPED) : UNTYPED)
+var{name: y, alpha: alpha_2} := (1 : UNTYPED)
+var{name: x, alpha: alpha_1} = (5 : UNTYPED)
 }
-}
-(fmt.Println((var{name: total, alpha: alpha_1} : UNTYPED)) : UNTYPED)
+(fmt.Println((var{name: x, alpha: alpha_1} : UNTYPED)) : UNTYPED)
 }
