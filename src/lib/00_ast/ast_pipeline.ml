@@ -146,11 +146,15 @@ module type Ast_mapping = sig
 
   val block
     :  env:env
+    -> old_env:env
     -> new_contents:
          (new_block_annot, new_var_annot, new_expr_annot) command list
     -> old_annotations:old_block_annot
     -> result:result
-    -> env * (new_block_annot, new_var_annot, new_expr_annot) block * result
+    -> env
+       * env
+       * (new_block_annot, new_var_annot, new_expr_annot) block
+       * result
 
   val param
     :  env
@@ -262,8 +266,11 @@ struct
   let structure = ignore_branch
   let command = ignore_branch
 
-  let block ~env ~new_contents ~old_annotations ~result =
-    env, { contents = new_contents; annotations = old_annotations }, result
+  let block ~env ~old_env ~new_contents ~old_annotations ~result =
+    ( env
+    , old_env
+    , { contents = new_contents; annotations = old_annotations }
+    , result )
 
 
   let param = ignore_branch
@@ -519,7 +526,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     in
     let env, new_iter, iter_result = pipeline_var_statement env for_loop.iter in
     let env = Mapping.update_for_loop_env ~env ~new_init ~new_cond ~new_iter in
-    let env, new_contents, contents_result =
+    let env, old_env, new_contents, contents_result =
       pipeline_block env for_loop.contents
     in
     let result =
@@ -528,7 +535,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     in
     Mapping.for_loop
       ~start_env
-      ~end_env:env
+      ~end_env:old_env
       ~for_loop:
         { init = new_init
         ; cond = new_cond
@@ -547,7 +554,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
       pipeline_annotated_expr env for_each.iterator
     in
     let env = Mapping.update_for_each_env ~env ~new_item ~new_iterator in
-    let env, new_contents, contents_result =
+    let env, _, new_contents, contents_result =
       pipeline_block env for_each.contents
     in
     let result =
@@ -566,7 +573,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     let env, new_condition, condition_result =
       pipeline_annotated_expr env condition_template.condition
     in
-    let env, new_contents, contents_result =
+    let env, _, new_contents, contents_result =
       pipeline_block env condition_template.contents
     in
     let result =
@@ -588,7 +595,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     let env, new_else_contents, else_contents_result =
       match if_record.else_contents with
       | Some else_contents ->
-        let env, else_contents, else_contents_result =
+        let env, _, else_contents, else_contents_result =
           pipeline_block env else_contents
         in
         env, Some else_contents, else_contents_result
@@ -606,12 +613,8 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
 
   and pipeline_structure env = function
     | Block_struct block ->
-      single_pipeline
-        ~env
-        ~sub_pipeline:pipeline_block
-        ~mapping:Mapping.structure
-        ~new_ast_fun:(fun x -> Block_struct x)
-        block
+      let new_env, _, new_ast, new_ast_result = pipeline_block env block in
+      Mapping.structure new_env (Block_struct new_ast) new_ast_result
     | If if_record ->
       single_pipeline
         ~env
@@ -652,14 +655,24 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
         statement
 
 
-  and pipeline_block ?(is_func = false) env block =
+  and pipeline_block ?(is_func = false) env block
+      : Mapping.env
+        * Mapping.env
+        * ( Mapping.new_block_annot
+          , Mapping.new_var_annot
+          , Mapping.new_expr_annot )
+          block
+        * Mapping.result
+    =
     let env = Mapping.add_new_scope ~is_func env in
     let env, new_contents, contents_result =
       pipeline_map_collect ~env ~f:pipeline_command block.contents
     in
+    let old_env = env in
     let env = Mapping.remove_scope ~is_func env in
     Mapping.block
       ~env
+      ~old_env
       ~new_contents
       ~old_annotations:block.annotations
       ~result:contents_result
@@ -679,7 +692,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     let env, new_param, param_result =
       pipeline_map_collect ~env ~f:pipeline_param func.params
     in
-    let env, new_body, body_result =
+    let env, _, new_body, body_result =
       pipeline_block ~is_func:true env func.body
     in
     let env, new_return_type, return_type_result =

@@ -260,8 +260,8 @@ module Cost_tracking_ast_mapping = struct
     , empty_result )
 
 
-  let block ~env ~new_contents ~(old_annotations : old_block_annot) ~result =
-    ( env
+  let block ~env ~old_env ~new_contents ~(old_annotations : old_block_annot) ~result =
+    ( env, old_env 
     , { contents = new_contents
       ; annotations =
           { block_type = old_annotations.block_type

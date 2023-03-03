@@ -12,8 +12,19 @@ module type Context = sig
   val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
+  val apply_unary_fun : f:(value -> value) -> t -> t
+  val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t
   val get_all_values : t -> value list
   val string_of_t : t -> string
+
+  val get_post_loop_context
+    :  start_env:t
+    -> end_env:t
+    -> sum:(value -> value -> value)
+    -> subtract:(value -> value -> value)
+    -> multiply:(value -> 'a -> value)
+    -> iterations:'a
+    -> t
 end
 
 module type Bool_value = sig
@@ -28,6 +39,22 @@ struct
 
   exception Empty_scope
   exception Key_in_inner_scope
+  exception Different_shaped_envs
+  exception Key_not_found
+
+  let string_of_key_value_pair (key, value) =
+    Fmt.str "(%s,%s)" (Key.string_of_t key) (Value.string_of_t value)
+
+
+  let string_of_scope scope =
+    Fmt.str
+      "[%s]"
+      (String.concat ~sep:", " (List.map ~f:string_of_key_value_pair scope))
+
+
+  let string_of_t t =
+    Fmt.str "[%s]" (String.concat ~sep:", " (List.map ~f:string_of_scope t))
+
 
   let empty = [ [] ]
 
@@ -72,19 +99,64 @@ struct
     | [] -> raise Empty_scope
 
 
+  let apply_unary_fun_scope ~f = List.map ~f:(fun (key, value) -> key, f value)
+
+  let apply_unary_fun ~f =
+    List.map ~f:(fun scope -> apply_unary_fun_scope ~f scope)
+
+
+  let rec apply_bin_fun_scope ~f scope1 scope2 =
+    match scope1, scope2 with
+    | (key1, value1) :: scope1, (key2, value2) :: scope2 ->
+      if Key.compare key1 key2 = 0
+      then (key1, f value1 value2) :: apply_bin_fun_scope ~f scope1 scope2
+      else raise Different_shaped_envs
+    | [], [] -> []
+    | _ -> raise Different_shaped_envs
+
+
+  let rec apply_bin_fun ~f t1 t2 =
+    match t1, t2 with
+    | scope1 :: t1, scope2 :: t2 ->
+      apply_bin_fun_scope ~f scope1 scope2 :: apply_bin_fun ~f t1 t2
+    | [], [] -> []
+    | _ -> raise Different_shaped_envs
+
+
   let get_all_values =
     List.fold_left ~init:[] ~f:(fun acc scope ->
         acc @ List.map ~f:(fun (_, value) -> value) scope)
 
 
-  let string_of_key_value_pair (key, value) =
-    Fmt.str "(%s,%s)" (Key.string_of_t key) (Value.string_of_t value)
+  let get_post_loop_context
+      ~(start_env : t)
+      ~(end_env : t)
+      ~sum
+      ~subtract
+      ~multiply
+      ~iterations
+    =
+    let delta_scope =
+      match end_env with
+      | end_scope :: _ ->
+        List.map
+          ~f:(fun (key, end_value) ->
+            match get_value key start_env with
+            | Some start_value ->
+              ( key
+              , sum
+                  (multiply (subtract end_value start_value) iterations)
+                  start_value )
+            | None -> raise Key_not_found)
+          end_scope
+      | _ -> raise Empty_scope
+    in
+    match start_env with
+    | start_scope :: remaining_scope ->
+      (delta_scope @ start_scope) :: remaining_scope
+    | _ -> raise Empty_scope
 
-
-  let string_of_scope scope =
-    Fmt.str "[%s]" (String.concat (List.map ~f:string_of_key_value_pair scope))
-
-
-  let string_of_t t =
-    Fmt.str "[%s]" (String.concat (List.map ~f:string_of_scope t))
+  (* let get_items =
+    List.fold_left ~init:[] ~f:(fun acc scope ->
+        acc @ List.map ~f:(fun (key, value) -> key, value) scope) *)
 end

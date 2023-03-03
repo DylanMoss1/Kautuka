@@ -88,6 +88,8 @@ module Variable_bound = struct
 
   exception Variable_not_in_map
 
+  let create_single_var_bound alpha = [ alpha, 1 ]
+
   let string_of_item (alpha, power) =
     Fmt.str "%s^%s" (Alpha.string_of_t alpha) (Int.to_string power)
 
@@ -163,6 +165,11 @@ module Cost = struct
     create_int_bound_cost (Integer_bound.create (0, 100))
 
 
+  let create_single_var_bound alpha =
+    [ Integer_bound.create (1, 1), Variable_bound.create_single_var_bound alpha
+    ]
+
+
   let sum_reduce =
     List.fold_left ~init:[] ~f:(fun acc cost_term ->
         add_cost_term cost_term acc)
@@ -193,16 +200,32 @@ module Cost = struct
   let multiply (t1 : t) (t2 : t) : t =
     sum_reduce (all_pairs_map ~f:(fun (x, y) -> multiply_cost_terms x y) t1 t2)
 
+  (* let scalar_multiply t ~scalar = 
+    multiply t (create_int_cost scalar) *)
 
   let rec exponent t power =
     if power = 0
     then one
-    else if power > 1
+    else if power >= 1
     then multiply t (exponent t (power - 1))
     else raise Negative_power
 
 
   let substitute_cost_term map (cost_term : Integer_bound.t * Variable_bound.t) =
+    (* print_endline "1";
+    print_endline
+      (String.concat
+         ~sep:","
+         (List.map
+            ~f:(fun (alpha, t) ->
+              Fmt.str "%s:%s" (Alpha.string_of_t alpha) (string_of_t t))
+            map));
+    let i, v = cost_term in
+    print_endline
+      (Fmt.str
+         "%s%s"
+         (Integer_bound.string_of_t i)
+         (Variable_bound.string_of_t v)); *)
     let int_bound, var_bound = cost_term in
     List.fold_left
       ~init:(create_int_bound_cost int_bound)

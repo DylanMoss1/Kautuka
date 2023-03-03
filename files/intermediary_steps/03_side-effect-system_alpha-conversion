@@ -3,35 +3,47 @@ package main
 import ("fmt")
 
 
+func var{name: sum_first_1000_nums, alpha: alpha_1} () int {
+//{block_type: Default, scoped_vars: {alpha_2, alpha_1}}
+
+var{name: total, alpha: alpha_2} := (0 : UNTYPED)
+{
+//{block_type: Default, scoped_vars: {alpha_3, alpha_2, alpha_1}}
+
+for var{name: i, alpha: alpha_3} := (0 : UNTYPED);((var{name: i, alpha: alpha_3} : UNTYPED) < (1000 : UNTYPED) : UNTYPED);var{name: i, alpha: alpha_3}++ {
+//{block_type: Default, scoped_vars: {alpha_3, alpha_2, alpha_1}}
+
+var{name: total, alpha: alpha_2} = ((var{name: total, alpha: alpha_2} : UNTYPED) + (var{name: i, alpha: alpha_3} : UNTYPED) : UNTYPED)
+}
+}
+return (var{name: total, alpha: alpha_2} : UNTYPED)
+}
 func var{name: main, alpha: main} ()  {
-//{block_type: Default, scoped_vars: {main}}
+//{block_type: Default, scoped_vars: {main, alpha_2, alpha_1}}
 
-var{name: x, alpha: alpha_1} := (0 : UNTYPED)
+var{name: a, alpha: alpha_4} := (0 : UNTYPED)
+var{name: b, alpha: alpha_5} := (0 : UNTYPED)
+var{name: c, alpha: alpha_6} := (0 : UNTYPED)
+var{name: d, alpha: alpha_7} := (0 : UNTYPED)
 {
-//{block_type: Default, scoped_vars: {alpha_1, main}}
+//{block_type: Default, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}}
 
-{
-//{block_type: Default, scoped_vars: {alpha_1, main}}
-
-for var{name: i, alpha: alpha_2} := (0 : UNTYPED);((var{name: i, alpha: alpha_2} : UNTYPED) < (500 : UNTYPED) : UNTYPED);var{name: i, alpha: alpha_2}++ {
-//{block_type: Default, scoped_vars: {alpha_2, alpha_1, main}}
-
-(fmt.Println(("hello world" : UNTYPED)) : UNTYPED)
-}
-}
+var{name: a, alpha: alpha_4} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : UNTYPED)
 }
 {
-//{block_type: Default, scoped_vars: {alpha_1, main}}
+//{block_type: Default, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}}
 
+var{name: b, alpha: alpha_5} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : UNTYPED)
+}
 {
-//{block_type: Default, scoped_vars: {alpha_1, main}}
+//{block_type: Default, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}}
 
-for var{name: i, alpha: alpha_3} := (0 : UNTYPED);((var{name: i, alpha: alpha_3} : UNTYPED) < (500 : UNTYPED) : UNTYPED);var{name: i, alpha: alpha_3}++ {
-//{block_type: Default, scoped_vars: {alpha_3, alpha_1, main}}
+var{name: c, alpha: alpha_6} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : UNTYPED)
+}
+{
+//{block_type: Default, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}}
 
-var{name: x, alpha: alpha_1} = ((var{name: x, alpha: alpha_1} : UNTYPED) + (var{name: i, alpha: alpha_3} : UNTYPED) : UNTYPED)
+var{name: d, alpha: alpha_7} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : UNTYPED)
 }
-}
-}
-(fmt.Println((var{name: x, alpha: alpha_1} : UNTYPED)) : UNTYPED)
+(fmt.Println(((((var{name: a, alpha: alpha_4} : UNTYPED) + (var{name: b, alpha: alpha_5} : UNTYPED) : UNTYPED) + (var{name: c, alpha: alpha_6} : UNTYPED) : UNTYPED) + (var{name: d, alpha: alpha_7} : UNTYPED) : UNTYPED)) : UNTYPED)
 }

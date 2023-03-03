@@ -19,10 +19,13 @@ while getopts 'sdb' OPTION; do
 done
 shift "$(($OPTIND - 1))"
 
+compiled_go="./files/compiled/go_program.go"
+compiled_seq_go="./files/compiled/seq_go_program.go"
+
 rm -r ./files/intermediary_steps >/dev/null 2>&1
 mkdir ./files/intermediary_steps
-rm ./files/go_program.go >/dev/null 2>&1  
-rm ./files/seq_go_program.go >/dev/null 2>&1  
+rm $compiled_go >/dev/null 2>&1  
+rm $compiled_seq_go >/dev/null 2>&1  
 
 dune build 
 
@@ -31,9 +34,6 @@ if $debug; then
 else
   dune exec kautuka >/dev/null 2>&1
 fi
-
-compiled_go="./files/compiled/go_program.go"
-compiled_seq_go="./files/compiled/seq_go_program.go"
 
 if test -f $compiled_go; then 
   if $suppress_output; then

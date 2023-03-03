@@ -2,35 +2,47 @@ package main
 
 
 
+func sum_first_1000_nums () int {
+//{block_type: Default}
+
+total := (0 : UNTYPED)
+{
+//{block_type: Default}
+
+for i := (0 : UNTYPED);((i : UNTYPED) < (1000 : UNTYPED) : UNTYPED);i++ {
+//{block_type: Default}
+
+total = ((total : UNTYPED) + (i : UNTYPED) : UNTYPED)
+}
+}
+return (total : UNTYPED)
+}
 func main ()  {
 //{block_type: Default}
 
-x := (0 : UNTYPED)
+a := (0 : UNTYPED)
+b := (0 : UNTYPED)
+c := (0 : UNTYPED)
+d := (0 : UNTYPED)
 {
 //{block_type: Default}
 
-{
-//{block_type: Default}
-
-for i := (0 : UNTYPED);((i : UNTYPED) < (500 : UNTYPED) : UNTYPED);i++ {
-//{block_type: Default}
-
-(fmt.Println(("hello world" : UNTYPED)) : UNTYPED)
-}
-}
+a = (sum_first_1000_nums() : UNTYPED)
 }
 {
 //{block_type: Default}
 
+b = (sum_first_1000_nums() : UNTYPED)
+}
 {
 //{block_type: Default}
 
-for i := (0 : UNTYPED);((i : UNTYPED) < (500 : UNTYPED) : UNTYPED);i++ {
+c = (sum_first_1000_nums() : UNTYPED)
+}
+{
 //{block_type: Default}
 
-x = ((x : UNTYPED) + (i : UNTYPED) : UNTYPED)
+d = (sum_first_1000_nums() : UNTYPED)
 }
-}
-}
-(fmt.Println((x : UNTYPED)) : UNTYPED)
+(fmt.Println(((((a : UNTYPED) + (b : UNTYPED) : UNTYPED) + (c : UNTYPED) : UNTYPED) + (d : UNTYPED) : UNTYPED)) : UNTYPED)
 }

@@ -82,8 +82,8 @@ module Alpha_conversion_ast_mapping = struct
       | None -> raise (Unbound_var var.name))
 
 
-  let block ~env ~new_contents ~old_annotations ~result =
-    ( env
+  let block ~env ~old_env ~new_contents ~old_annotations ~result =
+    ( env, old_env 
     , { contents = new_contents
       ; annotations =
           Block_scoped_vars_annotation.create

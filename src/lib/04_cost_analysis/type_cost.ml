@@ -61,6 +61,8 @@ module Type_cost = struct
 
 
   let verified_type_cost expected_type type_cost =
+    (* print_endline (string_of_type_id expected_type);
+    print_endline (string_of_t type_cost); *)
     match expected_type, type_cost with
     | T_Int, C_Int _ -> type_cost
     | T_String, C_String _ -> type_cost
@@ -91,12 +93,35 @@ module Type_cost = struct
     | [], [] -> []
     | _, [] | [], _ -> raise Type_error
     | _ -> raise Type_error
+
+
+  let apply_cost_unary_fun ~f = function
+    | C_Int cost -> C_Int (f cost)
+    | C_String cost -> C_String (f cost)
+    | C_Bool | C_Unit | C_File | _ -> raise Type_error
+
+
+  let apply_cost_bin_fun ~f t1 t2 =
+    match t1, t2 with
+    | C_Int cost1, C_Int cost2 -> C_Int (f cost1 cost2)
+    | C_String cost1, C_String cost2 -> C_String (f cost1 cost2)
+    | C_Bool, C_Bool -> C_Bool
+    | C_Unit, C_Unit -> C_Unit
+    | C_File, C_File -> C_File
+    | _ -> raise Type_error
+
+
+  let sum = apply_cost_bin_fun ~f:Cost.sum
+  let subtract = apply_cost_bin_fun ~f:Cost.subtract
+
+  let multiply t scalar_cost =
+    apply_cost_unary_fun ~f:(Cost.multiply scalar_cost) t
 end
 
 module Type_cost_context =
   Make_context (Alpha) (Type_cost)
     (struct
-      let t = true
+      let t = false
     end)
 
 module Type_cost_result = struct
@@ -238,6 +263,7 @@ module Type_cost_ast_mapping = struct
     let alpha_to_cost_mapping =
       Type_cost.create_alpha_to_cost_mapping params args
     in
+    (* print_endline (Cost.string_of_t cost); *)
     Cost.substitute alpha_to_cost_mapping cost
 
 
@@ -263,7 +289,7 @@ module Type_cost_ast_mapping = struct
                 func_type_cost.params
                 (Type_cost_result.get_expr_type_cost result)
                 cost))
-          result )
+          empty_result )
     | Type_cost.C_String cost ->
       ( env
       , user_func
@@ -273,9 +299,11 @@ module Type_cost_ast_mapping = struct
                 func_type_cost.params
                 (Type_cost_result.get_expr_type_cost result)
                 cost))
-          result )
-    | Type_cost.C_Unit -> env, user_func, Type_cost_result.add C_Unit result
-    | Type_cost.C_Bool -> env, user_func, Type_cost_result.add C_Bool result
+          empty_result )
+    | Type_cost.C_Unit ->
+      env, user_func, Type_cost_result.add C_Unit empty_result
+    | Type_cost.C_Bool ->
+      env, user_func, Type_cost_result.add C_Bool empty_result
     | _ -> raise Invalid_return_type
 
 
@@ -395,6 +423,10 @@ module Type_cost_ast_mapping = struct
       ~old_annotations:_
       ~(result : Type_cost_result.t)
     =
+    (* print_endline
+      (String.concat
+         ~sep:","
+         (List.map ~f:(fun t -> Type_cost.string_of_t t) result.expr_type_cost)); *)
     ( env
     , { expr = new_expr
       ; annotations = Type_cost_result.extract result.expr_type_cost
@@ -445,54 +477,6 @@ module Type_cost_ast_mapping = struct
           (type_cost :: result.return_type_cost) )
     | _ -> ignore_branch env statement result
 
-
-  (* 
-
-  let get_new_env ~(start_env : env) ~(end_env : env) ~iterations : env =
-    Cost.sum
-      (Cost.multiply (Cost.subtract end_env start_env) iterations)
-      start_env
-
-
-  let for_loop ~start_env ~end_env ~for_loop ~result =
-    let { init; cond; iter; contents = _ } = for_loop in
-    let init_var, init_type_cost =
-      match init with
-      | Var_init (var, _, annotated_expr) -> var, annotated_expr.annotations
-      | Var_decl (var, annotated_expr) -> var, annotated_expr.annotations
-      | _ -> raise Type_error
-    in
-    let cond_type_cost = cond.annotations in
-    let is_inc =
-      match iter with
-      | Post_inc var ->
-        if Alpha.compare init_var.alpha var.alpha = 0
-        then true
-        else raise Type_error
-      | Post_dec var ->
-        if Alpha.compare init_var.alpha var.alpha = 0
-        then false
-        else raise Type_error
-      | _ -> raise Type_error
-    in
-    match init_type_cost, cond_type_cost with
-    | Type_cost.C_Int init_cost, Type_cost.C_Int cond_cost ->
-      ( end_env
-      , for_loop
-      , let iterations =
-          if is_inc
-          then Cost.subtract cond_cost Cost.one
-          else Cost.subtract (Cost.sum Cost.one init_cost) cond_cost
-        in
-        get_new_env ~start_env ~end_env ~iterations, for_loop, result )
-    | _ -> raise Type_error
-
-
-  let for_each ~start_env ~end_env ~for_each ~result =
-    match for_each.iterator.annotations with
-    | Type_cost.C_String cost ->
-      get_new_env ~start_env ~end_env ~iterations:cost, for_each, result
-    | _ -> raise Type_error *)
 
   let update_for_loop_env
       ~env
@@ -561,6 +545,92 @@ module Type_cost_ast_mapping = struct
     | _ -> raise Type_error
 
 
+  let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
+    let x =
+      Type_cost_context.get_post_loop_context
+        ~start_env
+        ~end_env
+        ~sum:Type_cost.sum
+        ~subtract:Type_cost.subtract
+        ~multiply:Type_cost.multiply
+        ~iterations
+    in
+    print_endline (Type_cost_context.string_of_t x);
+    x
+
+
+  (* (print_endline (Type_cost_context.string_of_t start_env));
+    (print_endline (Type_cost_context.string_of_t end_env));
+    let delta_env =
+      Type_cost_context.apply_bin_fun
+        ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.subtract)
+        (Type_cost_context.remove_scope ~is_func:true end_env)
+        (Type_cost_context.remove_scope ~is_func:true start_env)
+    in
+    let delta_env =
+      Type_cost_context.apply_unary_fun
+        ~f:(Type_cost.apply_cost_unary_fun ~f:(Cost.multiply iterations))
+        delta_env
+    in
+    let x = 
+    Type_cost_context.apply_bin_fun
+      ~f:(Type_cost.apply_cost_bin_fun ~f:Cost.sum)
+      start_env
+      (Type_cost_context.add_new_scope ~is_func:true delta_env)
+    in (print_endline (Type_cost_context.string_of_t x)); x  *)
+
+  let for_loop ~start_env ~end_env ~for_loop ~result =
+    let { init; cond; iter; contents = _ } = for_loop in
+    let init_var, init_type_cost =
+      match init with
+      | Var_init (var, _, annotated_expr) -> var, annotated_expr.annotations
+      | Var_decl (var, annotated_expr) -> var, annotated_expr.annotations
+      | _ -> raise Type_error
+    in
+    let cond_type_cost =
+      let new_code_expr = cond.expr in
+      match new_code_expr with
+      | Binop (var, Lt, value) ->
+        let var =
+          match var.expr with
+          | Var_read var -> var
+          | _ -> raise Type_error
+        in
+        if Alpha.compare init_var.alpha var.alpha = 0
+        then value.annotations
+        else raise Type_error
+      | _ -> raise Type_error
+    in
+    let is_inc =
+      match iter with
+      | Post_inc var ->
+        if Alpha.compare init_var.alpha var.alpha = 0
+        then true
+        else raise Type_error
+      | Post_dec var ->
+        if Alpha.compare init_var.alpha var.alpha = 0
+        then false
+        else raise Type_error
+      | _ -> raise Type_error
+    in
+    match init_type_cost, cond_type_cost with
+    | Type_cost.C_Int init_cost, Type_cost.C_Int cond_cost ->
+      let iterations =
+        if is_inc
+        then Cost.subtract cond_cost Cost.one
+        else Cost.subtract (Cost.sum Cost.one init_cost) cond_cost
+      in
+      get_new_env ~start_env ~end_env ~iterations, for_loop, result
+    | _ -> raise Type_error
+
+
+  let for_each ~start_env ~end_env ~for_each ~result =
+    match for_each.iterator.annotations with
+    | Type_cost.C_String cost ->
+      get_new_env ~start_env ~end_env ~iterations:cost, for_each, result
+    | _ -> raise Type_error
+
+
   let if_record env if_record (result : result) =
     let number_of_conditions =
       1
@@ -576,6 +646,20 @@ module Type_cost_ast_mapping = struct
     ( env
     , if_record
     , Type_cost_result.create_with_return None result.return_type_cost )
+
+
+  let param env param result =
+    let var, type_id = param in
+    ( add_to_env
+        var.alpha
+        (match type_id with
+        | T_Int -> C_Int (Cost.create_single_var_bound var.alpha)
+        | T_String -> C_String (Cost.create_single_var_bound var.alpha)
+        | T_Bool -> C_Bool
+        | T_Unit -> C_Unit)
+        env
+    , param
+    , result )
 
 
   let func env func (result : Type_cost_result.t) =
