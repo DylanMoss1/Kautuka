@@ -83,7 +83,8 @@ module Alpha_conversion_ast_mapping = struct
 
 
   let block ~env ~old_env ~new_contents ~old_annotations ~result =
-    ( env, old_env 
+    ( env
+    , old_env
     , { contents = new_contents
       ; annotations =
           Block_scoped_vars_annotation.create

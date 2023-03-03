@@ -121,13 +121,20 @@ module Side_effect_ast_mapping = struct
     | None -> true
 
 
-  let block ~env ~old_env ~new_contents ~(old_annotations : old_block_annot) ~result =
+  let block
+      ~env
+      ~old_env
+      ~new_contents
+      ~(old_annotations : old_block_annot)
+      ~result
+    =
     let new_side_effects =
       Side_effect_set.filter
         ~f:(filter_local_var_side_effects old_annotations.scoped_vars)
         result
     in
-    ( env, old_env 
+    ( env
+    , old_env
     , { contents = new_contents
       ; annotations =
           { block_type = old_annotations.block_type

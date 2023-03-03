@@ -200,6 +200,7 @@ module Cost = struct
   let multiply (t1 : t) (t2 : t) : t =
     sum_reduce (all_pairs_map ~f:(fun (x, y) -> multiply_cost_terms x y) t1 t2)
 
+
   (* let scalar_multiply t ~scalar = 
     multiply t (create_int_cost scalar) *)
 
