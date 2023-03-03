@@ -23,7 +23,7 @@
     }
 
 
-  let plus_equals_unsugar var annotated_expr =
+  let plus_equals_desugar var annotated_expr =
     Var_assign
       ( var
       , create_annotated_plus_binop
@@ -49,7 +49,7 @@
 %token BREAK CONTINUE RETURN 
 %token INCREMENT DECREMENT
 %token PLUS PLUS_EQUALS MINUS MULT EQ NE LT LE GT GE AND OR NOT
-%token PRINT INPUT OPEN READ WRITE APPEND 
+%token PRINT INPUT OPEN READ WRITE APPEND UNDERSCORE
 %type <(Parsed_ast.block_annot, Parsed_ast.var_annot, Parsed_ast.import_annot, Parsed_ast.expr_annot) program> program
 %type <string> package
 %type <(Parsed_ast.var_annot, Parsed_ast.expr_annot) statement> statement 
@@ -119,12 +119,13 @@ value:
 
 var: 
 | name=ID { Parsed_ast.create_var_annot { name } }
+| UNDERSCORE { Parsed_ast.create_var_annot { name = "_" } }
 
 var_statement:
 | var_statement=global_var { var_statement }
 | var=var DECL annotated_expr=annotated_expr { Var_decl(var, annotated_expr) }
 | var=var EQUALS annotated_expr=annotated_expr { Var_assign(var, annotated_expr) }
-| var=var PLUS_EQUALS annotated_expr=annotated_expr { plus_equals_unsugar var annotated_expr }
+| var=var PLUS_EQUALS annotated_expr=annotated_expr { plus_equals_desugar var annotated_expr }
 | var=var INCREMENT { Post_inc(var) }
 | var=var DECREMENT { Post_dec(var) }
 

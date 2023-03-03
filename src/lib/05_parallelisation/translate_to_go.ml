@@ -7,7 +7,7 @@ open Preperation.Import
 
 let alpha_generator = Alpha.create
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
-let go_of_var (var : 'var) = Alpha.string_of_t var.alpha
+let go_of_var (var : 'var) = var.name
 
 let go_of_type_id = function
   | T_Int -> "int"

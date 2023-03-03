@@ -77,10 +77,23 @@ module Alpha_conversion_ast_mapping = struct
       in
       (* print_endline (Alpha_conversion_context.string_of_t env); *)
       add_to_env var.name alpha env, { name = var.name; alpha }, empty_result
-    | Read | Write ->
+    | Read ->
       (match Alpha_conversion_context.get_value var.name env with
       | Some alpha -> env, { name = var.name; alpha }, empty_result
       | None -> raise (Unbound_var var.name))
+    | Write ->
+      if String.compare (Parsed_ast.string_of_var_annot var) "_" = 0
+      then (
+        let alpha =
+          Alpha.get_new_alpha
+            ~is_main:(String.compare var.name "main" = 0)
+            alpha_generator
+        in
+        add_to_env var.name alpha env, { name = var.name; alpha }, empty_result)
+      else (
+        match Alpha_conversion_context.get_value var.name env with
+        | Some alpha -> env, { name = var.name; alpha }, empty_result
+        | None -> raise (Unbound_var var.name))
 
 
   let block ~env ~old_env ~new_contents ~old_annotations ~result =

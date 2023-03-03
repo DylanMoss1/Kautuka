@@ -12,6 +12,13 @@ x := (0 : UNTYPED)
 
 y := (1 : UNTYPED)
 x = (5 : UNTYPED)
+_ = (y : UNTYPED)
+}
+{
+//{block_type: Default}
+
+z := (0 : UNTYPED)
+_ = (z : UNTYPED)
 }
 (fmt.Println((x : UNTYPED)) : UNTYPED)
 }

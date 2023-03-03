@@ -76,6 +76,7 @@ rule read_token = parse
   | "&&"                             { AND }
   | "||"                             { OR }
   | "!"                              { NOT }
+  | "_"                              { UNDERSCORE }
   | id as s                          { ID (s) }
   | newline_eof                      { EOF }
   | _ { raise (Lexer_error ("Lexer Error - Illegal character: " ^ Lexing.lexeme lexbuf)) }

@@ -414,6 +414,11 @@ module Type_cost_ast_mapping = struct
           result.return_type_cost )
     | Var_read var ->
       env, expr, Type_cost_result.push_type_cost (get_type_cost var env) result
+      (* ( env
+      , expr
+      , if String.compare var.name "_" = 0
+        then Type_cost_result.create_with_return None result.return_type_cost
+        else Type_cost_result.push_type_cost (get_type_cost var env) result ) *)
     | _ -> ignore_branch env expr result
 
 
@@ -444,6 +449,16 @@ module Type_cost_ast_mapping = struct
       ( add_to_env var.alpha expr_type_cost env
       , var_statement
       , Type_cost_result.create_with_return None result.return_type_cost )
+      (* if String.compare var.name "_" = 0
+      then
+        ( env
+        , var_statement
+        , Type_cost_result.create_with_return None result.return_type_cost )
+      else (
+        let expr_type_cost = annot_expr.annotations in
+        ( add_to_env var.alpha expr_type_cost env
+        , var_statement
+        , Type_cost_result.create_with_return None result.return_type_cost )) *)
     | Post_inc var ->
       (match get_type_cost var env with
       | C_Int cost ->
@@ -555,7 +570,8 @@ module Type_cost_ast_mapping = struct
       ~multiply:Type_cost.multiply
       ~iterations
 
-    (* let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
+
+  (* let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
     print_endline (Type_cost_context.string_of_t start_env);
     print_endline (Type_cost_context.string_of_t end_env);
     let end_env = remove_scope ~is_func:false end_env in
@@ -580,7 +596,6 @@ module Type_cost_ast_mapping = struct
     in
     (* print_endline (Type_cost_context.string_of_t x); *)
     x *)
-
 
   let for_loop ~start_env ~end_env ~for_loop ~result =
     let { init; cond; iter; contents = _ } = for_loop in

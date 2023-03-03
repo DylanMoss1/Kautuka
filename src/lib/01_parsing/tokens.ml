@@ -53,6 +53,7 @@ let string_of_token = function
   | AND -> Fmt.str "AND"
   | OR -> Fmt.str "OR"
   | NOT -> Fmt.str "NOT"
+  | UNDERSCORE -> Fmt.str "UNDERSCORE"
   | ID s -> Fmt.str "ID(%s)" s
   | EOF -> Fmt.str "EOF"
 

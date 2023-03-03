@@ -11,6 +11,7 @@ module type Context = sig
   val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option
   val get_value_outside_scope : key -> t -> value option
+
   (* val apply_unary_fun : f:(value -> value) -> t -> t *)
   (* val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t *)
   val get_all_values : t -> value list
