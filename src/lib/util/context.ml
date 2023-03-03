@@ -40,7 +40,6 @@ struct
   exception Empty_scope
   exception Key_in_inner_scope
   exception Different_shaped_envs
-  exception Key_not_found
 
   let string_of_key_value_pair (key, value) =
     Fmt.str "(%s,%s)" (Key.string_of_t key) (Value.string_of_t value)
@@ -139,15 +138,17 @@ struct
     let delta_scope =
       match end_env with
       | end_scope :: _ ->
-        List.map
-          ~f:(fun (key, end_value) ->
+        List.fold_left
+          ~init:[]
+          ~f:(fun acc (key, end_value) ->
             match get_value key start_env with
             | Some start_value ->
               ( key
               , sum
                   (multiply (subtract end_value start_value) iterations)
                   start_value )
-            | None -> raise Key_not_found)
+              :: acc
+            | None -> acc)
           end_scope
       | _ -> raise Empty_scope
     in
@@ -155,8 +156,4 @@ struct
     | start_scope :: remaining_scope ->
       (delta_scope @ start_scope) :: remaining_scope
     | _ -> raise Empty_scope
-
-  (* let get_items =
-    List.fold_left ~init:[] ~f:(fun acc scope ->
-        acc @ List.map ~f:(fun (key, value) -> key, value) scope) *)
 end

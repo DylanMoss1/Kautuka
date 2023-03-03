@@ -2,7 +2,7 @@ package main
 
 
 
-func sum_first_1000_nums () int {
+func main ()  {
 //{block_type: Default}
 
 total := (0 : UNTYPED)
@@ -15,34 +15,5 @@ for i := (0 : UNTYPED);((i : UNTYPED) < (1000 : UNTYPED) : UNTYPED);i++ {
 total = ((total : UNTYPED) + (i : UNTYPED) : UNTYPED)
 }
 }
-return (total : UNTYPED)
-}
-func main ()  {
-//{block_type: Default}
-
-a := (0 : UNTYPED)
-b := (0 : UNTYPED)
-c := (0 : UNTYPED)
-d := (0 : UNTYPED)
-{
-//{block_type: Default}
-
-a = (sum_first_1000_nums() : UNTYPED)
-}
-{
-//{block_type: Default}
-
-b = (sum_first_1000_nums() : UNTYPED)
-}
-{
-//{block_type: Default}
-
-c = (sum_first_1000_nums() : UNTYPED)
-}
-{
-//{block_type: Default}
-
-d = (sum_first_1000_nums() : UNTYPED)
-}
-(fmt.Println(((((a : UNTYPED) + (b : UNTYPED) : UNTYPED) + (c : UNTYPED) : UNTYPED) + (d : UNTYPED) : UNTYPED)) : UNTYPED)
+(fmt.Println((total : UNTYPED)) : UNTYPED)
 }

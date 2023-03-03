@@ -3,47 +3,18 @@ package main
 import ("fmt")
 
 
-func var{name: sum_first_1000_nums, alpha: alpha_1} () int {
-//{side_effects: {R:var[alpha_2], W:var[alpha_2]}, scoped_vars: {alpha_2, alpha_1}, runtime_cost: <7994,7994>, parallelise_contents: no}
-
-var{name: total, alpha: alpha_2} := (0 : int<0,0>)
-{
-//{side_effects: {R:var[alpha_2], R:var[alpha_3], W:var[alpha_2], W:var[alpha_3]}, scoped_vars: {alpha_3, alpha_2, alpha_1}, runtime_cost: <7992,7992>, parallelise_contents: no}
-
-for var{name: i, alpha: alpha_3} := (0 : int<0,0>);((var{name: i, alpha: alpha_3} : int<0,0>) < (1000 : int<1000,1000>) : bool);var{name: i, alpha: alpha_3}++ {
-//{side_effects: {R:var[alpha_2], R:var[alpha_3], W:var[alpha_2]}, scoped_vars: {alpha_3, alpha_2, alpha_1}, runtime_cost: <4,4>, parallelise_contents: no}
-
-var{name: total, alpha: alpha_2} = ((var{name: total, alpha: alpha_2} : int<0,0>) + (var{name: i, alpha: alpha_3} : int<0,999>) : int<0,999>)
-}
-}
-return (var{name: total, alpha: alpha_2} : int<0,0>)
-}
 func var{name: main, alpha: main} ()  {
-//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:console, W:var[alpha_2]}, scoped_vars: {main, alpha_2, alpha_1}, runtime_cost: <32191,32191>, parallelise_contents: no}
+//{side_effects: {R:var[alpha_1], W:console, W:var[alpha_1]}, scoped_vars: {alpha_1, main}, runtime_cost: <8194,8194>, parallelise_contents: no}
 
-var{name: a, alpha: alpha_4} := (0 : int<0,0>)
-var{name: b, alpha: alpha_5} := (0 : int<0,0>)
-var{name: c, alpha: alpha_6} := (0 : int<0,0>)
-var{name: d, alpha: alpha_7} := (0 : int<0,0>)
+var{name: total, alpha: alpha_1} := (0 : int<0,0>)
 {
-//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_2], W:var[alpha_4]}, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}, runtime_cost: <7995,7995>, parallelise_contents: no}
+//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_1], W:var[alpha_2]}, scoped_vars: {alpha_2, alpha_1, main}, runtime_cost: <7992,7992>, parallelise_contents: no}
 
-var{name: a, alpha: alpha_4} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : int<0,0>)
-}
-{
-//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_2], W:var[alpha_5]}, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}, runtime_cost: <7995,7995>, parallelise_contents: no}
+for var{name: i, alpha: alpha_2} := (0 : int<0,0>);((var{name: i, alpha: alpha_2} : int<0,0>) < (1000 : int<1000,1000>) : bool);var{name: i, alpha: alpha_2}++ {
+//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_1]}, scoped_vars: {alpha_2, alpha_1, main}, runtime_cost: <4,4>, parallelise_contents: no}
 
-var{name: b, alpha: alpha_5} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : int<0,0>)
+var{name: total, alpha: alpha_1} = ((var{name: total, alpha: alpha_1} : int<0,0>) + (var{name: i, alpha: alpha_2} : int<0,999>) : int<0,999>)
 }
-{
-//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_2], W:var[alpha_6]}, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}, runtime_cost: <7995,7995>, parallelise_contents: no}
-
-var{name: c, alpha: alpha_6} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : int<0,0>)
 }
-{
-//{side_effects: {R:var[alpha_1], R:var[alpha_2], W:var[alpha_2], W:var[alpha_7]}, scoped_vars: {alpha_7, alpha_6, alpha_5, alpha_4, main, alpha_2, alpha_1}, runtime_cost: <7995,7995>, parallelise_contents: no}
-
-var{name: d, alpha: alpha_7} = (var{name: sum_first_1000_nums, alpha: alpha_1}() : int<0,0>)
-}
-(fmt.Println(((((var{name: a, alpha: alpha_4} : int<0,0>) + (var{name: b, alpha: alpha_5} : int<0,0>) : int<0,0>) + (var{name: c, alpha: alpha_6} : int<0,0>) : int<0,0>) + (var{name: d, alpha: alpha_7} : int<0,0>) : int<0,0>)) : unit)
+(fmt.Println((var{name: total, alpha: alpha_1} : int<0,0>)) : unit)
 }

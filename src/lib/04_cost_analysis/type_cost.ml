@@ -546,17 +546,13 @@ module Type_cost_ast_mapping = struct
 
 
   let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
-    let x =
-      Type_cost_context.get_post_loop_context
-        ~start_env
-        ~end_env
-        ~sum:Type_cost.sum
-        ~subtract:Type_cost.subtract
-        ~multiply:Type_cost.multiply
-        ~iterations
-    in
-    print_endline (Type_cost_context.string_of_t x);
-    x
+    Type_cost_context.get_post_loop_context
+      ~start_env
+      ~end_env
+      ~sum:Type_cost.sum
+      ~subtract:Type_cost.subtract
+      ~multiply:Type_cost.multiply
+      ~iterations
 
 
   (* (print_endline (Type_cost_context.string_of_t start_env));
@@ -620,7 +616,9 @@ module Type_cost_ast_mapping = struct
         then Cost.subtract cond_cost Cost.one
         else Cost.subtract (Cost.sum Cost.one init_cost) cond_cost
       in
-      get_new_env ~start_env ~end_env ~iterations, for_loop, result
+      let x = get_new_env ~start_env ~end_env ~iterations in
+      (* print_endline (Type_cost_context.string_of_t x); *)
+      x, for_loop, result
     | _ -> raise Type_error
 
 
@@ -646,6 +644,18 @@ module Type_cost_ast_mapping = struct
     ( env
     , if_record
     , Type_cost_result.create_with_return None result.return_type_cost )
+
+
+  let block ~env ~old_env ~new_contents ~old_annotations ~result =
+    let x = get_new_env ~start_env:old_env ~end_env:env ~iterations:Cost.one in
+    print_endline (Type_cost_context.string_of_t old_env);
+    print_endline (Type_cost_context.string_of_t env);
+    print_endline (Type_cost_context.string_of_t x);
+    print_endline "\n\n";
+    ( get_new_env ~start_env:old_env ~end_env:env ~iterations:Cost.one
+    , old_env
+    , { contents = new_contents; annotations = old_annotations }
+    , result )
 
 
   let param env param result =
