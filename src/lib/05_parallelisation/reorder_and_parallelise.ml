@@ -4,6 +4,7 @@ open Util
 open Side_effect_system
 open Side_effect_system.Side_effect_tracking
 open Preperation.Import
+open Preperation.Alpha_conversion 
 open Cost_analysis.Type_cost
 open Ast.Annotated_ast
 open Cost_analysis
@@ -27,7 +28,7 @@ module Block_parallelised_annotation = struct
       "{side_effects: %s, scoped_vars: %s, runtime_cost: %s, \
        parallelise_contents: %s}"
       (Side_effect_set.string_of_t t.side_effects)
-      (Alpha_conversion.string_of_scoped_vars t.scoped_vars)
+      (string_of_scoped_vars t.scoped_vars)
       (Cost.string_of_t t.runtime_cost)
       (string_of_parallelise_contents t.parallelise_contents)
 end
@@ -35,7 +36,7 @@ end
 module Parallelisation_ast =
   Annotated_ast
     (Block_parallelised_annotation)
-    (Alpha_conversion.Alpha_conversion_annotation)
+    (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
@@ -217,11 +218,11 @@ and string_of_contents_list_cost_tracking contents_list =
     (String.concat
        ~sep:", "
        (List.map
-          ~f:Cost_tracking.Cost_tracking_ast.string_of_command
+          ~f:Runtime_cost.Runtime_cost_ast.string_of_command
           contents_list))
 
 
-and parallelise_block (block : (Cost_tracking.block_runtime_cost, 'b, 'c) block)
+and parallelise_block (block : (Runtime_cost.block_runtime_cost, 'b, 'c) block)
   =
   (* print_endline (Cost_tracking.Cost_tracking_ast.string_of_block block); *)
   (* print_endline "\n"; *)

@@ -5,8 +5,8 @@ open Util.Context
 open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing.Parser_types
-open Preperation.Import
 open Ast.Ast_types
+open Import 
 
 type alpha_var =
   { name : string

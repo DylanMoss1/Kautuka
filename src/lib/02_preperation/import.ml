@@ -5,6 +5,23 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing.Parser_types
 
+module File_access = struct
+  type t =
+    | Read
+    | Write
+    | Append
+  [@@deriving of_sexp, sexp_of, compare]
+
+  let string_of_t = function
+    | Read -> "read"
+    | Write -> "write"
+    | Append -> "append"
+end
+
+module File_access_set = struct
+  include Set.Make (File_access)
+end
+
 module Import = struct
   type t =
     | I_Fmt

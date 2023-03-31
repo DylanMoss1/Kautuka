@@ -57,7 +57,7 @@ let () =
          ~debug_file:(Some "03_side-effect-system_side-effect-tracking")
     |> Type_cost.Type_cost_ast_pipeline.pipeline_ast
          ~debug_file:(Some "04_cost-analysis__type-cost")
-    |> Cost_tracking.Cost_tracking_ast_pipeline.pipeline_ast
+    |> Runtime_cost.Cost_tracking_ast_pipeline.pipeline_ast
          ~debug_file:(Some "04_cost-analysis_cost-tracking")
     |> Reorder_and_parallelise.pipeline_ast
          ~debug_file:(Some "05_parallelisation_reorder-and-parallelise")

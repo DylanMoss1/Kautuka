@@ -7,7 +7,7 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing.Parser_types
 open Preperation.Import
-open Alpha_conversion
+open Preperation.Alpha_conversion
 open Side_effect
 
 let all_pairs xs ys =

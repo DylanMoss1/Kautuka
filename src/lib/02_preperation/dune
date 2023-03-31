@@ -1,6 +1,6 @@
 (library
  (name preperation)
- (libraries core fmt ast parsing)
+ (libraries core fmt ast parsing util)
  (preprocess
   (pps ppx_jane bisect_ppx --conditional))
  (lint

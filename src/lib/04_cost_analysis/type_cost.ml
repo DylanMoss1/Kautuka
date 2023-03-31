@@ -5,7 +5,7 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Preperation.Import
 open Cost
-open Side_effect_system.Alpha_conversion
+open Preperation.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
 open Util
 

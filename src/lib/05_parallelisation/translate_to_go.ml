@@ -2,8 +2,9 @@ open Core
 open Ast.Ast_types
 open Reorder_and_parallelise
 open Util
-open Side_effect_system.Alpha_conversion
+open Preperation.Alpha_conversion
 open Preperation.Import
+
 
 let alpha_generator = Alpha.create
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)

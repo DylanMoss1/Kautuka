@@ -5,7 +5,7 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing
 open Preperation.Import
-open Side_effect_system.Alpha_conversion
+open Preperation.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
 open Type_cost
 open Cost
@@ -97,14 +97,14 @@ module Block_runtime_cost_annotation = struct
       (Cost.string_of_t t.runtime_cost)
 end
 
-module Cost_tracking_ast =
+module Runtime_cost_ast =
   Annotated_ast (Block_runtime_cost_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
-module Cost_tracking_ast_mapping = struct
+module Runtime_cost_ast_mapping = struct
   include
-    Default_ast_mapping (Type_cost_ast) (Cost_tracking_ast)
+    Default_ast_mapping (Type_cost_ast) (Runtime_cost_ast)
       (Runtime_cost_context)
       (Runtime_cost)
 
@@ -280,4 +280,4 @@ module Cost_tracking_ast_mapping = struct
     , result )
 end
 
-module Cost_tracking_ast_pipeline = Ast_pipeline (Cost_tracking_ast_mapping)
+module Cost_tracking_ast_pipeline = Ast_pipeline (Runtime_cost_ast_mapping)
