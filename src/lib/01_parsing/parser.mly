@@ -1,6 +1,10 @@
 %{ 
   open Ast.Ast_types
   open Parser_types 
+  open Util 
+ 
+  let generate_ref = File_ref.get_new_generated_ref 
+  let user_ref = File_ref.get_new_user_ref 
 
   type ('block, 'var, 'expr) program_contents = 
   { global_vars : ('var, 'expr) var_statement list
@@ -196,11 +200,14 @@ control:
 func_call: 
 | name=var LPAREN args=separated_list(COMMA, annotated_expr) RPAREN { User_func( { name; args } ) }
 | PRINT LPAREN arg=annotated_expr RPAREN { Print(arg) }
-| INPUT LPAREN RPAREN { Input }
-| OPEN LPAREN arg=annotated_expr RPAREN { Open(arg) } 
-| READ LPAREN arg=var RPAREN { Read(arg) }
-| WRITE LPAREN arg1=var COMMA arg2=annotated_expr RPAREN { Write( { file = arg1; contents = arg2 } ) } 
-| APPEND LPAREN arg1=var COMMA arg2=annotated_expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
+| INPUT LPAREN upper=INT RPAREN { Input(Upper(upper)) }
+| INPUT LPAREN lower=INT COMMA upper=INT RPAREN { Input(Both(lower, upper)) }
+| OPEN LPAREN arg=annotated_expr RPAREN { Open(arg, generate_ref) }
+| OPEN LPAREN arg=annotated_expr COMMA ref=INT RPAREN { Open(arg, user_ref ref) }
+| READ LPAREN arg=annotated_expr COMMA upper=INT RPAREN { Read(arg, Upper(upper)) }
+| READ LPAREN arg=annotated_expr COMMA lower=INT COMMA upper=INT RPAREN { Read(arg, Both(lower, upper)) }
+| WRITE LPAREN arg1=annotated_expr COMMA arg2=annotated_expr RPAREN { Write( { file = arg1; contents = arg2 } ) } 
+| APPEND LPAREN arg1=annotated_expr COMMA arg2=annotated_expr RPAREN { Append( { file = arg1; contents = arg2 } ) } 
 
 structure:
 | condition=condition { condition }

@@ -9,6 +9,7 @@ open Parsing.Parser_types
 open Preperation.Import
 open Preperation.Alpha_conversion
 open Side_effect
+open File_tracking
 
 let all_pairs xs ys =
   List.fold_left
@@ -60,15 +61,16 @@ module Func_side_effect_context =
 module Side_effect_ast =
   Annotated_ast (Block_side_effect_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
-    (Expr_empty_annotation)
+    (Expr_file_ref_annotation)
 
 module Side_effect_ast_mapping = struct
   include
-    Default_ast_mapping (Alpha_conversion_ast) (Side_effect_ast)
+    Default_ast_mapping (File_tracking_ast) (Side_effect_ast)
       (Func_side_effect_context)
       (Side_effect_set)
 
   exception Func_called_before_defined of string
+  exception File_ref_not_found
 
   let add_result = Side_effect_set.add
   let new_effect effect = add_result empty_result effect
@@ -78,6 +80,11 @@ module Side_effect_ast_mapping = struct
     | Init -> ignore_leaf env var
     | Read -> env, var, new_effect (Side_effect.create (Read, Var var.alpha))
     | Write -> env, var, new_effect (Side_effect.create (Write, Var var.alpha))
+
+
+  let get_file_ref = function
+    | Some file_ref -> file_ref
+    | None -> raise File_ref_not_found
 
 
   let func_call env func_call result =
@@ -92,19 +99,29 @@ module Side_effect_ast_mapping = struct
           | None -> raise (Func_called_before_defined user_func.name.name)) )
     | Print expr ->
       env, Print expr, add_result result (Side_effect.create (Write, Console))
-    | Input ->
-      env, Input, add_result result (Side_effect.create (Write, Console))
-    | Open expr -> env, Open expr, result
-    | Read var ->
-      env, Read var, add_result result (Side_effect.create (Read, File))
+    | Input bound ->
+      env, Input bound, add_result result (Side_effect.create (Write, Console))
+    | Open (expr, ref) -> env, Open (expr, ref), result
+    | Read (expr, bound) ->
+      ( env
+      , Read (expr, bound)
+      , add_result
+          result
+          (Side_effect.create (Read, File (get_file_ref expr.annotations))) )
     | Write write_template ->
       ( env
       , Write write_template
-      , add_result result (Side_effect.create (Write, File)) )
+      , add_result
+          result
+          (Side_effect.create
+             (Write, File (get_file_ref write_template.file.annotations))) )
     | Append write_template ->
       ( env
       , Append write_template
-      , add_result result (Side_effect.create (Write, File)) )
+      , add_result
+          result
+          (Side_effect.create
+             (Write, File (get_file_ref write_template.file.annotations))) )
 
 
   let rec scoped_vars_contain_var var = function

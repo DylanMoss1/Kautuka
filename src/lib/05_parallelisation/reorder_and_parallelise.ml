@@ -4,7 +4,7 @@ open Util
 open Side_effect_system
 open Side_effect_system.Side_effect_tracking
 open Preperation.Import
-open Preperation.Alpha_conversion 
+open Preperation.Alpha_conversion
 open Cost_analysis.Type_cost
 open Ast.Annotated_ast
 open Cost_analysis
@@ -34,13 +34,9 @@ module Block_parallelised_annotation = struct
 end
 
 module Parallelisation_ast =
-  Annotated_ast
-    (Block_parallelised_annotation)
-    (Alpha_conversion_annotation)
+  Annotated_ast (Block_parallelised_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
-
-let contains_parallelisation = ref false
 
 let find_disjoint_blocks_collection
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
@@ -136,7 +132,6 @@ let parallelise_disjoint_blocks
       | [] -> raise Empty_disjoint_blocks_list
       | [ block ] -> wrap_in_block_structure block
       | disjoint_blocks ->
-        contains_parallelisation := true;
         wrap_in_block_structure
           { contents = List.map ~f:wrap_in_block_structure disjoint_blocks
           ; annotations =
@@ -222,8 +217,7 @@ and string_of_contents_list_cost_tracking contents_list =
           contents_list))
 
 
-and parallelise_block (block : (Runtime_cost.block_runtime_cost, 'b, 'c) block)
-  =
+and parallelise_block (block : (Runtime_cost.block_runtime_cost, 'b, 'c) block) =
   (* print_endline (Cost_tracking.Cost_tracking_ast.string_of_block block); *)
   (* print_endline "\n"; *)
   (* print_endline (string_of_contents_list_cost_tracking block.contents); *)
@@ -307,17 +301,13 @@ and parallelise_func (func : ('a, 'b, 'c) func) =
 let parallelise_program program =
   let parallelised_funcs = List.map ~f:parallelise_func program.funcs in
   { package = program.package
-  ; imports =
-      (if !contains_parallelisation
-      then Import_annotation.add program.imports (Import.create Import.I_Sync)
-      else program.imports)
+  ; imports = program.imports
   ; global_vars = program.global_vars
   ; funcs = parallelised_funcs
   }
 
 
 let pipeline_ast ~debug_file program =
-  contains_parallelisation := false;
   let new_program = parallelise_program program in
   (match debug_file with
   | Some debug_file ->

@@ -6,7 +6,7 @@ open Ast.Annotated_ast
 open Ast.Ast_pipeline
 open Parsing.Parser_types
 open Ast.Ast_types
-open Import 
+open Import
 
 type alpha_var =
   { name : string

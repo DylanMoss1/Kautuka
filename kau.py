@@ -10,6 +10,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 4: 
         print("Error: incorrect number of args")
+        exit(1)
 
     run_go = sys.argv[1]
     debug = sys.argv[2]

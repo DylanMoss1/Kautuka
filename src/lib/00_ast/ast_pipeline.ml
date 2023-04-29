@@ -331,7 +331,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
 
   and pipeline_write_template env write_template =
     let env, new_file, file_result =
-      pipeline_var ~var_effect:Write env write_template.file
+    pipeline_annotated_expr env write_template.file
     in
     let env, new_contents, contents_result =
       pipeline_annotated_expr env write_template.contents
@@ -358,21 +358,21 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
         ~mapping:Mapping.func_call
         ~new_ast_fun:(fun x -> Print x)
         expr
-    | Input -> Mapping.func_call env Input Mapping.empty_result
-    | Open expr ->
+    | Input bound -> Mapping.func_call env (Input bound) Mapping.empty_result
+    | Open (expr, ref) ->
       single_pipeline
         ~env
         ~sub_pipeline:pipeline_annotated_expr
         ~mapping:Mapping.func_call
-        ~new_ast_fun:(fun x -> Open x)
+        ~new_ast_fun:(fun x -> Open (x, ref))
         expr
-    | Read var ->
+    | Read (expr, bound) ->
       single_pipeline
         ~env
-        ~sub_pipeline:(pipeline_var ~var_effect:Read)
+        ~sub_pipeline:pipeline_annotated_expr
         ~mapping:Mapping.func_call
-        ~new_ast_fun:(fun x -> Read x)
-        var
+        ~new_ast_fun:(fun x -> Read (x, bound))
+        expr
     | Write write_template ->
       single_pipeline
         ~env
@@ -685,18 +685,18 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
     Mapping.param env (new_var, new_type_id) result
 
 
-  and pipeline_func env func =
+  and pipeline_func prev_env func =
     let env, new_name, name_result =
-      pipeline_var ~var_effect:Init env func.name
+      pipeline_var ~var_effect:Init prev_env func.name
     in
-    let env, new_param, param_result =
-      pipeline_map_collect ~env ~f:pipeline_param func.params
+    let param_env, new_param, param_result =
+      pipeline_map_collect ~env:prev_env ~f:pipeline_param func.params
     in
-    let env, _, new_body, body_result =
-      pipeline_block ~is_func:true env func.body
+    let _, _, new_body, body_result =
+      pipeline_block ~is_func:true param_env func.body
     in
-    let env, new_return_type, return_type_result =
-      pipeline_type_id env func.return_type
+    let _, new_return_type, return_type_result =
+      pipeline_type_id param_env func.return_type
     in
     let result =
       Mapping.join_results_list

@@ -1,6 +1,6 @@
 open! Core
 open Ast_types
-open! Core
+open Util 
 
 module type Type_annotation = sig
   type t
@@ -51,6 +51,7 @@ struct
     | T_Bool -> "bool"
     | T_String -> "string"
     | T_Unit -> ""
+    | T_File -> "file"
 
 
   let string_of_unop = function
@@ -88,16 +89,21 @@ struct
   and string_of_write_template write_template =
     Fmt.str
       "%s, %s"
-      (string_of_var write_template.file)
+      (string_of_annotated_expr write_template.file)
       (string_of_annotated_expr write_template.contents)
+
+
+  and string_of_bound = function
+    | Upper u -> Int.to_string u
+    | Both (l, u) -> Fmt.str "%s, %s" (Int.to_string l) (Int.to_string u)
 
 
   and string_of_func_call = function
     | User_func user_func -> string_of_user_func user_func
     | Print expr -> Fmt.str "fmt.Println(%s)" (string_of_annotated_expr expr)
-    | Input -> "input()"
-    | Open expr -> Fmt.str "open(%s)" (string_of_annotated_expr expr)
-    | Read var -> Fmt.str "read(%s)" (string_of_var var)
+    | Input bound -> Fmt.str "input(%s)" (string_of_bound bound)
+    | Open (expr, ref) -> Fmt.str "open(%s, %s)" (string_of_annotated_expr expr) (File_ref.string_of_t ref)
+    | Read (expr, bound) -> Fmt.str "read(%s, %s)" (string_of_annotated_expr expr) (string_of_bound bound)
     | Write write_template ->
       Fmt.str "write(%s)" (string_of_write_template write_template)
     | Append write_template ->

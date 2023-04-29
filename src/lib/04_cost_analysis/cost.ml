@@ -40,6 +40,7 @@ let string_of_list
 module Integer_bound = struct
   type t = int * int (* <l, u> *) [@@deriving of_sexp, sexp_of, compare]
 
+  let go_of_t (l, u) = Float.to_string ((Int.to_float l +. Int.to_float u) /. 2.)
   let zero = 0, 0
   let one = 1, 1
   let create t = t
@@ -94,8 +95,23 @@ module Variable_bound = struct
     Fmt.str "%s^%s" (Alpha.string_of_t alpha) (Int.to_string power)
 
 
+  let go_of_item (alpha, power) =
+    Fmt.str
+      "math.Pow(float64(%s), %s)"
+      (Alpha.string_of_t alpha)
+      (Int.to_string power)
+
+
   let string_of_t =
     string_of_list ~left_format:"(" ~right_format:")" ~string_of_item
+
+
+  let go_of_t =
+    string_of_list
+      ~sep:" * "
+      ~left_format:"("
+      ~right_format:")"
+      ~string_of_item:go_of_item
 
 
   let empty = []
@@ -141,7 +157,16 @@ module Cost = struct
       (Variable_bound.string_of_t var_bound)
 
 
+  let go_of_item (int_bound, var_bound) =
+    let int_go = Integer_bound.go_of_t int_bound in
+    let var_go = Variable_bound.go_of_t var_bound in
+    if String.compare var_go "" = 0
+    then int_go
+    else Fmt.str "%s * %s" int_go var_go
+
+
   let string_of_t t = string_of_list ~sep:" + " ~string_of_item t
+  let go_of_t t = string_of_list ~sep:" + " ~string_of_item:go_of_item t
 
   let add_cost_terms_if_matching cost_term1 cost_term2 =
     let int_bound1, var_bound1 = cost_term1 in
@@ -158,6 +183,11 @@ module Cost = struct
   let empty = []
   let create_int_bound_cost int_bound = [ int_bound, Variable_bound.empty ]
   let create_int_cost i = [ Integer_bound.create (i, i), Variable_bound.empty ]
+
+  let create_int_bound (l, u) =
+    [ Integer_bound.create (l, u), Variable_bound.empty ]
+
+
   let zero = create_int_bound_cost Integer_bound.zero
   let one = create_int_bound_cost Integer_bound.one
 

@@ -1,0 +1,18 @@
+package main
+
+import ("fmt"
+"os")
+
+
+func main ()  {
+//{block_type: Default}
+
+x := (input(100) : UNTYPED)
+(fmt.Println((x : UNTYPED)) : UNTYPED)
+y := (open(("./test_files/a/b.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
+(write((y : UNTYPED), ("hello world" : UNTYPED)) : UNTYPED)
+(fmt.Println((read((y : UNTYPED), 100) : UNTYPED)) : UNTYPED)
+(write((y : UNTYPED), ("a" : UNTYPED)) : UNTYPED)
+(append((y : UNTYPED), ("a" : UNTYPED)) : UNTYPED)
+(fmt.Println((read((y : UNTYPED), 100) : UNTYPED)) : UNTYPED)
+}

@@ -55,6 +55,7 @@ if test -f $compiled_go; then
       end=$(date +%s%N)
       echo "Sequential elapsed time: $((($end-$start-$time_delay)/1000)) us"
     else
+      gofmt -w $compiled_go
       go run $compiled_go >/dev/null 2>&1
     fi
   else 
@@ -77,6 +78,7 @@ if test -f $compiled_go; then
       end=$(date +%s%N)
       echo "Sequential elapsed time: $((($end-$start-$time_delay)/1000)) us"
     else
+      gofmt -w $compiled_go
       go run $compiled_go
     fi
   fi

@@ -14,6 +14,7 @@ let string_of_type_id = function
   | T_Bool -> "bool"
   | T_String -> "string"
   | T_Unit -> ""
+  | T_File -> "file"
 
 
 module Type_cost = struct
@@ -314,6 +315,12 @@ module Type_cost_ast_mapping = struct
     )
 
 
+  let cost_of_bound bound =
+    match bound with
+    | Upper u -> Cost.create_int_cost u
+    | Both (l, u) -> Cost.create_int_bound (l, u)
+
+
   let get_type_cost var env =
     match Type_cost_context.get_value var.alpha env with
     | Some type_cost -> type_cost
@@ -329,31 +336,23 @@ module Type_cost_ast_mapping = struct
       (match Type_cost_result.extract_expr_type_cost result with
       | C_String _ | C_Int _ -> new_branch env func_call result (Some C_Unit)
       | _ -> raise Type_error)
-    | Input ->
-      new_branch env func_call result (Some (C_String Cost.default_input_bound))
+    | Input bound ->
+      new_branch env func_call result (Some (C_String (cost_of_bound bound)))
     | Open _ ->
       (match Type_cost_result.extract result.expr_type_cost with
       | C_String _ -> new_branch env func_call result (Some C_File)
       | _ -> raise Type_error)
-    | Read var ->
-      (match get_type_cost var env with
-      | C_File ->
-        new_branch
-          env
-          func_call
-          result
-          (Some (C_String Cost.default_input_bound))
+    | Read (_, bound) ->
+      (match Type_cost_result.extract_2 result.expr_type_cost with
+      | C_File, C_Int _ ->
+        new_branch env func_call result (Some (C_String (cost_of_bound bound)))
       | _ -> raise Type_error)
-    | Write { file; _ } ->
-      (match
-         get_type_cost file env, Type_cost_result.extract_expr_type_cost result
-       with
+    | Write { file = _; contents = _ } ->
+      (match Type_cost_result.extract_2 result.expr_type_cost with
       | C_File, C_String _ -> new_branch env func_call result (Some C_Unit)
       | _ -> raise Type_error)
-    | Append { file; _ } ->
-      (match
-         get_type_cost file env, Type_cost_result.extract_expr_type_cost result
-       with
+    | Append { file = _; contents = _ } ->
+      (match Type_cost_result.extract_2 result.expr_type_cost with
       | C_File, C_String _ -> new_branch env func_call result (Some C_Unit)
       | _ -> raise Type_error)
 
@@ -414,11 +413,6 @@ module Type_cost_ast_mapping = struct
           result.return_type_cost )
     | Var_read var ->
       env, expr, Type_cost_result.push_type_cost (get_type_cost var env) result
-      (* ( env
-      , expr
-      , if String.compare var.name "_" = 0
-        then Type_cost_result.create_with_return None result.return_type_cost
-        else Type_cost_result.push_type_cost (get_type_cost var env) result ) *)
     | _ -> ignore_branch env expr result
 
 
@@ -688,7 +682,8 @@ module Type_cost_ast_mapping = struct
         | T_Int -> C_Int (Cost.create_single_var_bound var.alpha)
         | T_String -> C_String (Cost.create_single_var_bound var.alpha)
         | T_Bool -> C_Bool
-        | T_Unit -> C_Unit)
+        | T_Unit -> C_Unit
+        | T_File -> C_File)
         env
     , param
     , result )

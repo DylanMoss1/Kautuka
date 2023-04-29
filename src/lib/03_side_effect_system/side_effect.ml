@@ -13,7 +13,7 @@ type side_effect_operation =
 
 type side_effect_channel =
   | Console
-  | File
+  | File of File_ref.t
   | Var of Alpha.t
 [@@deriving of_sexp, sexp_of, compare]
 
@@ -23,7 +23,7 @@ module Side_effect = struct
 
   let string_of_side_effect_channel = function
     | Console -> "console"
-    | File -> "file"
+    | File file_ref -> Fmt.str "file(%s)" (File_ref.string_of_t file_ref)
     | Var uuid -> Fmt.str "var[%s]" (Alpha.string_of_t uuid)
 
 
@@ -35,16 +35,11 @@ module Side_effect = struct
   let create x = x
 
   let is_disjoint t1 t2 =
-    let t1_operation, t1_channel = t1 in
-    let t2_operation, t2_channel = t2 in
-    match t1_operation, t2_operation with
-    | Read, Read -> true
-    | _, _ ->
-      (match t1_channel, t2_channel with
-      | Console, Console -> false
-      | File, File -> false
-      | Var alpha1, Var alpha2 -> Alpha.compare alpha1 alpha2 <> 0
-      | _ -> true)
+    match t1, t2 with
+    | (Read, _), (Read, _) -> true
+    | (_, File i), (_, File j) -> File_ref.compare i j = 0
+    | (_, channel1), (_, channel2) ->
+      compare_side_effect_channel channel1 channel2 <> 0
 
 
   let extract_var (_, channel) =

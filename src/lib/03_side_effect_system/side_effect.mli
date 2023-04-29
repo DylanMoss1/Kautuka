@@ -12,7 +12,7 @@ type side_effect_operation =
 
 type side_effect_channel =
   | Console
-  | File
+  | File of File_ref.t
   | Var of Util.Alpha.t
 [@@deriving of_sexp, sexp_of, compare]
 

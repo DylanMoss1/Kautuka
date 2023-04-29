@@ -4,17 +4,26 @@ open Reorder_and_parallelise
 open Util
 open Preperation.Alpha_conversion
 open Preperation.Import
+open Cost_analysis.Cost
 
-
+let threshold = 300
+let has_sync = ref false
+let has_math = ref false
+let has_input = ref false
+let has_open = ref false
+let has_read = ref false
+let has_write = ref false
+let has_append = ref false
 let alpha_generator = Alpha.create
 let map_concat ~sep ~f x = String.concat ~sep (List.map ~f x)
-let go_of_var (var : 'var) = var.name
+let go_of_var var = Alpha.string_of_t var.alpha
 
 let go_of_type_id = function
   | T_Int -> "int"
   | T_Bool -> "bool"
-  | T_String -> "go"
+  | T_String -> "string"
   | T_Unit -> ""
+  | T_File -> "*os.File"
 
 
 let go_of_unop = function
@@ -52,19 +61,27 @@ let rec go_of_user_func (user_func : ('var, 'expr) user_func) =
 and go_of_write_template write_template =
   Fmt.str
     "%s, %s"
-    (go_of_var write_template.file)
+    (go_of_annotated_expr write_template.file)
     (go_of_annotated_expr write_template.contents)
 
 
 and go_of_func_call = function
   | User_func user_func -> go_of_user_func user_func
   | Print expr -> Fmt.str "fmt.Println(%s)" (go_of_annotated_expr expr)
-  | Input -> "input()"
-  | Open expr -> Fmt.str "open(%s)" (go_of_annotated_expr expr)
-  | Read var -> Fmt.str "read(%s)" (go_of_var var)
+  | Input _ ->
+    has_input := true;
+    "input()"
+  | Open (expr, _) ->
+    has_open := true;
+    Fmt.str "open(%s)" (go_of_annotated_expr expr)
+  | Read (var, _) ->
+    has_read := true;
+    Fmt.str "read(%s)" (go_of_annotated_expr var)
   | Write write_template ->
+    has_write := true;
     Fmt.str "write(%s)" (go_of_write_template write_template)
   | Append write_template ->
+    has_append := true;
     Fmt.str "append(%s)" (go_of_write_template write_template)
 
 
@@ -168,6 +185,39 @@ and go_of_command ~sequential = function
   | Statement statement -> go_of_statement statement
 
 
+and get_exec_path_cond runtime_cost =
+  Fmt.str "%s < %s" (Cost.go_of_t runtime_cost) (Int.to_string threshold)
+
+
+and par_group ~sequential wg_var num_block block_contents =
+  has_sync := true;
+  Fmt.str
+    "var wg_%s sync.WaitGroup\nwg_%s.Add(%d)\n%s\nwg_%s.Wait()"
+    (Alpha.string_of_t wg_var)
+    (Alpha.string_of_t wg_var)
+    num_block
+    (String.concat
+       ~sep:"\n"
+       (List.map
+          ~f:(fun block_item ->
+            Fmt.str
+              "go func(){\n%s\nwg_%s.Done()\n}()"
+              (go_of_command ~sequential block_item)
+              (Alpha.string_of_t wg_var))
+          block_contents))
+    (Alpha.string_of_t wg_var)
+
+
+and seq_group ~sequential block_contents =
+  map_concat ~sep:"\n" ~f:(go_of_command ~sequential) block_contents
+
+
+and contains_substring search target =
+  match String.substr_index search ~pattern:target with
+  | None -> false
+  | _ -> true
+
+
 and go_of_block
     ~sequential
     (block : (Parallelisation_ast.block_annot, 'a, 'b) block)
@@ -175,21 +225,18 @@ and go_of_block
   match block.annotations.parallelise_contents, sequential with
   | Some num_block, false ->
     let wg_var = Alpha.get_new_alpha alpha_generator in
-    Fmt.str
-      "var wg_%s sync.WaitGroup\nwg_%s.Add(%d)\n%s\nwg_%s.Wait()"
-      (Alpha.string_of_t wg_var)
-      (Alpha.string_of_t wg_var)
-      num_block
-      (String.concat
-         ~sep:"\n"
-         (List.map
-            ~f:(fun block_item ->
-              Fmt.str
-                "go func(){\n%s\nwg_%s.Done()\n}()"
-                (go_of_command ~sequential block_item)
-                (Alpha.string_of_t wg_var))
-            block.contents))
-      (Alpha.string_of_t wg_var)
+    let block_contents = block.contents in
+    let seq_str = seq_group ~sequential block_contents in
+    if sequential
+    then seq_str
+    else (
+      let exec_path_cond = get_exec_path_cond block.annotations.runtime_cost in
+      if contains_substring exec_path_cond "math.Pow" then has_math := true;
+      Fmt.str
+        "if %s {%s} else {%s}"
+        exec_path_cond
+        seq_str
+        (par_group ~sequential wg_var num_block block_contents))
   | _ ->
     Fmt.str
       "%s"
@@ -209,12 +256,87 @@ and go_of_func ~sequential (func : ('c, 'd, 'e) func) =
     (go_of_block ~sequential func.body)
 
 
+let if_cond_then_str cond str = if cond then str else ""
+
+let input has_input =
+  if_cond_then_str
+    has_input
+    "func input() string { \n\
+    \  var __s string\n\
+    \  fmt.Scan(&__s)\n\
+    \  return __s\n\
+     }\n\n"
+
+
+let check has_check =
+  if_cond_then_str
+    has_check
+    "func check(err error) {\n\tif err != nil {\n\t\t\tpanic(err)\n\t}\n}\n\n"
+
+
+let _open has_open =
+  if_cond_then_str
+    has_open
+    "func open(filename string) *os.File {\n\
+     file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0666)\n\
+     check(err)\n\
+     return file\n\
+     }\n\n"
+
+
+let read has_read =
+  if_cond_then_str
+    has_read
+    "func read(file *os.File) string {\n\
+    \  dat, err := os.ReadFile(file.Name())\n\
+    \  check(err)\n\
+    \  return string(dat)\n\
+     }\n\n"
+
+
+let write has_write =
+  if_cond_then_str
+    has_write
+    "func write(file *os.File, contents string) {\n\
+    \  file, err := os.Create(file.Name())\n\
+    \  check(err) \n\
+    \  _, err = file.WriteString(contents)\n\
+    \  check(err)\n\
+     }\n\n"
+
+
+let append has_append =
+  if_cond_then_str
+    has_append
+    "func append(file *os.File, contents string) {\n\
+    \  _, err := file.WriteString(contents)\n\
+    \  check(err)\n\
+     }\n\n"
+
+
+let extra_funcs has_input has_open has_read has_write has_append =
+  let has_check = has_open || has_read || has_write || has_append in
+  input has_input
+  ^ check has_check
+  ^ _open has_open
+  ^ read has_read
+  ^ write has_write
+  ^ append has_append
+
+
 let go_of_program ~sequential program =
   Fmt.str "package %s\n\n" program.package
   ^ Parallelisation_ast.string_of_import_annot program.imports
+  ^ extra_funcs !has_input !has_open !has_read !has_write !has_append
   ^ map_concat ~sep:"\n" ~f:go_of_var_statement program.global_vars
   ^ "\n\n"
   ^ map_concat ~sep:"\n\n" ~f:(go_of_func ~sequential) program.funcs
+
+
+let add_import program cond_ref import =
+  if !cond_ref
+  then { program with imports = Import_annotation.add program.imports import }
+  else program
 
 
 let pipeline_ast ~sequential program =
@@ -223,10 +345,7 @@ let pipeline_ast ~sequential program =
     then "./files/compiled/seq_go_program.go"
     else "./files/compiled/go_program.go"
   in
-  let program =
-    if sequential
-    then
-      { program with imports = Import_annotation.remove program.imports I_Sync }
-    else program
-  in
+  let _ = go_of_program ~sequential program in
+  let program = add_import program has_sync I_Sync in
+  let program = add_import program has_math I_Math in
   Out_channel.write_all output_file ~data:(go_of_program ~sequential program)

@@ -1,18 +1,12 @@
 package main
 
 func main() {
-	x := 0 
-
-	{ 
-		y := 1 
-		x = 5
-		_ = y
-	}
-
-	{
-		z := 0 
-		_ = z
-	}
-
+	x := input(100)
 	print(x)
+	y := open("./test_files/a/b.txt")
+	write(y, "hello world")
+	print(read(y, 100))
+	write(y, "a")
+	append(y, "a")
+	print(read(y, 100))
 }

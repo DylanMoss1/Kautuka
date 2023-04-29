@@ -1,5 +1,6 @@
 open! Core
 open Util.Extended_set
+open Util
 
 type 'var var = 'var
 
@@ -7,6 +8,7 @@ type type_id =
   | T_Int
   | T_Bool
   | T_String
+  | T_File
   | T_Unit
 [@@deriving of_sexp, sexp_of, compare]
 
@@ -38,16 +40,20 @@ type ('var, 'expr) user_func =
   }
 
 and ('var, 'expr) write_template =
-  { file : 'var var
+  { file : ('var, 'expr) annotated_expr
   ; contents : ('var, 'expr) annotated_expr
   }
+
+and bound =
+  | Upper of int
+  | Both of int * int
 
 and ('var, 'expr) func_call =
   | User_func of ('var, 'expr) user_func
   | Print of ('var, 'expr) annotated_expr
-  | Input
-  | Open of ('var, 'expr) annotated_expr
-  | Read of 'var var
+  | Input of bound
+  | Open of ('var, 'expr) annotated_expr * File_ref.t
+  | Read of ('var, 'expr) annotated_expr * bound
   | Write of ('var, 'expr) write_template
   | Append of ('var, 'expr) write_template
 

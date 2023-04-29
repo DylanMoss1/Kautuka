@@ -131,7 +131,7 @@ module Runtime_cost_ast_mapping = struct
   let func_call env func_call result =
     match func_call with
     | Print _ -> env, func_call, join_results result Runtime_cost.cost_of_print
-    | Input -> env, func_call, join_results result Runtime_cost.cost_of_input
+    | Input _ -> env, func_call, join_results result Runtime_cost.cost_of_input
     | Open _ -> env, func_call, join_results result Runtime_cost.cost_of_open
     | Read _ -> env, func_call, join_results result Runtime_cost.cost_of_read
     | Write _ -> env, func_call, join_results result Runtime_cost.cost_of_write

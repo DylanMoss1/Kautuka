@@ -27,6 +27,7 @@ module Import = struct
     | I_Fmt
     | I_Os
     | I_Sync
+    | I_Math
   [@@deriving of_sexp, sexp_of, compare]
 
   let string_of_t t =
@@ -35,7 +36,8 @@ module Import = struct
       (match t with
       | I_Fmt -> "fmt"
       | I_Os -> "os"
-      | I_Sync -> "sync")
+      | I_Sync -> "sync"
+      | I_Math -> "math")
 
 
   let create x = x
@@ -72,12 +74,12 @@ module Import_ast_mapping = struct
     match func_call with
     | User_func user_func -> env, User_func user_func, result
     | Print expr -> env, Print expr, add_result result I_Fmt
-    | Input -> env, Input, add_result result I_Fmt
-    | Open expr -> env, Open expr, add_result result I_Fmt
-    | Read expr -> env, Read expr, add_result result I_Fmt
-    | Write write_template -> env, Write write_template, add_result result I_Fmt
+    | Input bound -> env, Input bound, add_result result I_Fmt
+    | Open (expr, ref) -> env, Open (expr, ref), add_result result I_Os
+    | Read (expr, bound) -> env, Read (expr, bound), add_result result I_Os
+    | Write write_template -> env, Write write_template, add_result result I_Os
     | Append write_template ->
-      env, Append write_template, add_result result I_Fmt
+      env, Append write_template, add_result result I_Os
 
 
   let program

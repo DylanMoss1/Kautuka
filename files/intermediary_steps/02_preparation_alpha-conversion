@@ -1,0 +1,18 @@
+package main
+
+import ("fmt"
+"os")
+
+
+func var{name: main, alpha: main} ()  {
+//{block_type: Default, scoped_vars: {}}
+
+var{name: x, alpha: alpha_1} := (input(100) : UNTYPED)
+(fmt.Println((var{name: x, alpha: alpha_1} : UNTYPED)) : UNTYPED)
+var{name: y, alpha: alpha_2} := (open(("./test_files/a/b.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
+(write((var{name: y, alpha: alpha_2} : UNTYPED), ("hello world" : UNTYPED)) : UNTYPED)
+(fmt.Println((read((var{name: y, alpha: alpha_2} : UNTYPED), 100) : UNTYPED)) : UNTYPED)
+(write((var{name: y, alpha: alpha_2} : UNTYPED), ("a" : UNTYPED)) : UNTYPED)
+(append((var{name: y, alpha: alpha_2} : UNTYPED), ("a" : UNTYPED)) : UNTYPED)
+(fmt.Println((read((var{name: y, alpha: alpha_2} : UNTYPED), 100) : UNTYPED)) : UNTYPED)
+}

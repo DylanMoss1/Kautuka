@@ -52,7 +52,9 @@ let () =
     |> Import.Import_ast_pipeline.pipeline_ast
          ~debug_file:(Some "02_preperation_import")
     |> Alpha_conversion.Alpha_conversion_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "03_side-effect-system_alpha-conversion")
+         ~debug_file:(Some "02_preparation_alpha-conversion")
+    |> File_tracking.File_tracking_ast_pipeline.pipeline_ast 
+        ~debug_file:(Some "03_side-effect-system_file-tracking")
     |> Side_effect_tracking.Side_effect_ast_pipeline.pipeline_ast
          ~debug_file:(Some "03_side-effect-system_side-effect-tracking")
     |> Type_cost.Type_cost_ast_pipeline.pipeline_ast
