@@ -1,12 +1,25 @@
 package main
 
 func main() {
-	x := input(100)
-	print(x)
-	y := open("./test_files/a/b.txt")
-	write(y, "hello world")
-	print(read(y, 100))
-	write(y, "a")
-	append(y, "a")
-	print(read(y, 100))
+	x := open("./test_files/a/b.txt", 1)
+	y := open("./test_files/a/c.txt", 1)
+	z := y
+
+	a := ""
+	b := ""
+	c := ""
+
+	{
+		a = read(x, 100)
+	}
+	{
+		b = read(y, 100)
+	}
+	{
+		c = read(z, 100)
+	}
+
+	print(a)
+	print(b)
+	print(c)
 }

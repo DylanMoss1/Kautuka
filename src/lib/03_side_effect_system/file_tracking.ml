@@ -34,7 +34,8 @@ module File_ref_result = struct
 end
 
 module File_tracking_ast =
-  Annotated_ast (Block_scoped_vars_annotation) (Alpha_conversion_annotation) (Import_annotation)
+  Annotated_ast (Block_scoped_vars_annotation) (Alpha_conversion_annotation)
+    (Import_annotation)
     (Expr_file_ref_annotation)
 
 module File_tracking_ast_mapping = struct
@@ -43,7 +44,7 @@ module File_tracking_ast_mapping = struct
       (File_ref_context)
       (File_ref_result)
 
-  exception Variable_not_found
+  exception File_ref_in_var_not_found
 
   let generate_ref = File_ref.get_new_generated_ref
 
@@ -54,20 +55,21 @@ module File_tracking_ast_mapping = struct
       , User_func user_func
       , (match File_ref_context.get_value user_func.name.alpha env with
         | Some value -> value
-        | None -> raise Variable_not_found) )
+        | None -> raise File_ref_in_var_not_found) )
     | Open (filename, file_ref) ->
       env, Open (filename, file_ref), File_ref_result.create file_ref
     | _ -> env, func_call, None
 
 
-  let expr env expr _ =
+  let expr env expr result =
     match expr with
+    | Func_call func_call -> env, Func_call func_call, result
     | Var_read var ->
       ( env
       , expr
       , (match File_ref_context.get_value var.alpha env with
         | Some value -> value
-        | None -> raise Variable_not_found) )
+        | None -> raise File_ref_in_var_not_found) )
     | _ -> env, expr, None
 
 
@@ -75,17 +77,12 @@ module File_tracking_ast_mapping = struct
     env, { expr = new_expr; annotations = result }, None
 
 
-  let var_statement env var_statement result =
+  let var_statement env var_statement _ =
     match var_statement with
     | Var_init (var, _, annot_expr)
     | Var_decl (var, annot_expr)
     | Var_assign (var, annot_expr) ->
-      (match annot_expr.annotations with
-      | None -> env, var_statement, None
-      | Some file_ref ->
-        ( File_ref_context.add_item var.alpha (Some file_ref) env
-        , var_statement
-        , result ))
+      File_ref_context.add_item var.alpha (annot_expr.annotations) env, var_statement, None
     | _ -> env, var_statement, None
 
 

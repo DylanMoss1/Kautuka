@@ -1,16 +1,21 @@
-package main
+x := open("./test_files/a/b.txt", 1)	
+y := open("./test_files/a/c.txt", 1)
+z := y
 
-func main() {
-	x := 0
-	{
-		for i := 0; i < 50; i++ { 
-			print("hello world")
-		}
-	}
-	{
-		for i := 0; i < 50; i++ { 
-			x += i 
-		}
-	}
-	print(x)
+a := ""
+b := ""
+c := ""
+
+{
+	a := read(x, 100)
 }
+{ 
+	b := read(y, 100)
+}
+{ 
+	c := read(z, 100)
+}
+
+print(a)
+print(b)
+print(c)

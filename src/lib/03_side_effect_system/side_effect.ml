@@ -37,7 +37,8 @@ module Side_effect = struct
   let is_disjoint t1 t2 =
     match t1, t2 with
     | (Read, _), (Read, _) -> true
-    | (_, File i), (_, File j) -> File_ref.compare i j = 0
+    | (_, File file_ref1), (_, File file_ref2) ->
+      File_ref.disjoint file_ref1 file_ref2
     | (_, channel1), (_, channel2) ->
       compare_side_effect_channel channel1 channel2 <> 0
 

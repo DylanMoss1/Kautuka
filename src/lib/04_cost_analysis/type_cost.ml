@@ -343,8 +343,8 @@ module Type_cost_ast_mapping = struct
       | C_String _ -> new_branch env func_call result (Some C_File)
       | _ -> raise Type_error)
     | Read (_, bound) ->
-      (match Type_cost_result.extract_2 result.expr_type_cost with
-      | C_File, C_Int _ ->
+      (match Type_cost_result.extract result.expr_type_cost with
+      | C_File ->
         new_branch env func_call result (Some (C_String (cost_of_bound bound)))
       | _ -> raise Type_error)
     | Write { file = _; contents = _ } ->

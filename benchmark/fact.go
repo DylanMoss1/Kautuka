@@ -7,7 +7,7 @@ func fact(x uint64) uint64 {
 		total *= i 
 	}
 
-	return total 
+	return total
 }
 
 func main() {

@@ -26,6 +26,7 @@ module type Ast_mapping = sig
 
   val empty_env : env
   val add_to_env : env_key -> env_value -> env -> env
+  val add_to_env_no_replace : env_key -> env_value -> env -> env
   val add_new_scope : is_func:bool -> env -> env
   val remove_scope : is_func:bool -> env -> env
   val get_value : env_key -> env -> env_value option
@@ -222,6 +223,7 @@ struct
 
   let empty_env = Context.empty
   let add_to_env = Context.add_item
+  let add_to_env_no_replace = Context.add_item_no_replace
   let add_new_scope = Context.add_new_scope
   let remove_scope = Context.remove_scope
   let get_value = Context.get_value
@@ -331,7 +333,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
 
   and pipeline_write_template env write_template =
     let env, new_file, file_result =
-    pipeline_annotated_expr env write_template.file
+      pipeline_annotated_expr env write_template.file
     in
     let env, new_contents, contents_result =
       pipeline_annotated_expr env write_template.contents
@@ -669,7 +671,9 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
       pipeline_map_collect ~env ~f:pipeline_command block.contents
     in
     let old_env = env in
-    let env = Mapping.remove_scope ~is_func env in
+    let env =
+      Mapping.remove_scope ~is_func env
+    in
     Mapping.block
       ~env
       ~old_env

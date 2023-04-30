@@ -31,3 +31,6 @@ let string_of_t = function
 
 
 let get_id (id, _) = id
+
+let disjoint (id1, ref1) (id2, ref2) =
+  compare_ref_type ref1 ref2 = 0 && id1 <> id2

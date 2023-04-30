@@ -278,7 +278,7 @@ let _open has_open =
   if_cond_then_str
     has_open
     "func open(filename string) *os.File {\n\
-     file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0666)\n\
+     file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)\n\
      check(err)\n\
      return file\n\
      }\n\n"

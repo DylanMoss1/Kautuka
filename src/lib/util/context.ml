@@ -8,6 +8,7 @@ module type Context = sig
 
   val empty : t
   val add_item : key -> value -> t -> t
+  val add_item_no_replace : key -> value -> t -> t
   val add_new_scope : is_func:bool -> t -> t
   val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option
@@ -81,6 +82,13 @@ struct
         | [] -> raise Empty_scope)
     in
     add_item_to_env key value env []
+
+
+  let add_item_no_replace key value env =
+    match env with
+    | inner_scope :: remaining_scope ->
+      ((key, value) :: inner_scope) :: remaining_scope
+    | [] -> raise Empty_scope
 
 
   (* let rec add_item_to_scope key = function

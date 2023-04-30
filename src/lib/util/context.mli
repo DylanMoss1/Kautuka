@@ -7,6 +7,7 @@ module type Context = sig
 
   val empty : t
   val add_item : key -> value -> t -> t
+  val add_item_no_replace : key -> value -> t -> t
   val add_new_scope : is_func:bool -> t -> t
   val remove_scope : is_func:bool -> t -> t
   val get_value : key -> t -> value option

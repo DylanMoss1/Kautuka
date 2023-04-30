@@ -1,6 +1,6 @@
 open! Core
 open Ast_types
-open Util 
+open Util
 
 module type Type_annotation = sig
   type t
@@ -102,8 +102,16 @@ struct
     | User_func user_func -> string_of_user_func user_func
     | Print expr -> Fmt.str "fmt.Println(%s)" (string_of_annotated_expr expr)
     | Input bound -> Fmt.str "input(%s)" (string_of_bound bound)
-    | Open (expr, ref) -> Fmt.str "open(%s, %s)" (string_of_annotated_expr expr) (File_ref.string_of_t ref)
-    | Read (expr, bound) -> Fmt.str "read(%s, %s)" (string_of_annotated_expr expr) (string_of_bound bound)
+    | Open (expr, ref) ->
+      Fmt.str
+        "open(%s, %s)"
+        (string_of_annotated_expr expr)
+        (File_ref.string_of_t ref)
+    | Read (expr, bound) ->
+      Fmt.str
+        "read(%s, %s)"
+        (string_of_annotated_expr expr)
+        (string_of_bound bound)
     | Write write_template ->
       Fmt.str "write(%s)" (string_of_write_template write_template)
     | Append write_template ->
