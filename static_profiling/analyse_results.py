@@ -5,6 +5,32 @@ from sklearn.linear_model import LinearRegression
 
 model = LinearRegression(fit_intercept=False)
 
+def plot_for_each_data(data):
+  zero_size_data = data[0]
+
+  data -= zero_size_data
+
+  x = np.array([i for i in range(0, 11)])
+
+  model.fit(x.reshape((-1, 1)), data)
+
+  data += zero_size_data
+
+  plt.plot(x + 2, data, label="static profiling results")
+  plt.plot(x + 2, model.predict(x.reshape((-1, 1))) +
+           zero_size_data, label="linear regression model")
+
+  plt.title(f"Runtime estimate for parallelisation")
+  plt.xlabel("For each iterations")
+  plt.ylabel("Runtime (ns)")
+
+  plt.legend(loc="best")
+
+  plt.show()
+
+  print(f"for each\n  m: {model.coef_[0]}\n  c: {zero_size_data}\n\n")
+  
+
 
 def plot_par_data(data):
   two_size_data = data[0]
@@ -65,6 +91,8 @@ def get_data(results_file):
     reader_obj = csv.reader(file)
 
     headings = next(reader_obj)
+  
+    for_each_data = [float(item) for item in next(reader_obj)]
     par_data = [float(item) for item in next(reader_obj)]
 
     data = []
@@ -72,14 +100,15 @@ def get_data(results_file):
     for row in reader_obj:
       data.append([float(item) for item in row])
 
-  return headings, np.array(par_data), np.array(data).transpose()
+  return headings, np.array(for_each_data), np.array(par_data), np.array(data).transpose()
 
 
 if __name__ == "__main__":
   results_file = "./results/results.csv"
 
-  headings, par_data, data = get_data(results_file)
+  headings, for_each_data, par_data, data = get_data(results_file)
 
+  plot_for_each_data(for_each_data)
   plot_par_data(par_data)
 
   for heading, data in zip(headings, data):

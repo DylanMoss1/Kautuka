@@ -6,10 +6,20 @@ open Side_effect_system
 open Cost_analysis
 open Parallelisation
 
-let usage_msg = "x [--debug]"
+let usage_msg = "./kau.sh [--debug] [--seq] <file> <output>"
 let debug = ref false
 let sequential = ref false
-let anon_fun _ = ()
+let first = ref true
+let output = ref ""
+let file = ref ""
+
+let anon_fun filename =
+  if !first
+  then (
+    file := filename;
+    first := false)
+  else output := filename
+
 
 let speclist =
   [ "--debug", Arg.Set debug, "Output intermediary steps"
@@ -34,7 +44,7 @@ let print_error_position lexbuf =
 let () =
   Arg.parse speclist anon_fun usage_msg;
   print_endline "\n";
-  In_channel.read_all "./files/kau_program.kau"
+  In_channel.read_all !file
   |> fun program ->
   Out_channel.write_all
     "./files/intermediary_steps/01_parsing_lexer"
@@ -50,20 +60,20 @@ let () =
            parsed_ast;
          parsed_ast)
     |> Import.Import_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "02_preperation_import")
+         ~debug_file:(Some "02_preprocessing__import.go")
     |> Alpha_conversion.Alpha_conversion_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "02_preparation_alpha-conversion")
+         ~debug_file:(Some "02_preprocessing_alpha-conversion.go")
     |> File_tracking.File_tracking_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "03_side-effect-system_file-tracking")
+         ~debug_file:(Some "03_side-effect-system_file-tracking.go")
     |> Side_effect_tracking.Side_effect_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "03_side-effect-system_side-effect-tracking")
+         ~debug_file:(Some "03_side-effect-system_side-effect-tracking.go")
     |> Type_cost.Type_cost_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "04_cost-analysis__type-cost")
+         ~debug_file:(Some "04_cost-analysis__type-cost.go")
     |> Runtime_cost.Cost_tracking_ast_pipeline.pipeline_ast
-         ~debug_file:(Some "04_cost-analysis_cost-tracking")
+         ~debug_file:(Some "04_cost-analysis_cost-tracking.go")
     |> Reorder_and_parallelise.pipeline_ast
-         ~debug_file:(Some "05_parallelisation_reorder-and-parallelise")
-    |> Translate_to_go.pipeline_ast ~sequential:!sequential
+         ~debug_file:(Some "05_parallelisation_reorder-and-parallelise.go")
+    |> Translate_to_go.pipeline_ast ~sequential:!sequential ~output_path:!output
   with
   | Lexer.Lexer_error msg ->
     print_endline

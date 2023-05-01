@@ -274,38 +274,394 @@ func get_for_loop_runtime_cost(i int) int64 {
 	}
 }
 
-func get_for_each_runtime_cost(i int) int64 {
+func get_for_each0_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 0)
+
+	item1 := ""
+		
+	start1 := time.Now()
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+
+func get_for_each1_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 1)
+
+	item1 := ""
+	
+	start1 := time.Now()
+
+	item1 += string(str[0])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+
+func get_for_each2_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 2)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+func get_for_each3_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 3)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+func get_for_each4_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 4)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+	item1 += string(str[3])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+func get_for_each5_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 5)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+	item1 += string(str[3])
+	item1 += string(str[4])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+func get_for_each6_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 6)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+	item1 += string(str[3])
+	item1 += string(str[4])
+	item1 += string(str[5])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+func get_for_each7_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 7)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+	item1 += string(str[3])
+	item1 += string(str[4])
+	item1 += string(str[5])
+	item1 += string(str[6])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+
+func get_for_each8_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 8)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+	item1 += string(str[3])
+	item1 += string(str[4])
+	item1 += string(str[5])
+	item1 += string(str[6])
+	item1 += string(str[7])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+
+func get_for_each9_runtime_cost(i int) int64 {
+	_ = dud_operation()
+
+	str := strings.Repeat("h", 9)
+
+	item1 := ""
+
+	start1 := time.Now()
+
+	item1 += string(str[0])
+	item1 += string(str[1])
+	item1 += string(str[2])
+	item1 += string(str[3])
+	item1 += string(str[4])
+	item1 += string(str[5])
+	item1 += string(str[6])
+	item1 += string(str[7])
+	item1 += string(str[8])
+
+	elapsed1 := time.Since(start1)
+
+	_ = item1
+
+	item2 := ""
+
+	start2 := time.Now()
+
+	for _, s := range str {
+		item2 += string(s)
+	}
+
+	elapsed2 := time.Since(start2)
+
+	_ = str
+	_ = item2
+
+	if i > 2 {
+		return elapsed2.Nanoseconds() - elapsed1.Nanoseconds()
+	} else {
+		return 0
+	}
+}
+
+func get_for_each10_runtime_cost(i int) int64 {
 	_ = dud_operation()
 
 	str := strings.Repeat("h", 10)
 
+	item1 := ""
+
 	start1 := time.Now()
 
-	l1 := len(str)
-
-	j := 0
-	j++
-	t := j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-	j++
-	t = j < l1
-
-	item1 := ""
 	item1 += string(str[0])
 	item1 += string(str[1])
 	item1 += string(str[2])
@@ -319,8 +675,6 @@ func get_for_each_runtime_cost(i int) int64 {
 
 	elapsed1 := time.Since(start1)
 
-	_ = l1
-	_ = t
 	_ = item1
 
 	item2 := ""
@@ -873,7 +1227,7 @@ func get_parallelisation10_runtime_cost(i int) int64 {
 
 func run_experiment(experiment func(int) int64, experiment_name string, subtraction float64) float64 {
 	total := int64(0)
-	epochs := 100000
+	epochs := 1000000
 
 	for i := 0; i < epochs+3; i++ {
 		total += experiment(i)
@@ -907,7 +1261,7 @@ func run_experiment_scaled(experiment func(int, int) int64, experiment_name stri
 
 	for index, size := range size_seq {
 		total := int64(0)
-		epochs := 100
+		epochs := 1000
 
 		for i := 0; i < epochs+3; i++ {
 			total += experiment(i, size)
@@ -942,17 +1296,30 @@ func main() {
 	run_experiment(get_open_runtime_cost, "open", empty+assign+var_read)
 	run_experiment(get_func_call_runtime_cost, "func call", empty+var_read+add+assign)
 	run_experiment(get_for_loop_runtime_cost, "for loop", 0.)
-	run_experiment(get_for_each_runtime_cost, "for each", 0.)
 
-	par2 := run_experiment(get_parallelisation2_runtime_cost, "parallelisation", empty)
-	par3 := run_experiment(get_parallelisation3_runtime_cost, "parallelisation", empty)
-	par4 := run_experiment(get_parallelisation4_runtime_cost, "parallelisation", empty)
-	par5 := run_experiment(get_parallelisation5_runtime_cost, "parallelisation", empty)
-	par6 := run_experiment(get_parallelisation6_runtime_cost, "parallelisation", empty)
-	par7 := run_experiment(get_parallelisation7_runtime_cost, "parallelisation", empty)
-	par8 := run_experiment(get_parallelisation8_runtime_cost, "parallelisation", empty)
-	par9 := run_experiment(get_parallelisation9_runtime_cost, "parallelisation", empty)
-	par10 := run_experiment(get_parallelisation10_runtime_cost, "parallelisation", empty)
+	for_each0 := run_experiment(get_for_each0_runtime_cost, "for each 0", 0.)
+	for_each1 := run_experiment(get_for_each1_runtime_cost, "for each 1", 0.)
+	for_each2 := run_experiment(get_for_each2_runtime_cost, "for each 2", 0.)
+	for_each3 := run_experiment(get_for_each3_runtime_cost, "for each 3", 0.)
+	for_each4 := run_experiment(get_for_each4_runtime_cost, "for each 4", 0.)
+	for_each5 := run_experiment(get_for_each5_runtime_cost, "for each 5", 0.)
+	for_each6 := run_experiment(get_for_each6_runtime_cost, "for each 6", 0.)
+	for_each7 := run_experiment(get_for_each7_runtime_cost, "for each 7", 0.)
+	for_each8 := run_experiment(get_for_each8_runtime_cost, "for each 8", 0.)
+	for_each9 := run_experiment(get_for_each9_runtime_cost, "for each 9", 0.)
+	for_each10 := run_experiment(get_for_each10_runtime_cost, "for each 10", 0.)
+
+	csv_writer.Write([]string{fmt.Sprintf("%f", for_each0), fmt.Sprintf("%f", for_each1), fmt.Sprintf("%f", for_each2), fmt.Sprintf("%f", for_each3), fmt.Sprintf("%f", for_each4), fmt.Sprintf("%f", for_each5), fmt.Sprintf("%f", for_each6), fmt.Sprintf("%f", for_each7), fmt.Sprintf("%f", for_each8), fmt.Sprintf("%f", for_each9), fmt.Sprintf("%f", for_each10)})
+
+	par2 := run_experiment(get_parallelisation2_runtime_cost, "parallelisation 2", empty)
+	par3 := run_experiment(get_parallelisation3_runtime_cost, "parallelisation 3", empty)
+	par4 := run_experiment(get_parallelisation4_runtime_cost, "parallelisation 4", empty)
+	par5 := run_experiment(get_parallelisation5_runtime_cost, "parallelisation 5", empty)
+	par6 := run_experiment(get_parallelisation6_runtime_cost, "parallelisation 6", empty)
+	par7 := run_experiment(get_parallelisation7_runtime_cost, "parallelisation 7", empty)
+	par8 := run_experiment(get_parallelisation8_runtime_cost, "parallelisation 8", empty)
+	par9 := run_experiment(get_parallelisation9_runtime_cost, "parallelisation 9", empty)
+	par10 := run_experiment(get_parallelisation10_runtime_cost, "parallelisation 10", empty)
 
 	csv_writer.Write([]string{fmt.Sprintf("%f", par2), fmt.Sprintf("%f", par3), fmt.Sprintf("%f", par4), fmt.Sprintf("%f", par5), fmt.Sprintf("%f", par6), fmt.Sprintf("%f", par7), fmt.Sprintf("%f", par8), fmt.Sprintf("%f", par9), fmt.Sprintf("%f", par10)})
 

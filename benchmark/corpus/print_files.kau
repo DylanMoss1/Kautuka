@@ -1,0 +1,47 @@
+package main
+
+func main() { 
+	{
+		file1 := open("./files/read1.txt")
+	}
+
+	{
+		print(read(file1, 20000))
+	}
+
+
+	{
+		file2 := open("./files/read2.txt")
+	}
+
+	{
+		print(read(file2, 20000))
+	}
+
+
+	{
+		file3 := open("./files/read3.txt")
+	}
+
+	{
+		print(read(file3, 20000))
+	}
+
+
+	{
+		file4 := open("./files/read4.txt")
+	}
+
+	{
+		print(read(file4, 20000))
+	}
+
+
+	{
+		file5 := open("./files/read5.txt")
+	}
+
+	{
+		print(read(file5, 20000))
+	}
+}

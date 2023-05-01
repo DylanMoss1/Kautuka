@@ -76,7 +76,9 @@ module Alpha_conversion_ast_mapping = struct
           alpha_generator
       in
       (* print_endline (Alpha_conversion_context.string_of_t env); *)
-      add_to_env_no_replace var.name alpha env, { name = var.name; alpha }, empty_result
+      ( add_to_env_no_replace var.name alpha env
+      , { name = var.name; alpha }
+      , empty_result )
     | Read ->
       (match Alpha_conversion_context.get_value var.name env with
       | Some alpha -> env, { name = var.name; alpha }, empty_result

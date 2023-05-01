@@ -81,6 +81,11 @@ module Integer_bound = struct
   let zero_upper t =
     let l, _ = t in
     l, 0
+
+
+  let round_to_int f = int_of_float (Float.round f)
+  let apply_linear m c x = round_to_int (c +. (m *. float_of_int x))
+  let fit_linear m c ((l, u) : t) : t = apply_linear m c l, apply_linear m c u
 end
 
 module Variable_bound = struct
@@ -229,6 +234,11 @@ module Cost = struct
 
   let multiply (t1 : t) (t2 : t) : t =
     sum_reduce (all_pairs_map ~f:(fun (x, y) -> multiply_cost_terms x y) t1 t2)
+
+
+  let fit_linear m c =
+    List.map ~f:(fun (int_bound, var_bound) ->
+        Integer_bound.fit_linear m c int_bound, var_bound)
 
 
   (* let scalar_multiply t ~scalar = 

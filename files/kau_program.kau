@@ -1,25 +1,5 @@
 package main
 
 func main() {
-	x := open("./test_files/a/b.txt", 1)
-	y := open("./test_files/a/c.txt", 1)
-	z := y
-
-	a := ""
-	b := ""
-	c := ""
-
-	{
-		a = read(x, 100)
-	}
-	{
-		b = read(y, 100)
-	}
-	{
-		c = read(z, 100)
-	}
-
-	print(a)
-	print(b)
-	print(c)
+	print("program working")
 }

@@ -61,6 +61,16 @@ module Type_cost = struct
       Fmt.str "func%s" (string_of_func_type_cost func_type_cost)
 
 
+  let size_of_bound = function
+    | Upper u -> Cost.create_int_cost u
+    | Both (l, u) -> Cost.create_int_bound (l, u)
+
+
+  let get_size = function
+    | C_Int size | C_String size -> size
+    | _ -> raise Type_error
+
+
   let verified_type_cost expected_type type_cost =
     (* print_endline (string_of_type_id expected_type);
     print_endline (string_of_t type_cost); *)

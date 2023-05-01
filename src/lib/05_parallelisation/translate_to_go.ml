@@ -278,7 +278,8 @@ let _open has_open =
   if_cond_then_str
     has_open
     "func open(filename string) *os.File {\n\
-     file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)\n\
+     file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, \
+     0666)\n\
      check(err)\n\
      return file\n\
      }\n\n"
@@ -339,13 +340,8 @@ let add_import program cond_ref import =
   else program
 
 
-let pipeline_ast ~sequential program =
-  let output_file =
-    if sequential
-    then "./files/compiled/seq_go_program.go"
-    else "./files/compiled/go_program.go"
-  in
+let pipeline_ast ~sequential ~output_path program =
   let _ = go_of_program ~sequential program in
   let program = add_import program has_sync I_Sync in
   let program = add_import program has_math I_Math in
-  Out_channel.write_all output_file ~data:(go_of_program ~sequential program)
+  Out_channel.write_all output_path ~data:(go_of_program ~sequential program)

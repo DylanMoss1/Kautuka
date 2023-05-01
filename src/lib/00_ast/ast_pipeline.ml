@@ -671,9 +671,7 @@ module Ast_pipeline (Mapping : Ast_mapping) = struct
       pipeline_map_collect ~env ~f:pipeline_command block.contents
     in
     let old_env = env in
-    let env =
-      Mapping.remove_scope ~is_func env
-    in
+    let env = Mapping.remove_scope ~is_func env in
     Mapping.block
       ~env
       ~old_env

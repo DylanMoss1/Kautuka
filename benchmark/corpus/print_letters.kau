@@ -1,0 +1,19 @@
+package main 
+
+func print_letters(filename string) { 
+	file := open(filename)
+	contents := read(file, 20000)
+
+	for s := range contents { 
+		print(s)
+	}
+}
+
+func main() {
+	{
+		print_letters("./files/read1.txt")
+	}
+	{
+		print_letters("./files/read2.txt")
+	}
+}

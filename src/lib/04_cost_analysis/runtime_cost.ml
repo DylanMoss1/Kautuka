@@ -11,6 +11,7 @@ open Type_cost
 open Cost
 open Util
 
+(* Measured in nanoseconds *)
 module Runtime_cost = struct
   include Cost
 
@@ -39,16 +40,16 @@ module Runtime_cost = struct
   let cost_of_var_assign = tr
   let cost_of_post_inc = tr
   let cost_of_post_dec = tr
-  let cost_of_user_func_call = create_int_cost 50
-  let cost_of_print = create_int_cost 200
-  let cost_of_input = create_int_cost 5000
-  let cost_of_open = create_int_cost 300
-  let cost_of_read = create_int_cost 300
-  let cost_of_write = create_int_cost 500
-  let cost_of_append = create_int_cost 500
-  let cost_of_for_loop = create_int_cost 20
-  let cost_of_for_each = create_int_cost 30
-  let cost_of_if_record = create_int_cost 10
+  let cost_of_user_func_call = create_int_cost 3
+  let cost_of_print : Cost.t -> Cost.t = Cost.fit_linear 0.1119 100.0807
+  let cost_of_input = create_int_cost 3000000000 (* 3s *)
+  let cost_of_open = create_int_cost 2711
+  let cost_of_read : Cost.t -> Cost.t = Cost.fit_linear 0.4006 6743.0619
+  let cost_of_write : Cost.t -> Cost.t = Cost.fit_linear 0.6915 9008.9577
+  let cost_of_append : Cost.t -> Cost.t = Cost.fit_linear 0.4764 735.707
+  let cost_of_for_loop = create_int_cost 3
+  let cost_of_for_each : Cost.t -> Cost.t = Cost.fit_linear 8.3839 0.9235
+  let cost_of_if_record = tr
 end
 
 type param = Alpha.t * type_id [@@deriving of_sexp, sexp_of, compare]
@@ -130,13 +131,34 @@ module Runtime_cost_ast_mapping = struct
 
   let func_call env func_call result =
     match func_call with
-    | Print _ -> env, func_call, join_results result Runtime_cost.cost_of_print
+    | Print expr ->
+      ( env
+      , func_call
+      , join_results
+          result
+          (Runtime_cost.cost_of_print (Type_cost.get_size expr.annotations)) )
     | Input _ -> env, func_call, join_results result Runtime_cost.cost_of_input
     | Open _ -> env, func_call, join_results result Runtime_cost.cost_of_open
-    | Read _ -> env, func_call, join_results result Runtime_cost.cost_of_read
-    | Write _ -> env, func_call, join_results result Runtime_cost.cost_of_write
-    | Append _ ->
-      env, func_call, join_results result Runtime_cost.cost_of_append
+    | Read (_, bound) ->
+      ( env
+      , func_call
+      , join_results
+          result
+          (Runtime_cost.cost_of_read (Type_cost.size_of_bound bound)) )
+    | Write write_template ->
+      ( env
+      , func_call
+      , join_results
+          result
+          (Runtime_cost.cost_of_write
+             (Type_cost.get_size write_template.contents.annotations)) )
+    | Append write_template ->
+      ( env
+      , func_call
+      , join_results
+          result
+          (Runtime_cost.cost_of_append
+             (Type_cost.get_size write_template.contents.annotations)) )
     | _ -> ignore_branch env func_call result
 
 

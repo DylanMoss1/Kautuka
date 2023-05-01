@@ -82,7 +82,9 @@ module File_tracking_ast_mapping = struct
     | Var_init (var, _, annot_expr)
     | Var_decl (var, annot_expr)
     | Var_assign (var, annot_expr) ->
-      File_ref_context.add_item var.alpha (annot_expr.annotations) env, var_statement, None
+      ( File_ref_context.add_item var.alpha annot_expr.annotations env
+      , var_statement
+      , None )
     | _ -> env, var_statement, None
 
 
