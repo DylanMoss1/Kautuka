@@ -1,43 +1,45 @@
-package main 
+package main
 
-func count_letter(str string, letter string) { 
+func count_letter(str string, letter string) int {
+	count := 0
 
-	count := 0 
-
-	for s := range str { 
-		if s == letter { 
-			count += 1 
+	for s := range str {
+		if s == letter {
+			count += 1
 		}
 	}
 
-	return count 
+	return count
 }
 
-func main() { 
-	file := open("./files/read1.txt")
-	contents := read(file, 20000)
-
+func count_vowels(str string) int {
 	var a_count int
-	var e_count int 
-	var i_count int 
-	var o_count int 
-	var u_count int 
+	var e_count int
+	var i_count int
+	var o_count int
+	var u_count int
 
 	{
-		a_count = count_letter(contents, "a")
+		a_count = count_letter(str, "a")
 	}
 	{
-		e_count = count_letter(contents, "e")
+		e_count = count_letter(str, "e")
 	}
 	{
-		i_count = count_letter(contents, "i")
+		i_count = count_letter(str, "i")
 	}
 	{
-		o_count = count_letter(contents, "o")
+		o_count = count_letter(str, "o")
 	}
 	{
-		u_count = count_letter(contents, "u")
+		u_count = count_letter(str, "u")
 	}
 
-	_ = a_count + e_count + i_count + o_count + u_count
+	return a_count + e_count + i_count + o_count + u_count
+}
+
+func main() {
+	file := open("./benchmark/files/large1.txt")
+	contents := read(file, 20000)
+	print(count_vowels(contents))
 }

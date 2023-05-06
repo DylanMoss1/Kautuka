@@ -1,0 +1,17 @@
+package main
+
+func fact(x int) int {
+	total := 1
+
+	for i := 1; i < x; i++ {
+		total = total * i
+	}
+
+	return total
+}
+
+func main() {
+	for i := 0; i < 1000; i++ {
+		print(fact(i))
+	}
+}

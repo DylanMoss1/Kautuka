@@ -22,7 +22,7 @@ let all_pairs xs ys =
 module Side_effect_set = struct
   include Make_extended_set (Side_effect)
 
-  let disjoint t1 t2 =
+  let non_interfering t1 t2 =
     List.fold_left
       ~init:true
       ~f:(fun acc t1_effect ->
@@ -30,7 +30,8 @@ module Side_effect_set = struct
         && List.fold_left
              ~init:true
              ~f:(fun acc t2_effect ->
-               acc && Side_effect.is_disjoint t1_effect t2_effect)
+                
+               acc && Side_effect.is_non_interfering t1_effect t2_effect)
              (elements t2))
       (elements t1)
 end

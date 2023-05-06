@@ -1,0 +1,33 @@
+package main
+
+func warmup() {
+	x := open("./files/large1.txt")
+	y := open("./files/tmp/tmp.txt")
+	z := read(y, 20000)
+
+	write(x, z)
+}
+
+func main() {
+	file1 := open("./files/small1.txt", 1)
+	file2 := open("./files/small2.txt", 1)
+	file3 := open("./files/small3.txt", 1)
+
+	contents1 := read(open("./files/tmp/tmp1.txt"), 350000)
+	contents2 := read(open("./files/tmp/tmp2.txt"), 350000)
+	contents3 := read(open("./files/tmp/tmp3.txt"), 350000)
+
+	warmup()
+
+	{
+		write(file1, contents1)
+	}
+
+	{
+		write(file2, contents2)
+	}
+
+	{
+		write(file3, contents3)
+	}
+}

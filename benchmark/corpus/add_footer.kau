@@ -1,0 +1,21 @@
+package main
+
+func main() {
+	file1 := open("./benchmark/files/tmp/small1.txt", 1)
+	file2 := open("./benchmark/files/tmp/small2.txt", 1)
+	file3 := open("./benchmark/files/tmp/small3.txt", 1)
+
+	footer := "FOOTER"
+
+	{
+		append(file1, footer)
+	}
+
+	{
+		append(file2, footer)
+	}
+
+	{
+		append(file3, footer)
+	}
+}

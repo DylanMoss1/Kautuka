@@ -16,7 +16,9 @@ module type Context = sig
 
   (* val apply_unary_fun : f:(value -> value) -> t -> t *)
   (* val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t *)
+
   val get_all_values : t -> value list
+  val get_all_key_value_pairs : t -> (key * value) list
   val string_of_t : t -> string
 
   val get_post_loop_context
@@ -170,6 +172,11 @@ struct
   let get_all_values =
     List.fold_left ~init:[] ~f:(fun acc scope ->
         acc @ List.map ~f:(fun (_, value) -> value) scope)
+
+
+  let get_all_key_value_pairs =
+    List.fold_left ~init:[] ~f:(fun acc scope ->
+        acc @ List.map ~f:(fun (key, value) -> key, value) scope)
 
 
   let get_post_loop_context

@@ -38,7 +38,7 @@
 %token NEWLINE
 %token LPAREN RPAREN LBRACE RBRACE
 %token <string> ID
-%token T_INT T_BOOL T_STRING
+%token T_INT T_BOOL T_STRING T_FILE
 %token <int> INT
 %token <bool> BOOL
 %token <string> STRING
@@ -115,6 +115,7 @@ type_id:
 | T_INT { T_Int } 
 | T_BOOL { T_Bool }
 | T_STRING { T_String }
+| T_FILE {T_File}
 
 value: 
 | int_val=INT { Int(int_val) }
@@ -202,7 +203,7 @@ func_call:
 | PRINT LPAREN arg=annotated_expr RPAREN { Print(arg) }
 | INPUT LPAREN upper=INT RPAREN { Input(Upper(upper)) }
 | INPUT LPAREN lower=INT COMMA upper=INT RPAREN { Input(Both(lower, upper)) }
-| OPEN LPAREN arg=annotated_expr RPAREN { Open(arg, generate_ref) }
+| OPEN LPAREN arg=annotated_expr RPAREN { Open(arg, generate_ref ()) }
 | OPEN LPAREN arg=annotated_expr COMMA ref=INT RPAREN { Open(arg, user_ref ref) }
 | READ LPAREN arg=annotated_expr COMMA upper=INT RPAREN { Read(arg, Upper(upper)) }
 | READ LPAREN arg=annotated_expr COMMA lower=INT COMMA upper=INT RPAREN { Read(arg, Both(lower, upper)) }

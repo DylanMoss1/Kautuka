@@ -100,23 +100,26 @@ module Variable_bound = struct
     Fmt.str "%s^%s" (Alpha.string_of_t alpha) (Int.to_string power)
 
 
-  let go_of_item (alpha, power) =
-    Fmt.str
-      "math.Pow(float64(%s), %s)"
-      (Alpha.string_of_t alpha)
-      (Int.to_string power)
+  let go_of_item tagged_variables (alpha, power) =
+    let alpha_str =
+      if List.exists tagged_variables ~f:(fun x -> Alpha.compare x alpha = 0)
+      then Fmt.str "len(%s)" (Alpha.string_of_t alpha)
+      else Alpha.string_of_t alpha
+    in
+    Fmt.str "math.Pow(float64(%s), %s)" alpha_str (Int.to_string power)
 
 
   let string_of_t =
     string_of_list ~left_format:"(" ~right_format:")" ~string_of_item
 
 
-  let go_of_t =
+  let go_of_t t tagged_variables =
     string_of_list
       ~sep:" * "
       ~left_format:"("
       ~right_format:")"
-      ~string_of_item:go_of_item
+      ~string_of_item:(go_of_item tagged_variables)
+      t
 
 
   let empty = []
@@ -162,16 +165,19 @@ module Cost = struct
       (Variable_bound.string_of_t var_bound)
 
 
-  let go_of_item (int_bound, var_bound) =
+  let go_of_item tagged_variables (int_bound, var_bound) =
     let int_go = Integer_bound.go_of_t int_bound in
-    let var_go = Variable_bound.go_of_t var_bound in
+    let var_go = Variable_bound.go_of_t var_bound tagged_variables in
     if String.compare var_go "" = 0
     then int_go
     else Fmt.str "%s * %s" int_go var_go
 
 
   let string_of_t t = string_of_list ~sep:" + " ~string_of_item t
-  let go_of_t t = string_of_list ~sep:" + " ~string_of_item:go_of_item t
+
+  let go_of_t t tagged_variables =
+    string_of_list ~sep:" + " ~string_of_item:(go_of_item tagged_variables) t
+
 
   let add_cost_terms_if_matching cost_term1 cost_term2 =
     let int_bound1, var_bound1 = cost_term1 in

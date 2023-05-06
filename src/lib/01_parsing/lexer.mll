@@ -34,6 +34,7 @@ rule read_token = parse
   | "int"                            { T_INT }
   | "bool"                           { T_BOOL }
   | "string"                         { T_STRING }
+  | "file_ref"                           {T_FILE}
   | int as i                         { INT (int_of_string i) }
   | "true"                           { BOOL (true) }
   | "false"                          { BOOL (false) }

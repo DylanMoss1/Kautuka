@@ -13,21 +13,25 @@ type t = int * ref_type [@@deriving of_sexp, sexp_of, compare]
 let ref_generator = ref 0
 let id_generator = ref 0
 
-let get_new_id =
+let get_new_id id_generator =
   id_generator := !id_generator + 1;
   !id_generator
 
 
-let get_new_generated_ref =
+let get_new_ref ref_generator =
   ref_generator := !ref_generator + 1;
-  get_new_id, Generated !ref_generator
+  !ref_generator
 
 
-let get_new_user_ref i = get_new_id, User i
+let get_new_generated_ref () =
+  get_new_id id_generator, Generated (get_new_ref ref_generator)
+
+
+let get_new_user_ref i = get_new_id id_generator, User i
 
 let string_of_t = function
-  | id, User ref -> Fmt.str "user[id:%d, ref:%d]" id ref
-  | id, Generated ref -> Fmt.str "gen[id:%d, ref:%d]" id ref
+  | id, User ref -> Fmt.str "user[id:%d, user_ref:%d]" id ref
+  | id, Generated ref -> Fmt.str "gen[id:%d, gen_ref:%d]" id ref
 
 
 let get_id (id, _) = id

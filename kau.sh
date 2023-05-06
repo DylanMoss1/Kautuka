@@ -3,9 +3,10 @@
 suppress_output=false
 debug=false
 benchmark=false
+seq=false 
 
 print_usage() {
-  printf "Usage: ./kau.sh [-s] [-d] [-b] [-i] [-o <output>] <file>"
+  printf "Usage: ./kau.sh [-s] [-d] [-b] [-i] [--seq] [-o <output>] <file>"
 }
 
 while getopts 'sdbio:' OPTION; do
@@ -17,7 +18,7 @@ while getopts 'sdbio:' OPTION; do
     intermediary_steps=${OPTARG}
     ;;
   s)
-    suppress_output=true
+    seq=true
     ;;
   d)
     debug=true
@@ -31,7 +32,7 @@ shift "$(($OPTIND - 1))"
 
 input_file=$1
 
-rm -r ./files/intermediary_steps/*
+rm ./files/intermediary_steps/* >/dev/null 2>&1
 
 if [ -z $output_file ]; then
   output_file="${input_file%.*}.go"
@@ -43,7 +44,15 @@ else
   debug_str=""
 fi
 
+if [ $seq = true ]; then
+  seq_str="--seq"
+else
+  seq_str=""
+fi
+
+
 rm $output_file >/dev/null 2>&1
+touch $output_file
 
 execute_benchmark() {
   start=$(date +%s%N)
@@ -54,7 +63,7 @@ execute_benchmark() {
   start=$(date +%s%N)
   go run $output_file >/dev/null 2>&1
   end=$(date +%s%N)
-  
+
   start=$(date +%s%N)
   go run $output_file >/dev/null 2>&1
   end=$(date +%s%N)
@@ -72,7 +81,11 @@ execute_normal() {
 }
 
 run_scipt() {
-  dune exec kautuka -- $debug_str $input_file $output_file
+  if [ $debug = false ]; then
+    dune exec kautuka -- $debug_str $seq_str $input_file $output_file  >/dev/null 2>&1
+  else 
+    dune exec kautuka -- $debug_str $seq_str $input_file $output_file
+  fi 
 
   if [ $benchmark = true ]; then
     execute_benchmark
@@ -81,8 +94,10 @@ run_scipt() {
   fi
 }
 
-if [ $suppress_output = true ]; then
-  run_scipt >/dev/null 2>&1
-else
-  run_scipt
-fi
+cp ./benchmark/files/small1.txt ./benchmark/files/tmp/small1.txt
+cp ./benchmark/files/small2.txt ./benchmark/files/tmp/small2.txt
+cp ./benchmark/files/small2.txt ./benchmark/files/tmp/small2.txt
+
+run_scipt
+
+rm ./benchmark/files/tmp/* >/dev/null 2>&1

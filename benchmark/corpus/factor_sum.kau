@@ -1,0 +1,56 @@
+package main
+
+func has_factor(x int, y int) bool {
+
+	has_factor := false 
+
+	for i := 0; i < x; i++ { 
+		if (y * i) == x { 
+			has_factor = true 
+		}
+	}
+
+	return has_factor 
+}
+
+func factor_sum(x int) int { 
+
+	total := 0 
+
+	for i := 1; i < x; i++ { 
+		if has_factor(x, i) { 
+			total += i 
+		}
+	}
+
+	return total 
+}
+
+func factor_sum_range(lower int, upper int) int {
+	total := 0 
+
+	for i := lower; i < upper; i++ { 
+		total += factor_sum(i)
+	}
+
+	return total 
+}
+
+func main() {
+
+	var total1 int
+	var total2 int
+	var total3 int
+
+	{ 
+		factor_sum_range(1, 100)
+	}
+	{
+		factor_sum_range(101, 200)
+	}
+	{
+		factor_sum_range(201, 300)
+	}
+	
+	print(total1 + total2 + total3)
+}

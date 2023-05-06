@@ -20,7 +20,7 @@ def plot_for_each_data(data):
   plt.plot(x + 2, model.predict(x.reshape((-1, 1))) +
            zero_size_data, label="linear regression model")
 
-  plt.title(f"Runtime estimate for parallelisation")
+  plt.title(f"Runtime estimate for 'for each'")
   plt.xlabel("For each iterations")
   plt.ylabel("Runtime (ns)")
 

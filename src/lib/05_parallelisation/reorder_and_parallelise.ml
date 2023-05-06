@@ -14,12 +14,19 @@ module Block_parallelised_annotation = struct
   type t =
     { side_effects : Side_effect_tracking.Side_effect_set.t
     ; scoped_vars : Alpha.t list
+    ; type_cost_context : Type_cost_context.t
     ; runtime_cost : Cost.t
-    ; parallelise_contents : int option
+    ; parallelise_contents : (int * Cost.t * Type_cost_context.t) option
+          (* num_blocks, par_runtime_cost, type_cost_context *)
     }
 
   let string_of_parallelise_contents = function
-    | Some i -> Fmt.str "yes (%d blocks)" i
+    | Some (num_blocks, par_runtime_cost, type_cost_context) ->
+      Fmt.str
+        "yes (%d blocks, %s par_runtime_cost, %s type_cost_context)"
+        num_blocks
+        (Cost.string_of_t par_runtime_cost)
+        (Type_cost_context.string_of_t type_cost_context)
     | None -> "no"
 
 
@@ -38,10 +45,10 @@ module Parallelisation_ast =
     (Import_annotation)
     (Expr_type_cost_annotation)
 
-let find_disjoint_blocks_collection
+let find_non_interfering_blocks_collection
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
-  let rec find_disjoint_blocks_collection_inner
+  let rec find_non_interfering_blocks_collection_inner
       (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
       collected_effects
       collected_blocks
@@ -53,45 +60,45 @@ let find_disjoint_blocks_collection
         Side_effect_set.union block.annotations.side_effects collected_effects
       in
       let collected_blocks, passed_blocks =
-        if Side_effect_set.disjoint
+        if Side_effect_set.non_interfering
              block.annotations.side_effects
              collected_effects
         then collected_blocks @ [ block ], passed_blocks
         else collected_blocks, passed_blocks @ [ block ]
       in
-      find_disjoint_blocks_collection_inner
+      find_non_interfering_blocks_collection_inner
         block_list
         new_collected_effects
         collected_blocks
         passed_blocks
     | [] -> collected_blocks, passed_blocks
   in
-  find_disjoint_blocks_collection_inner block_list Side_effect_set.empty [] []
+  find_non_interfering_blocks_collection_inner block_list Side_effect_set.empty [] []
 
 
-let find_all_disjoint_block_collections
+let find_all_non_interfering_block_collections
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
-  let rec find_all_disjoint_block_collections_inner
+  let rec find_all_non_interfering_block_collections_inner
       remaining_blocks
-      all_disjoint_block_collections
+      all_non_interfering_block_collections
     =
     if List.length remaining_blocks = 0
-    then all_disjoint_block_collections
+    then all_non_interfering_block_collections
     else (
-      let disjoint_block_collection, remaining_blocks =
-        find_disjoint_blocks_collection remaining_blocks
+      let non_interfering_block_collection, remaining_blocks =
+        find_non_interfering_blocks_collection remaining_blocks
       in
-      find_all_disjoint_block_collections_inner
+      find_all_non_interfering_block_collections_inner
         remaining_blocks
         (List.append
-           all_disjoint_block_collections
-           [ disjoint_block_collection ]))
+           all_non_interfering_block_collections
+           [ non_interfering_block_collection ]))
   in
-  find_all_disjoint_block_collections_inner block_list []
+  find_all_non_interfering_block_collections_inner block_list []
 
 
-exception Empty_disjoint_blocks_list
+exception Empty_non_interfering_blocks_list
 
 let wrap_in_block_structure block = Structure (Block_struct block)
 
@@ -110,7 +117,15 @@ let get_scoped_vars_of_contents
   =
   match contents with
   | block :: _ -> block.annotations.scoped_vars
-  | [] -> raise Empty_disjoint_blocks_list
+  | [] -> raise Empty_non_interfering_blocks_list
+
+
+let get_type_cost_context
+    (contents : (Block_parallelised_annotation.t, 'b, 'c) block list)
+  =
+  match contents with
+  | block :: _ -> block.annotations.type_cost_context
+  | [] -> raise Empty_non_interfering_blocks_list
 
 
 let get_runtime_cost_of_contents
@@ -122,26 +137,38 @@ let get_runtime_cost_of_contents
     contents
 
 
-let parallelise_disjoint_blocks
+let max_exec_time
+    (block_list : (Block_parallelised_annotation.t, 'var, 'expr) block list)
+  =
+  Cost.union_of_list
+    (List.map ~f:(fun block -> block.annotations.runtime_cost) block_list)
+
+
+let parallelise_non_interfering_blocks
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
-  let disjoint_blocks_list = find_all_disjoint_block_collections block_list in
+  let non_interfering_blocks_list = find_all_non_interfering_block_collections block_list in
   List.map
-    ~f:(fun disjoint_blocks ->
-      match disjoint_blocks with
-      | [] -> raise Empty_disjoint_blocks_list
+    ~f:(fun non_interfering_blocks ->
+      match non_interfering_blocks with
+      | [] -> raise Empty_non_interfering_blocks_list
       | [ block ] -> wrap_in_block_structure block
-      | disjoint_blocks ->
+      | non_interfering_blocks ->
         wrap_in_block_structure
-          { contents = List.map ~f:wrap_in_block_structure disjoint_blocks
+          { contents = List.map ~f:wrap_in_block_structure non_interfering_blocks
           ; annotations =
-              { side_effects = get_side_effects_of_contents disjoint_blocks
-              ; scoped_vars = get_scoped_vars_of_contents disjoint_blocks
-              ; runtime_cost = get_runtime_cost_of_contents disjoint_blocks
-              ; parallelise_contents = Some (List.length disjoint_blocks)
+              { side_effects = get_side_effects_of_contents non_interfering_blocks
+              ; scoped_vars = get_scoped_vars_of_contents non_interfering_blocks
+              ; type_cost_context = get_type_cost_context non_interfering_blocks
+              ; runtime_cost = get_runtime_cost_of_contents non_interfering_blocks
+              ; parallelise_contents =
+                  Some
+                    ( List.length non_interfering_blocks
+                    , max_exec_time non_interfering_blocks
+                    , get_type_cost_context non_interfering_blocks )
               }
           })
-    disjoint_blocks_list
+    non_interfering_blocks_list
 
 
 let rec parallelise_for_loop for_loop =
@@ -188,7 +215,7 @@ and add_parallelised_adjacent_blocks_to_acc adjacent_blocks acc =
   match adjacent_blocks with
   | [] -> acc
   | [ block ] -> acc @ [ Structure (Block_struct block) ]
-  | _ -> acc @ parallelise_disjoint_blocks adjacent_blocks
+  | _ -> acc @ parallelise_non_interfering_blocks adjacent_blocks
 
 
 and string_of_block_list block_list =
@@ -218,11 +245,7 @@ and string_of_contents_list_cost_tracking contents_list =
 
 
 and parallelise_block (block : (Runtime_cost.block_runtime_cost, 'b, 'c) block) =
-  (* print_endline (Cost_tracking.Cost_tracking_ast.string_of_block block); *)
-  (* print_endline "\n"; *)
-  (* print_endline (string_of_contents_list_cost_tracking block.contents); *)
   let { contents; annotations } = block in
-  (* print_endline (string_of_contents_list_cost_tracking contents); *)
   let contents = List.map ~f:parallelise_command contents in
   let parallelised_contents =
     let rec parallelise_contents_inner
@@ -230,24 +253,8 @@ and parallelise_block (block : (Runtime_cost.block_runtime_cost, 'b, 'c) block) 
         passed_adjacent_blocks
         parallelised_contents_acc
       =
-      (* print_endline
-        (Fmt.str
-           "remaining_contents: %s"
-           (string_of_contents_list remaining_contents));
-      print_endline
-        (Fmt.str
-           "passed_adjacent_blocks: %s"
-           (string_of_block_list passed_adjacent_blocks));
-      print_endline
-        (Fmt.str
-           "parallelised_contents_acc: %s"
-           (string_of_contents_list parallelised_contents_acc));
-      print_endline "\n\n--\n\n"; *)
-
-      (* print_endline "\n\n------\n\n"; *)
       match remaining_contents with
       | command :: remaining_contents ->
-        (* print_endline (Parallelisation_ast.string_of_command command); *)
         (match command with
         | Structure (Block_struct block) ->
           parallelise_contents_inner
@@ -263,26 +270,17 @@ and parallelise_block (block : (Runtime_cost.block_runtime_cost, 'b, 'c) block) 
                parallelised_contents_acc
             @ [ command ]))
       | [] ->
-        (* let x = *)
         add_parallelised_adjacent_blocks_to_acc
           passed_adjacent_blocks
           parallelised_contents_acc
-      (* in
-        print_endline (string_of_contents_list x);
-        x *)
     in
     parallelise_contents_inner contents [] []
   in
-  (* print_endline
-    (Fmt.str
-       "final_contents: %s"
-       (string_of_contents_list parallelised_contents));
-  print_endline "\n\n----\n\n"; *)
-  (* print_endline "\n\n-----\n\n"; *)
   { contents = parallelised_contents
   ; annotations =
       { side_effects = annotations.side_effects
       ; scoped_vars = annotations.scoped_vars
+      ; type_cost_context = annotations.type_cost_context
       ; runtime_cost = annotations.runtime_cost
       ; parallelise_contents = None
       }

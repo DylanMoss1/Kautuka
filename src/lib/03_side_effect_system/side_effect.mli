@@ -21,6 +21,6 @@ module Side_effect : sig
 
   val string_of_t : t -> string
   val create : side_effect_operation * side_effect_channel -> t
-  val is_disjoint : t -> t -> bool
+  val is_non_interfering : t -> t -> bool
   val extract_var : t -> Alpha.t option
 end

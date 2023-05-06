@@ -2,43 +2,49 @@ package main
 
 
 
+func map_chars (contents string, from string, to string) string {
+//{block_type: Default}
+
+result := ("" : UNTYPED)
+{
+//{block_type: Default}
+
+for char := range (contents : UNTYPED) {
+//{block_type: Default}
+
+if ((char : UNTYPED) == (from : UNTYPED) : UNTYPED) {
+//{block_type: Default}
+
+result = ((result : UNTYPED) + (to : UNTYPED) : UNTYPED)
+} //{block_type: Default}
+
+result = ((result : UNTYPED) + (char : UNTYPED) : UNTYPED)
+}
+}
+return (result : UNTYPED)
+}
 func main ()  {
 //{block_type: Default}
 
-var file1_contents string
-var file2_contents string
-var file3_contents string
-var file4_contents string
-var file5_contents string
+var result1 string
+var result2 string
+var result3 string
 {
 //{block_type: Default}
 
-file1 := (open(("./benchmark/files/read1.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
-file1_contents = (read((file1 : UNTYPED), 20000) : UNTYPED)
+result1 = (map_chars((read((open(("./benchmark/files/very_small1.txt" : UNTYPED), user[id:1, user_ref:1]) : UNTYPED), 20000) : UNTYPED), ("a" : UNTYPED), ("b" : UNTYPED)) : UNTYPED)
 }
 {
 //{block_type: Default}
 
-file2 := (open(("./benchmark/files/read2.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
-file2_contents = (read((file2 : UNTYPED), 20000) : UNTYPED)
+result2 = (map_chars((read((open(("./benchmark/files/very_small2.txt" : UNTYPED), user[id:2, user_ref:1]) : UNTYPED), 20000) : UNTYPED), ("c" : UNTYPED), ("d" : UNTYPED)) : UNTYPED)
 }
 {
 //{block_type: Default}
 
-file3 := (open(("./benchmark/files/read3.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
-file3_contents = (read((file3 : UNTYPED), 20000) : UNTYPED)
+result3 = (map_chars((read((open(("./benchmark/files/very_small3.txt" : UNTYPED), user[id:3, user_ref:1]) : UNTYPED), 20000) : UNTYPED), ("e" : UNTYPED), ("f" : UNTYPED)) : UNTYPED)
 }
-{
-//{block_type: Default}
-
-file4 := (open(("./benchmark/files/read4.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
-file4_contents = (read((file4 : UNTYPED), 20000) : UNTYPED)
-}
-{
-//{block_type: Default}
-
-file5 := (open(("./benchmark/files/read5.txt" : UNTYPED), gen[id:1, ref:1]) : UNTYPED)
-file5_contents = (read((file5 : UNTYPED), 20000) : UNTYPED)
-}
-_ = (((((file1_contents : UNTYPED) + (file2_contents : UNTYPED) : UNTYPED) + (file3_contents : UNTYPED) : UNTYPED) + (file4_contents : UNTYPED) : UNTYPED) + (file5_contents : UNTYPED) : UNTYPED)
+(fmt.Println((result1 : UNTYPED)) : UNTYPED)
+(fmt.Println((result2 : UNTYPED)) : UNTYPED)
+(fmt.Println((result3 : UNTYPED)) : UNTYPED)
 }

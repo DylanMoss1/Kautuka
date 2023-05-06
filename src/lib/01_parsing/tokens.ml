@@ -12,6 +12,7 @@ let string_of_token = function
   | T_INT -> Fmt.str "T_INT"
   | T_BOOL -> Fmt.str "T_BOOL"
   | T_STRING -> Fmt.str "T_STRING"
+  | T_FILE -> Fmt.str "T_FILE"
   | INT i -> Fmt.str "INT(%d)" i
   | BOOL true -> Fmt.str "BOOL(true)"
   | BOOL false -> Fmt.str "BOOL(false)"

@@ -44,7 +44,7 @@ module File_tracking_ast_mapping = struct
       (File_ref_context)
       (File_ref_result)
 
-  exception File_ref_in_var_not_found
+  exception File_ref_in_var_not_found of string
 
   let generate_ref = File_ref.get_new_generated_ref
 
@@ -55,7 +55,7 @@ module File_tracking_ast_mapping = struct
       , User_func user_func
       , (match File_ref_context.get_value user_func.name.alpha env with
         | Some value -> value
-        | None -> raise File_ref_in_var_not_found) )
+        | None -> raise (File_ref_in_var_not_found user_func.name.name)) )
     | Open (filename, file_ref) ->
       env, Open (filename, file_ref), File_ref_result.create file_ref
     | _ -> env, func_call, None
@@ -69,7 +69,9 @@ module File_tracking_ast_mapping = struct
       , expr
       , (match File_ref_context.get_value var.alpha env with
         | Some value -> value
-        | None -> raise File_ref_in_var_not_found) )
+        | None ->
+          print_endline (File_ref_context.string_of_t env);
+          raise (File_ref_in_var_not_found var.name)) )
     | _ -> env, expr, None
 
 
@@ -79,6 +81,8 @@ module File_tracking_ast_mapping = struct
 
   let var_statement env var_statement _ =
     match var_statement with
+    | Var_non_init (var, _) ->
+      File_ref_context.add_item var.alpha None env, var_statement, None
     | Var_init (var, _, annot_expr)
     | Var_decl (var, annot_expr)
     | Var_assign (var, annot_expr) ->
@@ -88,13 +92,30 @@ module File_tracking_ast_mapping = struct
     | _ -> env, var_statement, None
 
 
+  let var env var ~var_effect =
+    match var_effect with
+    | Init -> File_ref_context.add_item var.alpha None env, var, None
+    | _ -> env, var, None
+
+
+  let add_param_to_env (var, type_id) env =
+    File_ref_context.add_item
+      var.alpha
+      (match type_id with
+      | T_File -> File_ref_result.create (generate_ref ())
+      | _ -> None)
+      env
+
+
+  let param env param _ = add_param_to_env param env, param, None
+
   let func env func _ =
     let { name; params = _; body = _; return_type } = func in
     let env =
       File_ref_context.add_item
         name.alpha
         (match return_type with
-        | T_File -> File_ref_result.create generate_ref
+        | T_File -> File_ref_result.create (generate_ref ())
         | _ -> None)
         env
     in

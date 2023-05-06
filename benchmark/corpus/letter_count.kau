@@ -1,18 +1,15 @@
 package main
 
-func get_count_from_contents(contents string) int {
+func letter_count(contents string) int {
 	total := 0
 
 	for s := range contents {
-		total += 1
+		if s != " " {
+			total += 1
+		}
 	}
 
 	return total
-}
-
-func letter_count(filename string) int {
-	contents := read(open(filename), 20000)
-	return get_count_from_contents(contents)
 }
 
 func main() {
@@ -20,28 +17,19 @@ func main() {
 	var file1_count int
 	var file2_count int
 	var file3_count int
-	var file4_count int
-	var file5_count int
 
 	{
-		file1_count = letter_count("./files/read1.txt")
+		file1_count = letter_count(read(open("./benchmark/files/large1.txt", 1), 20000))
 	}
 
 	{
-		file2_count = letter_count("./files/read2.txt")
+		file2_count = letter_count(read(open("./benchmark/files/large2.txt", 1), 20000))
 	}
 
 	{
-		file3_count = letter_count("./files/read3.txt")
+		file3_count = letter_count(read(open("./benchmark/files/large3.txt", 1), 20000))
 	}
 
-	{
-		file4_count = letter_count("./files/read4.txt")
-	}
 
-	{
-		file5_count = letter_count("./files/read5.txt")
-	}
-
-	_ = file1_count + file2_count + file3_count + file4_count + file5_count
+	print(file1_count + file2_count + file3_count)
 }

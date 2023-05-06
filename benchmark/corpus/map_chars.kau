@@ -1,0 +1,36 @@
+package main
+
+func map_chars(contents string, from string, to string) string { 
+
+	result := ""
+
+	for char := range contents { 
+		if char == from {
+			result += to
+		} else { 
+			result += char 
+		}
+	}
+
+	return result 
+}
+
+func main() {
+	var result1 string
+	var result2 string
+	var result3 string
+
+	{
+		result1 = map_chars(read(open("./benchmark/files/very_small1.txt", 1), 20000), "a", "b")
+	}
+	{
+		result2 = map_chars(read(open("./benchmark/files/very_small2.txt", 1), 20000), "c", "d")
+	}
+	{
+		result3 = map_chars(read(open("./benchmark/files/very_small3.txt", 1), 20000), "e", "f")
+	}
+
+	print(result1)
+	print(result2)
+	print(result3)
+}

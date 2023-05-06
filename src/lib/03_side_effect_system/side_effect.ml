@@ -34,13 +34,21 @@ module Side_effect = struct
 
   let create x = x
 
-  let is_disjoint t1 t2 =
+  let is_non_interfering t1 t2 =
     match t1, t2 with
     | (Read, _), (Read, _) -> true
     | (_, File file_ref1), (_, File file_ref2) ->
       File_ref.disjoint file_ref1 file_ref2
     | (_, channel1), (_, channel2) ->
       compare_side_effect_channel channel1 channel2 <> 0
+
+(* 
+  let is_non_interfering t1 t2 =
+    print_endline (string_of_t t1);
+    print_endline (string_of_t t2);
+    let y = is_non_interfering_x t1 t2 in
+    print_endline (string_of_bool y);
+    y *)
 
 
   let extract_var (_, channel) =

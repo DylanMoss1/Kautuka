@@ -21,8 +21,8 @@ module Runtime_cost = struct
   let tr = one
   let cost_of_not = tr
   let cost_of_u_minus = tr
-  let cost_of_plus_int = tr
-  let cost_of_plus_str = tr
+  let cost_of_plus = tr
+  let cost_of_concat = tr
   let cost_of_b_minus = tr
   let cost_of_mult = tr
   let cost_of_lt = tr
@@ -40,15 +40,15 @@ module Runtime_cost = struct
   let cost_of_var_assign = tr
   let cost_of_post_inc = tr
   let cost_of_post_dec = tr
-  let cost_of_user_func_call = create_int_cost 3
-  let cost_of_print : Cost.t -> Cost.t = Cost.fit_linear 0.1119 100.0807
+  let cost_of_user_func_call = create_int_cost 5
+  let cost_of_print : Cost.t -> Cost.t = Cost.fit_linear 0.2118 486.8636
   let cost_of_input = create_int_cost 3000000000 (* 3s *)
-  let cost_of_open = create_int_cost 2711
-  let cost_of_read : Cost.t -> Cost.t = Cost.fit_linear 0.4006 6743.0619
-  let cost_of_write : Cost.t -> Cost.t = Cost.fit_linear 0.6915 9008.9577
-  let cost_of_append : Cost.t -> Cost.t = Cost.fit_linear 0.4764 735.707
-  let cost_of_for_loop = create_int_cost 3
-  let cost_of_for_each : Cost.t -> Cost.t = Cost.fit_linear 8.3839 0.9235
+  let cost_of_open = create_int_cost 4285
+  let cost_of_read : Cost.t -> Cost.t = Cost.fit_linear 0.7596 78047.7545
+  let cost_of_write : Cost.t -> Cost.t = Cost.fit_linear 2.8451 1410315.1545
+  let cost_of_append : Cost.t -> Cost.t = Cost.fit_linear 2.3044 1310741.9063 
+  let cost_of_for_loop = create_int_cost 34
+  let cost_of_for_each : Cost.t -> Cost.t = Cost.fit_linear 11.7656 4.4181 
   let cost_of_if_record = tr
 end
 
@@ -83,6 +83,7 @@ type block_runtime_cost =
   { block_type : Parser_types.block_type
   ; scoped_vars : Alpha.t list
   ; side_effects : Side_effect_set.t
+  ; type_cost_context : Type_cost_context.t
   ; runtime_cost : Cost.t
   }
 
@@ -176,10 +177,9 @@ module Runtime_cost_ast_mapping = struct
           (match binop with
           | Plus ->
             (match annotated_expr1.annotations, annotated_expr2.annotations with
-            | Type_cost.C_Int _, Type_cost.C_Int _ ->
-              Runtime_cost.cost_of_plus_int
+            | Type_cost.C_Int _, Type_cost.C_Int _ -> Runtime_cost.cost_of_plus
             | Type_cost.C_String _, Type_cost.C_String _ ->
-              Runtime_cost.cost_of_plus_str
+              Runtime_cost.cost_of_concat
             | _ -> raise Type_error)
           | B_Minus -> Runtime_cost.cost_of_b_minus
           | Mult -> Runtime_cost.cost_of_mult
@@ -296,6 +296,7 @@ module Runtime_cost_ast_mapping = struct
           { block_type = old_annotations.block_type
           ; scoped_vars = old_annotations.scoped_vars
           ; side_effects = old_annotations.side_effects
+          ; type_cost_context = old_annotations.type_cost_context
           ; runtime_cost = result
           }
       }

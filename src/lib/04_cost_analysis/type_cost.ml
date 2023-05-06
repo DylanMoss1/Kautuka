@@ -8,6 +8,7 @@ open Cost
 open Preperation.Alpha_conversion
 open Side_effect_system.Side_effect_tracking
 open Util
+open Parsing.Parser_types
 
 let string_of_type_id = function
   | T_Int -> "int"
@@ -61,6 +62,14 @@ module Type_cost = struct
       Fmt.str "func%s" (string_of_func_type_cost func_type_cost)
 
 
+  let default = function
+    | T_Int -> C_Int Cost.zero
+    | T_String -> C_String Cost.zero
+    | T_Bool -> C_Bool
+    | T_Unit -> C_Unit
+    | T_File -> C_File
+
+
   let size_of_bound = function
     | Upper u -> Cost.create_int_cost u
     | Both (l, u) -> Cost.create_int_bound (l, u)
@@ -109,7 +118,7 @@ module Type_cost = struct
   let apply_cost_unary_fun ~f = function
     | C_Int cost -> C_Int (f cost)
     | C_String cost -> C_String (f cost)
-    | C_Bool | C_Unit | C_File | _ -> raise Type_error
+    | type_cost -> type_cost
 
 
   let apply_cost_bin_fun ~f t1 t2 =
@@ -119,6 +128,10 @@ module Type_cost = struct
     | C_Bool, C_Bool -> C_Bool
     | C_Unit, C_Unit -> C_Unit
     | C_File, C_File -> C_File
+    | C_Func func_type_cost1, C_Func func_type_cost2 ->
+      if compare_func_type_cost func_type_cost1 func_type_cost2 = 0
+      then C_Func func_type_cost1
+      else raise Type_error
     | _ -> raise Type_error
 
 
@@ -241,8 +254,28 @@ end
 
 module Expr_type_cost_annotation = Type_cost
 
+type block_type_cost =
+  { block_type : block_type
+  ; scoped_vars : Alpha.t list
+  ; side_effects : Side_effect_set.t
+  ; type_cost_context : Type_cost_context.t
+  }
+
+module Block_type_cost_annotation = struct
+  type t = block_type_cost
+
+  let string_of_t t =
+    Fmt.str
+      "{block_type: %s, scoped_vars: %s, side_effects: %s, type_cost_context: \
+       %s}"
+      (string_of_block_type t.block_type)
+      (string_of_scoped_vars t.scoped_vars)
+      (Side_effect_set.string_of_t t.side_effects)
+      (Type_cost_context.string_of_t t.type_cost_context)
+end
+
 module Type_cost_ast =
-  Annotated_ast (Block_side_effect_annotation) (Alpha_conversion_annotation)
+  Annotated_ast (Block_type_cost_annotation) (Alpha_conversion_annotation)
     (Import_annotation)
     (Expr_type_cost_annotation)
 
@@ -406,6 +439,8 @@ module Type_cost_ast_mapping = struct
               | Plus ->
                 (match expr1_type_cost, expr2_type_cost with
                 | C_Int cost_1, C_Int cost_2 -> C_Int (Cost.sum cost_1 cost_2)
+                | C_String cost_1, C_String cost_2 ->
+                  C_String (Cost.sum cost_1 cost_2)
                 | _ -> raise Type_error)
               | B_Minus ->
                 (match expr1_type_cost, expr2_type_cost with
@@ -417,8 +452,13 @@ module Type_cost_ast_mapping = struct
                 | C_Int cost_1, C_Int cost_2 ->
                   C_Int (Cost.multiply cost_1 cost_2)
                 | _ -> raise Type_error)
-              | Lt | Le | Gt | Ge | Eq | Ne ->
+              | Lt | Le | Gt | Ge ->
                 bin_op_int_to_bool expr1_type_cost expr2_type_cost
+              | Eq | Ne ->
+                (match expr1_type_cost, expr2_type_cost with
+                | Type_cost.C_Int _, Type_cost.C_Int _ -> Type_cost.C_Bool
+                | Type_cost.C_String _, Type_cost.C_String _ -> Type_cost.C_Bool
+                | _ -> raise Invalid_arg_type)
               | And | Or -> bin_op_bool_to_bool expr1_type_cost expr2_type_cost))
           result.return_type_cost )
     | Var_read var ->
@@ -445,7 +485,10 @@ module Type_cost_ast_mapping = struct
 
   let var_statement env var_statement (result : Type_cost_result.t) =
     match var_statement with
-    | Var_non_init (_, _) -> ignore_branch env var_statement empty_result
+    | Var_non_init (var, type_id) ->
+      ( Type_cost_context.add_item var.alpha (Type_cost.default type_id) env
+      , var_statement
+      , empty_result )
     | Var_init (var, _, annot_expr)
     | Var_decl (var, annot_expr)
     | Var_assign (var, annot_expr) ->
@@ -559,20 +602,35 @@ module Type_cost_ast_mapping = struct
       ~(new_iterator : ('a, 'b) annotated_expr)
     =
     match new_iterator.annotations with
-    | Type_cost.C_String cost ->
-      Type_cost_context.add_item new_item.alpha (C_String cost) env
+    | Type_cost.C_String _ ->
+      Type_cost_context.add_item
+        new_item.alpha
+        (C_String (Cost.create_int_cost 1))
+        env
     | _ -> raise Type_error
 
 
-  let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
+  let get_new_env ~for_each ~(start_env : env) ~(end_env : env) ~iterations =
+    (* print_endline (Type_cost_context.string_of_t start_env);  *)
+    (* print_endline (Type_cost_context.string_of_t end_env);  *)
+
+    let start_env = remove_scope ~is_func:false start_env in
     let end_env = remove_scope ~is_func:false end_env in
-    Type_cost_context.get_post_loop_context
-      ~start_env
-      ~end_env
-      ~sum:Type_cost.sum
-      ~subtract:Type_cost.subtract
-      ~multiply:Type_cost.multiply
-      ~iterations
+    let end_env =
+      if for_each then end_env else remove_scope ~is_func:false end_env
+    in
+    (* print_endline (Type_cost_context.string_of_t start_env);  *)
+    (* print_endline (Type_cost_context.string_of_t end_env);  *)
+
+    Type_cost_context.add_new_scope
+      ~is_func:false
+      (Type_cost_context.get_post_loop_context
+         ~start_env
+         ~end_env
+         ~sum:Type_cost.sum
+         ~subtract:Type_cost.subtract
+         ~multiply:Type_cost.multiply
+         ~iterations)
 
 
   (* let get_new_env ~(start_env : env) ~(end_env : env) ~iterations =
@@ -602,6 +660,10 @@ module Type_cost_ast_mapping = struct
     x *)
 
   let for_loop ~start_env ~end_env ~for_loop ~result =
+    (* print_endline "for_start";
+    print_endline (Type_cost_context.string_of_t start_env);
+    print_endline (Type_cost_context.string_of_t end_env);
+    print_endline "for_end"; *)
     let { init; cond; iter; contents = _ } = for_loop in
     let init_var, init_type_cost =
       match init with
@@ -642,16 +704,14 @@ module Type_cost_ast_mapping = struct
         then Cost.subtract cond_cost Cost.one
         else Cost.subtract (Cost.sum Cost.one init_cost) cond_cost
       in
-      let x = get_new_env ~start_env ~end_env ~iterations in
-      (* print_endline (Type_cost_context.string_of_t x); *)
-      x, for_loop, result
+      get_new_env ~for_each:false ~start_env ~end_env ~iterations, for_loop, result
     | _ -> raise Type_error
 
 
   let for_each ~start_env ~end_env ~for_each ~result =
     match for_each.iterator.annotations with
     | Type_cost.C_String cost ->
-      get_new_env ~start_env ~end_env ~iterations:cost, for_each, result
+      get_new_env ~for_each:true ~start_env ~end_env ~iterations:cost, for_each, result
     | _ -> raise Type_error
 
 
@@ -672,6 +732,35 @@ module Type_cost_ast_mapping = struct
     , Type_cost_result.create_with_return None result.return_type_cost )
 
 
+  let block
+      ~env
+      ~old_env
+      ~new_contents
+      ~(old_annotations : old_block_annot)
+      ~result
+    =
+    (* print_endline "block_start";
+    print_endline (Type_cost_context.string_of_t env);
+    print_endline (Type_cost_context.string_of_t old_env);
+    print_endline "block_end"; *)
+    ( env
+    , old_env
+    , { contents = new_contents
+      ; annotations =
+          { block_type = old_annotations.block_type
+          ; scoped_vars = old_annotations.scoped_vars
+          ; side_effects = old_annotations.side_effects
+          ; type_cost_context = old_env
+          }
+      }
+    , result )
+
+
+  (* block_type : block_type
+  ; scoped_vars : Alpha.t list
+  ; side_effects : Side_effect_set.t
+  ; type_cost_contxt : Type_cost_context.t
+   *)
   (* let block ~env ~old_env ~new_contents ~old_annotations ~result =
     (* let x = get_new_env ~start_env:old_env ~end_env:env ~iterations:Cost.one in
     print_endline (Type_cost_context.string_of_t old_env);

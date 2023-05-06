@@ -1,0 +1,9 @@
+package main 
+
+func print_letters(filename string) { 
+	file := open(filename)
+}
+
+func main() {
+	print_letters("./files/small1.txt")
+}

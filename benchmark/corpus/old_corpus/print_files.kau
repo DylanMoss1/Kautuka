@@ -1,0 +1,50 @@
+package main
+
+func main() {
+
+	var file1 file
+	var file2 file
+	var file3 file
+	var file4 file
+	var file5 file
+
+	{
+		file1 = open("./benchmark/files/large1.txt", 1)
+	}
+
+	{
+		print(read(file1, 20000))
+	}
+
+	{
+		file2 = open("./benchmark/files/large2.txt", 1)
+	}
+
+	{
+		print(read(file2, 20000))
+	}
+
+	{
+		file3 = open("./benchmark/files/large3.txt", 1)
+	}
+
+	{
+		print(read(file3, 20000))
+	}
+
+	{
+		file4 = open("./benchmark/files/large2.txt", 2)
+	}
+
+	{
+		print(read(file4, 20000))
+	}
+
+	{
+		file5 = open("./benchmark/files/large1.txt", 2)
+	}
+
+	{
+		print(read(file5, 20000))
+	}
+}

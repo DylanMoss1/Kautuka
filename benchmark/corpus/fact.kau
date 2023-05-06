@@ -1,0 +1,42 @@
+package main
+
+func fact(x int) int {
+	total := 1
+
+	for i := 1; i < x; i++ {
+		total = total * i
+	}
+
+	return total
+}
+
+func get_fact(start int, end int) int {
+	total := 0
+
+	for i := start; i < end; i++ {
+		total += fact(i)
+	}
+
+	return total
+}
+
+func main() {
+
+	total1 := 0
+	total2 := 0
+	total3 := 0
+
+	{
+		total1 += get_fact(1, 1000)
+	}
+
+	{
+		total2 += get_fact(1001, 2000)
+	}
+
+	{
+		total3 += get_fact(2001, 3000)
+	}
+
+	print(total1 + total2 + total3)
+}

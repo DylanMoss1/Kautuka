@@ -4,9 +4,13 @@ open Reorder_and_parallelise
 open Util
 open Preperation.Alpha_conversion
 open Preperation.Import
+open Cost_analysis.Type_cost
 open Cost_analysis.Cost
 
-let threshold = 300
+let threshold num_blocks =
+  int_of_float (Float.round (674.2374 +. (257.1065 *. float_of_int num_blocks)))
+
+
 let has_sync = ref false
 let has_math = ref false
 let has_input = ref false
@@ -67,7 +71,16 @@ and go_of_write_template write_template =
 
 and go_of_func_call = function
   | User_func user_func -> go_of_user_func user_func
-  | Print expr -> Fmt.str "fmt.Println(%s)" (go_of_annotated_expr expr)
+  | Print expr ->
+    let alpha_str = Alpha.string_of_t (Alpha.get_new_alpha alpha_generator) in
+    Fmt.str
+      "temp%s := os.Stdout\n\
+       os.Stdout = nil\n\
+       fmt.Println(%s)\n\
+       os.Stdout = temp%s"
+      alpha_str
+      (go_of_annotated_expr expr)
+      alpha_str
   | Input _ ->
     has_input := true;
     "input()"
@@ -185,8 +198,36 @@ and go_of_command ~sequential = function
   | Statement statement -> go_of_statement statement
 
 
-and get_exec_path_cond runtime_cost =
-  Fmt.str "%s < %s" (Cost.go_of_t runtime_cost) (Int.to_string threshold)
+and is_string = function
+  | Type_cost.C_String _ -> true
+  | _ -> false
+
+
+and tag_strings type_cost_context =
+  List.fold_left
+    ~init:[]
+    ~f:(fun acc (key, value) ->
+      if (not (List.exists acc ~f:(fun x -> Alpha.compare x key = 0)))
+         && is_string value
+      then key :: acc
+      else acc)
+    (Type_cost_context.get_all_key_value_pairs type_cost_context)
+
+
+and get_exec_path_cond
+    runtime_cost
+    num_blocks
+    par_runtime_cost
+    type_cost_context
+  =
+  Fmt.str
+    "%s < %s"
+    (Cost.go_of_t runtime_cost (tag_strings type_cost_context))
+    (Cost.go_of_t
+       (Cost.sum
+          (Cost.create_int_cost (threshold num_blocks))
+          (Cost.fit_linear 1.5 0. par_runtime_cost))
+       (tag_strings type_cost_context))
 
 
 and par_group ~sequential wg_var num_block block_contents =
@@ -222,21 +263,42 @@ and go_of_block
     ~sequential
     (block : (Parallelisation_ast.block_annot, 'a, 'b) block)
   =
-  match block.annotations.parallelise_contents, sequential with
-  | Some num_block, false ->
-    let wg_var = Alpha.get_new_alpha alpha_generator in
-    let block_contents = block.contents in
-    let seq_str = seq_group ~sequential block_contents in
+  match block.annotations.parallelise_contents with
+  | Some (num_blocks, par_runtime_cost, type_cost_context) ->
     if sequential
-    then seq_str
-    else (
-      let exec_path_cond = get_exec_path_cond block.annotations.runtime_cost in
-      if contains_substring exec_path_cond "math.Pow" then has_math := true;
+    then
       Fmt.str
-        "if %s {%s} else {%s}"
-        exec_path_cond
-        seq_str
-        (par_group ~sequential wg_var num_block block_contents))
+        "start := time.Now()\n\
+         %s\n\
+         elapsed := time.Since(start)\n\
+         print(elapsed.Nanoseconds())"
+        (map_concat ~sep:"\n" ~f:(go_of_command ~sequential) block.contents)
+    else (
+      let wg_var = Alpha.get_new_alpha alpha_generator in
+      let block_contents = block.contents in
+      let seq_str = seq_group ~sequential block_contents in
+      if sequential
+      then seq_str
+      else (
+        let exec_path_cond =
+          get_exec_path_cond
+            block.annotations.runtime_cost
+            num_blocks
+            par_runtime_cost
+            type_cost_context
+        in
+        if contains_substring exec_path_cond "math.Pow" then has_math := true;
+        Fmt.str
+          "if %s {start := time.Now()\n\
+           %s\n\
+           elapsed := time.Since(start)\n\
+           print(elapsed.Nanoseconds())} else {start := time.Now()\n\
+           %s\n\
+           elapsed := time.Since(start)\n\
+           print(elapsed.Nanoseconds())}"
+          exec_path_cond
+          seq_str
+          (par_group ~sequential wg_var num_blocks block_contents)))
   | _ ->
     Fmt.str
       "%s"
@@ -303,6 +365,7 @@ let write has_write =
     \  check(err) \n\
     \  _, err = file.WriteString(contents)\n\
     \  check(err)\n\
+    \  file.Sync()\n\
      }\n\n"
 
 
@@ -312,6 +375,7 @@ let append has_append =
     "func append(file *os.File, contents string) {\n\
     \  _, err := file.WriteString(contents)\n\
     \  check(err)\n\
+    \  file.Sync()\n\
      }\n\n"
 
 
@@ -344,4 +408,5 @@ let pipeline_ast ~sequential ~output_path program =
   let _ = go_of_program ~sequential program in
   let program = add_import program has_sync I_Sync in
   let program = add_import program has_math I_Math in
+  let program = add_import program (ref true) I_Time in
   Out_channel.write_all output_path ~data:(go_of_program ~sequential program)
