@@ -42,14 +42,14 @@ module Side_effect = struct
     | (_, channel1), (_, channel2) ->
       compare_side_effect_channel channel1 channel2 <> 0
 
-(* 
+
+  (* 
   let is_non_interfering t1 t2 =
     print_endline (string_of_t t1);
     print_endline (string_of_t t2);
     let y = is_non_interfering_x t1 t2 in
     print_endline (string_of_bool y);
     y *)
-
 
   let extract_var (_, channel) =
     match channel with

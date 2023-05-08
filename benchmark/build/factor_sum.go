@@ -2,6 +2,7 @@ package main
 
 import ("fmt"
 "os"
+"sync"
 "time")
 
 
@@ -37,14 +38,31 @@ func main ()  {
 var alpha_15 int
 var alpha_16 int
 var alpha_17 int
-{start := time.Now()
-{alpha_10(1, 100)}
-{alpha_10(101, 200)}
-{alpha_10(201, 300)}
+{if 3032444. < 2449218. {start := time.Now()
+{alpha_10(1, 50)}
+{alpha_10(51, 100)}
+{alpha_10(101, 150)}
 elapsed := time.Since(start)
-print(elapsed.Nanoseconds())}
-tempalpha_19 := os.Stdout
+print(elapsed.Nanoseconds())} else {start := time.Now()
+var wg_alpha_20 sync.WaitGroup
+wg_alpha_20.Add(3)
+go func(){
+{alpha_10(1, 50)}
+wg_alpha_20.Done()
+}()
+go func(){
+{alpha_10(51, 100)}
+wg_alpha_20.Done()
+}()
+go func(){
+{alpha_10(101, 150)}
+wg_alpha_20.Done()
+}()
+wg_alpha_20.Wait()
+elapsed := time.Since(start)
+print(elapsed.Nanoseconds())}}
+tempalpha_21 := os.Stdout
 os.Stdout = nil
 fmt.Println(alpha_15 + alpha_16 + alpha_17)
-os.Stdout = tempalpha_19
+os.Stdout = tempalpha_21
 }

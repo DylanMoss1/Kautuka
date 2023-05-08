@@ -73,7 +73,11 @@ let find_non_interfering_blocks_collection
         passed_blocks
     | [] -> collected_blocks, passed_blocks
   in
-  find_non_interfering_blocks_collection_inner block_list Side_effect_set.empty [] []
+  find_non_interfering_blocks_collection_inner
+    block_list
+    Side_effect_set.empty
+    []
+    []
 
 
 let find_all_non_interfering_block_collections
@@ -147,7 +151,9 @@ let max_exec_time
 let parallelise_non_interfering_blocks
     (block_list : (Parallelisation_ast.block_annot, 'b, 'c) block list)
   =
-  let non_interfering_blocks_list = find_all_non_interfering_block_collections block_list in
+  let non_interfering_blocks_list =
+    find_all_non_interfering_block_collections block_list
+  in
   List.map
     ~f:(fun non_interfering_blocks ->
       match non_interfering_blocks with
@@ -155,12 +161,15 @@ let parallelise_non_interfering_blocks
       | [ block ] -> wrap_in_block_structure block
       | non_interfering_blocks ->
         wrap_in_block_structure
-          { contents = List.map ~f:wrap_in_block_structure non_interfering_blocks
+          { contents =
+              List.map ~f:wrap_in_block_structure non_interfering_blocks
           ; annotations =
-              { side_effects = get_side_effects_of_contents non_interfering_blocks
+              { side_effects =
+                  get_side_effects_of_contents non_interfering_blocks
               ; scoped_vars = get_scoped_vars_of_contents non_interfering_blocks
               ; type_cost_context = get_type_cost_context non_interfering_blocks
-              ; runtime_cost = get_runtime_cost_of_contents non_interfering_blocks
+              ; runtime_cost =
+                  get_runtime_cost_of_contents non_interfering_blocks
               ; parallelise_contents =
                   Some
                     ( List.length non_interfering_blocks

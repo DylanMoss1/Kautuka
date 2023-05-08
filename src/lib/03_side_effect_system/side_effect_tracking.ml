@@ -30,7 +30,6 @@ module Side_effect_set = struct
         && List.fold_left
              ~init:true
              ~f:(fun acc t2_effect ->
-                
                acc && Side_effect.is_non_interfering t1_effect t2_effect)
              (elements t2))
       (elements t1)

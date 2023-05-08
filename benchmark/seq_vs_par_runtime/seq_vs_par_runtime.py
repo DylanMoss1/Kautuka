@@ -8,7 +8,7 @@ if __name__ == "__main__":
     outfile.write("")
   
   with open("./benchmark/seq_vs_par_runtime/results/results.txt", "a") as outfile:
-    for i in range(1): 
+    for i in range(10): 
       for flag in ["", "-s "]:
         for program in programs:
           command = f"./kau.sh {flag}-o ./benchmark/build/{program}.go ./benchmark/corpus/{program}.kau".split(" ")

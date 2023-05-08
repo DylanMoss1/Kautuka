@@ -1,21 +1,51 @@
 package main
 
+func generate_footer(x int) string {
+
+	footer1 := false 
+	footer2 := false 
+	footer3 := false 
+
+	{
+		if x == 1 { 
+			footer1 = true 
+		}
+	}
+	{
+		if x == 100 { 
+			footer2 = true 
+		}
+	}
+	{
+		if x == 10000 { 
+			footer3 = true 
+		}
+	}
+
+	if footer1 || footer2 || footer3 { 
+		return "TRUE"
+	} else {
+		return "FALSE"
+	}
+}
+
 func main() {
 	file1 := open("./benchmark/files/tmp/small1.txt", 1)
 	file2 := open("./benchmark/files/tmp/small2.txt", 1)
 	file3 := open("./benchmark/files/tmp/small3.txt", 1)
 
-	footer := "FOOTER"
-
 	{
+		footer := generate_footer(100)
 		append(file1, footer)
 	}
 
 	{
+		footer := generate_footer(200)
 		append(file2, footer)
 	}
 
 	{
+		footer := generate_footer(300)
 		append(file3, footer)
 	}
 }

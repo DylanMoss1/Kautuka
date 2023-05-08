@@ -43,13 +43,13 @@ func main() {
 	var total3 int
 
 	{ 
-		factor_sum_range(1, 100)
+		factor_sum_range(1, 50)
 	}
 	{
-		factor_sum_range(101, 200)
+		factor_sum_range(51, 100)
 	}
 	{
-		factor_sum_range(201, 300)
+		factor_sum_range(101, 150)
 	}
 	
 	print(total1 + total2 + total3)

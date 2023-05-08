@@ -16,19 +16,17 @@ func main() {
 
 	var result1 string
 	var result2 string
-	var result3 string
+
+	file1 := read(open("./benchmark/files/very_small1.txt", 1), 20000)
+	file2 := read(open("./benchmark/files/very_small2.txt", 1), 20000)
 
 	{
-		result1 = seperate_characters(read(open("./benchmark/files/very_small1.txt", 1), 20000))
+		result1 = seperate_characters(file1)
 	}
 	{
-		result2 = seperate_characters(read(open("./benchmark/files/very_small2.txt", 1), 20000))
-	}
-	{
-		result3 = seperate_characters(read(open("./benchmark/files/very_small3.txt", 1), 20000))
+		result2 = seperate_characters(file2)
 	}
 
 	print(result1)
 	print(result2)
-	print(result3)
 }

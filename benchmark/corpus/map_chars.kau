@@ -5,10 +5,10 @@ func map_chars(contents string, from string, to string) string {
 	result := ""
 
 	for char := range contents { 
-		if char == from {
-			result += to
+		if char != from {
+			result += char
 		} else { 
-			result += char 
+			result += to 
 		}
 	}
 
@@ -20,14 +20,18 @@ func main() {
 	var result2 string
 	var result3 string
 
+	file1 := read(open("./benchmark/files/very_small1.txt", 1), 20000)
+	file2 := read(open("./benchmark/files/very_small2.txt", 1), 20000)
+	file3 := read(open("./benchmark/files/very_small2.txt", 1), 20000)
+
 	{
-		result1 = map_chars(read(open("./benchmark/files/very_small1.txt", 1), 20000), "a", "b")
+		result1 = map_chars(file1, "a", "b")
 	}
 	{
-		result2 = map_chars(read(open("./benchmark/files/very_small2.txt", 1), 20000), "c", "d")
+		result2 = map_chars(file2, "c", "d")
 	}
 	{
-		result3 = map_chars(read(open("./benchmark/files/very_small3.txt", 1), 20000), "e", "f")
+		result3 = map_chars(file3, "e", "f")
 	}
 
 	print(result1)

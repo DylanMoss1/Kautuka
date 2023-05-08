@@ -19,15 +19,15 @@ func main() {
 	var file3_count int
 
 	{
-		file1_count = letter_count(read(open("./benchmark/files/large1.txt", 1), 20000))
+		file1_count = letter_count(read(open("./benchmark/files/large1.txt", 1), 200000))
 	}
 
 	{
-		file2_count = letter_count(read(open("./benchmark/files/large2.txt", 1), 20000))
+		file2_count = letter_count(read(open("./benchmark/files/large2.txt", 1), 200000))
 	}
 
 	{
-		file3_count = letter_count(read(open("./benchmark/files/large3.txt", 1), 20000))
+		file3_count = letter_count(read(open("./benchmark/files/large3.txt", 1), 200000))
 	}
 
 

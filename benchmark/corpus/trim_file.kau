@@ -1,0 +1,25 @@
+package main
+
+func main() {
+	var file1_contents string
+	var file2_contents string
+	var file3_contents string
+	
+	file1 := open("./benchmark/files/very_large1.txt", 1)
+
+	{
+		file1_contents = read(file1, 350000)
+	}
+
+	{
+		file2 := open("./benchmark/files/very_large2.txt", 1)
+		file2_contents = read(file2, 350000)
+	}
+
+	{
+		file3 := open("./benchmark/files/very_large3.txt", 1)
+		file3_contents = read(file3, 350000)
+	}
+
+	print(file1_contents + file2_contents + file3_contents)
+}

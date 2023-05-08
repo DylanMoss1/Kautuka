@@ -2,6 +2,7 @@ package main
 
 import ("fmt"
 "os"
+"sync"
 "time")
 func check(err error) {
 	if err != nil {
@@ -38,14 +39,31 @@ func main ()  {
 var alpha_5 int
 var alpha_6 int
 var alpha_7 int
-{start := time.Now()
+{if 4302768. < 2152830. {start := time.Now()
 {alpha_5 = alpha_1(read(open("./benchmark/files/large1.txt")))}
 {alpha_6 = alpha_1(read(open("./benchmark/files/large2.txt")))}
 {alpha_7 = alpha_1(read(open("./benchmark/files/large3.txt")))}
 elapsed := time.Since(start)
-print(elapsed.Nanoseconds())}
-tempalpha_9 := os.Stdout
+print(elapsed.Nanoseconds())} else {start := time.Now()
+var wg_alpha_10 sync.WaitGroup
+wg_alpha_10.Add(3)
+go func(){
+{alpha_5 = alpha_1(read(open("./benchmark/files/large1.txt")))}
+wg_alpha_10.Done()
+}()
+go func(){
+{alpha_6 = alpha_1(read(open("./benchmark/files/large2.txt")))}
+wg_alpha_10.Done()
+}()
+go func(){
+{alpha_7 = alpha_1(read(open("./benchmark/files/large3.txt")))}
+wg_alpha_10.Done()
+}()
+wg_alpha_10.Wait()
+elapsed := time.Since(start)
+print(elapsed.Nanoseconds())}}
+tempalpha_11 := os.Stdout
 os.Stdout = nil
 fmt.Println(alpha_5 + alpha_6 + alpha_7)
-os.Stdout = tempalpha_9
+os.Stdout = tempalpha_11
 }

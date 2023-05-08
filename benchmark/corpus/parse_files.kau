@@ -4,10 +4,33 @@ func parse(contents string) string {
 
 	result := ""
 
-	for char := range contents { 
-		if char != " " {
-			result += char
+	for char := range contents {
+		var result1 string
+		var result2 string
+		var result3 string
+
+		{
+			if (char != " ") && (char != "-") {
+				result1 = char
+			} else { 
+				result1 = ""
+			}
 		}
+		{
+			if char == " " { 
+				result2 = "_"
+			} else { 
+				result2 = ""
+			}
+		}
+		{
+			if char == "-" { 
+				result3 = "-"
+			} else {
+				result3 = ""
+			}
+		}
+		result += result1 + result2 + result3 
 	}
 
 	return result 
@@ -21,27 +44,27 @@ func main() {
 	var file5_contents string
 
 	{
-		file1 := open("./benchmark/files/small1.txt", 1)
+		file1 := open("./benchmark/files/very_small1.txt", 1)
 		file1_contents = parse(read(file1, 50000))
 	}
 
 	{
-		file2 := open("./benchmark/files/small2.txt", 1)
+		file2 := open("./benchmark/files/very_small2.txt", 1)
 		file2_contents = parse(read(file2, 50000))
 	}
 
 	{
-		file3 := open("./benchmark/files/small3.txt", 1)
+		file3 := open("./benchmark/files/very_small3.txt", 1)
 		file3_contents = parse(read(file3, 50000))
 	}
 
 	{
-		file4 := open("./benchmark/files/small4.txt", 1)
+		file4 := open("./benchmark/files/very_small4.txt", 1)
 		file4_contents = parse(read(file4, 50000))
 	}
 
 	{
-		file5 := open("./benchmark/files/small5.txt", 1)
+		file5 := open("./benchmark/files/very_small5.txt", 1)
 		file5_contents = parse(read(file5, 50000)) 
 	}
 

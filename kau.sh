@@ -3,7 +3,7 @@
 suppress_output=false
 debug=false
 benchmark=false
-seq=false 
+seq=false
 
 print_usage() {
   printf "Usage: ./kau.sh [-s] [-d] [-b] [-i] [--seq] [-o <output>] <file>"
@@ -50,7 +50,6 @@ else
   seq_str=""
 fi
 
-
 rm $output_file >/dev/null 2>&1
 touch $output_file
 
@@ -82,10 +81,10 @@ execute_normal() {
 
 run_scipt() {
   if [ $debug = false ]; then
-    dune exec kautuka -- $debug_str $seq_str $input_file $output_file  >/dev/null 2>&1
-  else 
+    dune exec kautuka -- $debug_str $seq_str $input_file $output_file >/dev/null 2>&1
+  else
     dune exec kautuka -- $debug_str $seq_str $input_file $output_file
-  fi 
+  fi
 
   if [ $benchmark = true ]; then
     execute_benchmark

@@ -2,6 +2,7 @@ package main
 
 import ("fmt"
 "os"
+"sync"
 "time")
 func check(err error) {
 	if err != nil {
@@ -23,38 +24,57 @@ func read(file *os.File) string {
 
 
 
-func alpha_1 (alpha_2 string) string {
-alpha_3 := ""
-{for _, alpha_4 := range alpha_2 {
-var alpha_4 string = string(alpha_4)
-    if alpha_4 != " " {
-alpha_3 = alpha_3 + alpha_4
-} 
+func alpha_1 (alpha_2 string, alpha_3 string, alpha_4 string) string {
+alpha_5 := ""
+{for _, alpha_6 := range alpha_2 {
+var alpha_6 string = string(alpha_6)
+    if alpha_6 != alpha_3 {
+alpha_5 = alpha_5 + alpha_6
+} else {alpha_5 = alpha_5 + alpha_4}
 }}
-return alpha_3
+return alpha_5
 }
 
 func main ()  {
-var alpha_5 string
-var alpha_6 string
 var alpha_7 string
 var alpha_8 string
 var alpha_9 string
-{start := time.Now()
-{alpha_10 := open("./benchmark/files/large1.txt")
-alpha_5 = read(alpha_10)}
-{alpha_11 := open("./benchmark/files/large2.txt")
-alpha_6 = read(alpha_11)}
-{alpha_12 := open("./benchmark/files/large3.txt")
-alpha_7 = read(alpha_12)}
-{alpha_13 := open("./benchmark/files/large4.txt")
-alpha_8 = read(alpha_13)}
-{alpha_14 := open("./benchmark/files/large5.txt")
-alpha_9 = read(alpha_14)}
+alpha_10 := read(open("./benchmark/files/very_small1.txt"))
+alpha_11 := read(open("./benchmark/files/very_small2.txt"))
+alpha_12 := read(open("./benchmark/files/very_small2.txt"))
+{if 1350012. < 676452. {start := time.Now()
+{alpha_7 = alpha_1(alpha_10, "a", "b")}
+{alpha_8 = alpha_1(alpha_11, "c", "d")}
+{alpha_9 = alpha_1(alpha_12, "e", "f")}
 elapsed := time.Since(start)
-print(elapsed.Nanoseconds())}
-tempalpha_16 := os.Stdout
+print(elapsed.Nanoseconds())} else {start := time.Now()
+var wg_alpha_17 sync.WaitGroup
+wg_alpha_17.Add(3)
+go func(){
+{alpha_7 = alpha_1(alpha_10, "a", "b")}
+wg_alpha_17.Done()
+}()
+go func(){
+{alpha_8 = alpha_1(alpha_11, "c", "d")}
+wg_alpha_17.Done()
+}()
+go func(){
+{alpha_9 = alpha_1(alpha_12, "e", "f")}
+wg_alpha_17.Done()
+}()
+wg_alpha_17.Wait()
+elapsed := time.Since(start)
+print(elapsed.Nanoseconds())}}
+tempalpha_18 := os.Stdout
 os.Stdout = nil
-fmt.Println(alpha_5 + alpha_6 + alpha_7 + alpha_8 + alpha_9)
-os.Stdout = tempalpha_16
+fmt.Println(alpha_7)
+os.Stdout = tempalpha_18
+tempalpha_19 := os.Stdout
+os.Stdout = nil
+fmt.Println(alpha_8)
+os.Stdout = tempalpha_19
+tempalpha_20 := os.Stdout
+os.Stdout = nil
+fmt.Println(alpha_9)
+os.Stdout = tempalpha_20
 }

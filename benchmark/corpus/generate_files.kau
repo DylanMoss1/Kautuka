@@ -1,9 +1,9 @@
 package main
 
 func main() {
-	file1 := open("./benchmark/files/small1.txt", 1)
-	file2 := open("./benchmark/files/small2.txt", 1)
-	file3 := open("./benchmark/files/small3.txt", 1)
+	file1 := open("./benchmark/files/tmp/small1.txt", 1)
+	file2 := open("./benchmark/files/tmp/small2.txt", 1)
+	file3 := open("./benchmark/files/tmp/small3.txt", 1)
 
 	contents1 := read(open("./benchmark/files/tmp/tmp1.txt"), 350000)
 	contents2 := read(open("./benchmark/files/tmp/tmp2.txt"), 350000)

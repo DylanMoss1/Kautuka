@@ -115,7 +115,7 @@ def analyse_results(results_file):
     n = 75
 
     par_data = np.zeros(9)
-    for_each = np.zeros(11)
+    for_each = np.zeros(n)
     print_data = np.zeros(n)
     read_data = np.zeros(n)
     write_data = np.zeros(n)
@@ -137,12 +137,12 @@ def analyse_results(results_file):
       print(f"{simple_ops[i]}: {simple_ops_data[i]}")
 
     plot_par_data(data_arrs[1])
-    plot_for_each_data(data_arrs[2])
+    # plot_for_each_data(data_arrs[2])
 
-    long_ops = ["print", "read", "write", "append"]
+    long_ops = ["for loop", "print", "read", "write", "append"]
 
-    for i in range(4):
-      plot_data(long_ops[i], data_arrs[i + 3])
+    for i in range(5):
+      plot_data(long_ops[i], data_arrs[i + 2])
 
 
 # empty := run_experiment(get_empty_runtime_cost, "empty", 0.)

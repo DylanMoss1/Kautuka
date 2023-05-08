@@ -182,7 +182,8 @@ and go_of_if_record ~sequential if_record =
        ~f:(go_of_condition_template ~sequential)
        (List.append [ if_record._if ] if_record.else_if))
     (match if_record.else_contents with
-    | Some else_contents -> go_of_block ~sequential else_contents
+    | Some else_contents ->
+      Fmt.str "else {%s}" (go_of_block ~sequential else_contents)
     | None -> "")
 
 

@@ -613,7 +613,6 @@ module Type_cost_ast_mapping = struct
   let get_new_env ~for_each ~(start_env : env) ~(end_env : env) ~iterations =
     (* print_endline (Type_cost_context.string_of_t start_env);  *)
     (* print_endline (Type_cost_context.string_of_t end_env);  *)
-
     let start_env = remove_scope ~is_func:false start_env in
     let end_env = remove_scope ~is_func:false end_env in
     let end_env =
@@ -621,7 +620,6 @@ module Type_cost_ast_mapping = struct
     in
     (* print_endline (Type_cost_context.string_of_t start_env);  *)
     (* print_endline (Type_cost_context.string_of_t end_env);  *)
-
     Type_cost_context.add_new_scope
       ~is_func:false
       (Type_cost_context.get_post_loop_context
@@ -704,14 +702,18 @@ module Type_cost_ast_mapping = struct
         then Cost.subtract cond_cost Cost.one
         else Cost.subtract (Cost.sum Cost.one init_cost) cond_cost
       in
-      get_new_env ~for_each:false ~start_env ~end_env ~iterations, for_loop, result
+      ( get_new_env ~for_each:false ~start_env ~end_env ~iterations
+      , for_loop
+      , result )
     | _ -> raise Type_error
 
 
   let for_each ~start_env ~end_env ~for_each ~result =
     match for_each.iterator.annotations with
     | Type_cost.C_String cost ->
-      get_new_env ~for_each:true ~start_env ~end_env ~iterations:cost, for_each, result
+      ( get_new_env ~for_each:true ~start_env ~end_env ~iterations:cost
+      , for_each
+      , result )
     | _ -> raise Type_error
 
 
@@ -719,10 +721,6 @@ module Type_cost_ast_mapping = struct
     let number_of_conditions =
       1
       + List.length if_record.else_if
-      +
-      match if_record.else_contents with
-      | Some _ -> 1
-      | None -> 0
     in
     let _ =
       Type_cost_result.extract_n result.expr_type_cost number_of_conditions

@@ -17,7 +17,6 @@ module type Context = sig
   (* val apply_bin_fun : f:(value -> value -> value) -> t -> t -> t *)
   val get_all_values : t -> value list
   val get_all_key_value_pairs : t -> (key * value) list
-
   val string_of_t : t -> string
 
   val get_post_loop_context

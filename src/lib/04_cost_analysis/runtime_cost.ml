@@ -19,36 +19,36 @@ module Runtime_cost = struct
   let join_list = List.fold_left ~init:empty ~f:sum
   let union_list = List.fold_left ~init:empty ~f:union
   let tr = one
-  let cost_of_not = tr
+  let cost_of_not = zero
   let cost_of_u_minus = tr
-  let cost_of_plus = tr
-  let cost_of_concat = tr
-  let cost_of_b_minus = tr
-  let cost_of_mult = tr
-  let cost_of_lt = tr
-  let cost_of_le = tr
-  let cost_of_gt = tr
-  let cost_of_ge = tr
-  let cost_of_eq = tr
-  let cost_of_ne = tr
-  let cost_of_and = tr
-  let cost_of_or = tr
-  let cost_of_var_read = tr
-  let cost_of_var_non_init = tr
-  let cost_of_var_init = tr
-  let cost_of_var_decl = tr
-  let cost_of_var_assign = tr
-  let cost_of_post_inc = tr
-  let cost_of_post_dec = tr
+  let cost_of_plus = zero
+  let cost_of_concat = zero
+  let cost_of_b_minus = zero
+  let cost_of_mult = zero
+  let cost_of_lt = zero
+  let cost_of_le = zero
+  let cost_of_gt = zero
+  let cost_of_ge = zero
+  let cost_of_eq = zero
+  let cost_of_ne = zero
+  let cost_of_and = zero
+  let cost_of_or = zero
+  let cost_of_var_read = zero
+  let cost_of_var_non_init = zero
+  let cost_of_var_init = zero
+  let cost_of_var_decl = zero
+  let cost_of_var_assign = zero
+  let cost_of_post_inc = zero
+  let cost_of_post_dec = zero
   let cost_of_user_func_call = create_int_cost 5
   let cost_of_print : Cost.t -> Cost.t = Cost.fit_linear 0.2118 486.8636
   let cost_of_input = create_int_cost 3000000000 (* 3s *)
   let cost_of_open = create_int_cost 4285
   let cost_of_read : Cost.t -> Cost.t = Cost.fit_linear 0.7596 78047.7545
   let cost_of_write : Cost.t -> Cost.t = Cost.fit_linear 2.8451 1410315.1545
-  let cost_of_append : Cost.t -> Cost.t = Cost.fit_linear 2.3044 1310741.9063 
+  let cost_of_append : Cost.t -> Cost.t = Cost.fit_linear 2.3044 1310741.9063
   let cost_of_for_loop = create_int_cost 34
-  let cost_of_for_each : Cost.t -> Cost.t = Cost.fit_linear 11.7656 4.4181 
+  let cost_of_for_each : Cost.t -> Cost.t = Cost.fit_linear 11.7656 4.4181
   let cost_of_if_record = tr
 end
 
@@ -254,14 +254,20 @@ module Runtime_cost_ast_mapping = struct
           then Runtime_cost.subtract cond_cost Runtime_cost.one
           else Runtime_cost.subtract (Cost.sum Cost.one init_cost) cond_cost
         in
-        Runtime_cost.multiply iterations result )
+        Runtime_cost.sum
+          Runtime_cost.cost_of_for_loop
+          (Runtime_cost.multiply iterations result) )
     | _ -> raise Type_error
 
 
   let for_each ~start_env:_ ~end_env ~for_each ~result =
     match for_each.iterator.annotations with
     | Type_cost.C_String cost ->
-      end_env, for_each, Runtime_cost.multiply cost result
+      ( end_env
+      , for_each
+      , Runtime_cost.sum
+          (Runtime_cost.cost_of_for_each cost)
+          (Runtime_cost.multiply cost result) )
     | _ -> raise Type_error
 
 

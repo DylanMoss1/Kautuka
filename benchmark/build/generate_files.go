@@ -1,6 +1,7 @@
 package main
 
 import ("os"
+"sync"
 "time")
 func check(err error) {
 	if err != nil {
@@ -31,16 +32,33 @@ func write(file *os.File, contents string) {
 
 
 func main ()  {
-alpha_1 := open("./benchmark/files/small1.txt")
-alpha_2 := open("./benchmark/files/small2.txt")
-alpha_3 := open("./benchmark/files/small3.txt")
+alpha_1 := open("./benchmark/files/tmp/small1.txt")
+alpha_2 := open("./benchmark/files/tmp/small2.txt")
+alpha_3 := open("./benchmark/files/tmp/small3.txt")
 alpha_4 := read(open("./benchmark/files/tmp/tmp1.txt"))
 alpha_5 := read(open("./benchmark/files/tmp/tmp2.txt"))
 alpha_6 := read(open("./benchmark/files/tmp/tmp3.txt"))
-{start := time.Now()
+{if 7218306. < 3610599. {start := time.Now()
 {write(alpha_1, alpha_4)}
 {write(alpha_2, alpha_5)}
 {write(alpha_3, alpha_6)}
 elapsed := time.Since(start)
-print(elapsed.Nanoseconds())}
+print(elapsed.Nanoseconds())} else {start := time.Now()
+var wg_alpha_8 sync.WaitGroup
+wg_alpha_8.Add(3)
+go func(){
+{write(alpha_1, alpha_4)}
+wg_alpha_8.Done()
+}()
+go func(){
+{write(alpha_2, alpha_5)}
+wg_alpha_8.Done()
+}()
+go func(){
+{write(alpha_3, alpha_6)}
+wg_alpha_8.Done()
+}()
+wg_alpha_8.Wait()
+elapsed := time.Since(start)
+print(elapsed.Nanoseconds())}}
 }
