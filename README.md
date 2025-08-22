@@ -1,6 +1,6 @@
 # Automatic Parallelisation using Effect Tracking and Cost Analysis
 
-An OCaml transpiler which compiles (annotated) sequential Go code into multithreaded Go code.
+An OCaml transpiler which compiles sequential Go code into multithreaded Go code.
 
 Accompanying Thesis: [https://github.com/DylanMoss1/Bachelors-Thesis](https://github.com/DylanMoss1/Bachelors-Thesis).
 
